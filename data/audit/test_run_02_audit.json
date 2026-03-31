@@ -1,0 +1,23 @@
+{
+  "run_id": "test_run_02",
+  "excel_report": "data\\input\\warning_reports\\mock_warning_report.xlsx",
+  "source_dir": "data\\input\\source_code",
+  "started_at": "2026-03-30T17:15:56.603710",
+  "phases": {
+    "6a": {
+      "duration_s": 3.1,
+      "warnings": 16
+    },
+    "6b": {
+      "duration_s": 104.3
+    },
+    "7": {
+      "duration_s": 1792.6,
+      "fixes_generated": 16,
+      "parse_errors": 3
+    }
+  },
+  "completed_at": "2026-03-30T17:47:36.581178",
+  "total_duration_s": 1900.0,
+  "final_output": "C:\\Users\\sanjay.ravichander\\misra_genai_system\\misra_genai_system\\data\\output\\test_run_02\\fix_suggestions.json"
+}

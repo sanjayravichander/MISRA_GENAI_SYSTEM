@@ -1,0 +1,684 @@
+========================================================================
+MISRA FIX SUGGESTIONS REPORT
+========================================================================
+
+────────────────────────────────────────────────────────────────────────
+WARNING : PS002  |  Rule 10.3  |  Severity: High
+File    : main.c  Line 22
+Message : Narrowing conversion
+Function: main
+
+EXPLANATION
+  The value of an expression (total + 300) is being assigned to a
+variable (small) with a narrower essential type (uint8_t). This can
+lead to unintended results, such as loss of value or precision.
+
+RISK ANALYSIS
+  If not fixed, this warning can result in unexpected behavior due to
+data loss or precision issues.
+
+RANKED FIX SUGGESTIONS
+  [1] Cast the result to uint8_t before assignment
+      Risk level : Medium
+      Rationale  : This fix ensures that the value is within the range of the uint8_t type, preventing data loss or precision issues.
+      Code change:
+        small = (uint8_t)(total + 300);
+
+  [2] Declare small as int
+      Risk level : High
+      Rationale  : This fix eliminates the need for the narrowing conversion, but may lead to potential overflow issues if the value exceeds the range of the int type.
+      Code change:
+        Change uint8_t small; to int small;
+
+  [3] Use a larger data type for small
+      Risk level : Low
+      Rationale  : This fix allows for a larger range of values, reducing the likelihood of data loss or precision issues, but may consume more memory.
+      Code change:
+        Change uint8_t small; to uint16_t small;
+
+DEVIATION ADVICE
+  No deviation justified.
+
+────────────────────────────────────────────────────────────────────────
+WARNING : PS008  |  Rule 9.1  |  Severity: High
+File    : sensor.c  Line 8
+Message : Variable used before initialization
+Function: read_sensor
+
+EXPLANATION
+  The variable 'raw_value' is used before it has been initialized.
+
+RISK ANALYSIS
+  If not fixed, the program may behave unpredictably due to the use of
+an uninitialized variable.
+
+RANKED FIX SUGGESTIONS
+  [1] Initialize 'raw_value' before using it.
+      Risk level : Low
+      Rationale  : This fix ensures that 'raw_value' has a defined value before it is used.
+      Code change:
+        Add an assignment to raw_value before the if statement.
+        ```c
+        int read_sensor(void)
+        {
+            int raw_value = 0;
+            ...
+            }
+        ```
+
+  [2] Add a check for raw_value initialization before using it.
+      Risk level : Medium
+      Rationale  : This fix ensures that 'raw_value' is only used if it has been initialized.
+      Code change:
+        Add a check for raw_value before the if statement.
+        ```c
+        int read_sensor(void)
+        {
+            int raw_value;
+            if (raw_value != 0) {
+                int output = raw_value;
+                ...
+            }
+            }
+        ```
+
+  [3] Refactor the code to avoid using 'raw_value' before initialization.
+      Risk level : High
+      Rationale  : This fix ensures that 'raw_value' is not used before it is assigned a value.
+      Code change:
+        Refactor the code to avoid using 'raw_value' before it is assigned a value.
+        ```c
+        int read_sensor(void)
+        {
+            int output = 0;
+            if (output == 0) {
+                // Assign raw_value here
+                output = raw_value;
+            }
+            ...
+            }
+        ```
+
+DEVIATION ADVICE
+  No deviation justified.
+
+────────────────────────────────────────────────────────────────────────
+WARNING : PS005  |  Rule 13.2  |  Severity: High
+File    : utils.c  Line 14
+Message : Evaluation order side effects
+Function: update_index
+
+EXPLANATION
+  The value of the expression `arr[i] = i++;` has a side effect
+(incrementing `i`) that is not guaranteed to be evaluated before the
+value is returned, which violates MISRA C 2012 Rule 13.2.
+
+RISK ANALYSIS
+  If the side effect is not evaluated before the return, the array
+will be updated incorrectly, leading to potential runtime errors.
+
+RANKED FIX SUGGESTIONS
+  [1] Store the value of `i` before incrementing it, then assign the new value to the array.
+      Risk level : Low
+      Rationale  : This approach ensures that the side effect is evaluated before the return, making the code compliant with MISRA C 2012 Rule 13.2.
+      Code change:
+        arr[i] = i; i++;
+
+  [2] Use a temporary variable to store the value of `i` before incrementing it, then assign the new value to the array.
+      Risk level : Medium
+      Rationale  : This approach also ensures that the side effect is evaluated before the return, making the code compliant with MISRA C 2012 Rule 13.2.
+      Code change:
+        int temp = i; arr[temp] = temp++;
+
+  [3] Modify the function to return the updated array instead of returning a single value.
+      Risk level : High
+      Rationale  : This approach eliminates the need for the side effect to be evaluated before the return, but may require changes to the calling code.
+      Code change:
+        Modify the function to return arr and remove the return statement.
+
+DEVIATION ADVICE
+  A formal deviation might be justified if the side effect is
+guaranteed to be evaluated before the return, but this should be
+carefully documented and reviewed.
+
+────────────────────────────────────────────────────────────────────────
+WARNING : PS001  |  Rule 8.7  |  Severity: Medium
+File    : calc.c  Line 3
+Message : Global object only used in one function
+Function: calculate_total
+
+EXPLANATION
+  The global variable `g_total` is only used within the
+`calculate_total` function, which violates MISRA C 2012 Rule 8.7.
+
+RISK ANALYSIS
+  If not fixed, this violation could lead to potential inadvertent
+access or confusion between identifiers.
+
+RANKED FIX SUGGESTIONS
+  [1] Make `g_total` a local variable within the `calculate_total` function.
+      Risk level : Medium
+      Rationale  : This option reduces the visibility of the object and avoids potential inadvertent access or confusion.
+      Code change:
+        Replace:
+        ```c
+        int g_total = 0;
+        ```
+        With:
+        ```c
+        int local_total = 0;
+        ```
+
+  [2] Pass `g_total` as an argument to the `calculate_total` function.
+      Risk level : Medium
+      Rationale  : This option allows the `calculate_total` function to modify the `g_total` variable without making it a global variable.
+      Code change:
+        Replace:
+        ```c
+        int calculate_total(int a, int b)
+        ```
+        With:
+        ```c
+        int calculate_total(int a, int b, int *g_total)
+        ```
+
+  [3] Make `g_total` a static global variable.
+      Risk level : Medium
+      Rationale  : This option reduces the visibility of the object but still allows it to be accessed from other translation units.
+      Code change:
+        Replace:
+        ```c
+        int g_total = 0;
+        ```
+        With:
+        ```c
+        static int g_total = 0;
+        ```
+
+DEVIATION ADVICE
+  No deviation justified.
+
+────────────────────────────────────────────────────────────────────────
+WARNING : PS012  |  Rule 14.4  |  Severity: Medium
+File    : control.c  Line 6
+Message : Controlling expression not Boolean
+Function: stop_motor
+
+EXPLANATION
+  The controlling expression of the if statement is not of essentially
+Boolean type.
+
+RISK ANALYSIS
+  The current implementation may lead to unexpected behavior if the
+state variable can take non-Boolean values.
+
+RANKED FIX SUGGESTIONS
+  [1] Change the if condition to check for non-zero state.
+      Risk level : Medium
+      Rationale  : This ensures the controlling expression is of essentially Boolean type.
+      Code change:
+        if (state != 0)
+
+  [2] Change the function signature to accept a Boolean parameter.
+      Risk level : High
+      Rationale  : This ensures the controlling expression is of essentially Boolean type.
+      Code change:
+        void stop_motor(bool state)
+
+  [3] Add a check for zero before passing state to the if condition.
+      Risk level : Low
+      Rationale  : This ensures the controlling expression is of essentially Boolean type.
+      Code change:
+        if (state && state != 0)
+
+DEVIATION ADVICE
+  No deviation justified.
+
+────────────────────────────────────────────────────────────────────────
+WARNING : PS010  |  Rule 8.13  |  Severity: Medium
+File    : logger.c  Line 5
+Message : Pointer parameter should be const
+Function: log_message
+
+EXPLANATION
+  The pointer parameter 'msg' is not const-qualified, but it is being
+used to modify the 'log_buffer' array.
+
+RISK ANALYSIS
+  If not fixed, this could lead to unintended modifications of the
+'log_buffer' array, potentially causing runtime errors or security
+vulnerabilities.
+
+RANKED FIX SUGGESTIONS
+  [1] Make the 'msg' parameter const-qualified.
+      Risk level : Medium
+      Rationale  : This is the safest option as it ensures that the 'msg' pointer cannot be modified, reducing the risk of unintended changes to the 'log_buffer' array.
+      Code change:
+        Change: `void log_message(const char * msg)`
+
+  [2] Copy the 'msg' content to a const-qualified buffer before modifying the 'log_buffer'.
+      Risk level : Medium
+      Rationale  : This option allows the 'msg' pointer to remain non-const, but introduces a temporary buffer to hold the const-qualified data before modifying the 'log_buffer'.
+      Code change:
+        Before line 10: `char temp_buffer[64]; strcpy(temp_buffer, msg); strcpy(log_buffer, temp_buffer);`
+
+  [3] Modify the 'log_buffer' outside the function and pass a const-qualified pointer to the function.
+      Risk level : Medium
+      Rationale  : This option allows the 'log_buffer' to be modified directly, but requires the function to receive a const-qualified pointer. This might not be suitable if the function needs to modify the buffer.
+      Code change:
+        Before function definition: `extern char log_buffer[64];`
+        After line 10: `strcpy(log_buffer, msg);`
+
+DEVIATION ADVICE
+  A formal deviation might be justified if the 'log_buffer' is
+intended to be modified by the function and the function is not
+intended to be called with a non-const pointer.
+
+────────────────────────────────────────────────────────────────────────
+WARNING : PS011  |  Rule 17.7  |  Severity: Medium
+File    : logger.c  Line 9
+Message : Return value ignored
+Function: log_message
+
+EXPLANATION
+  The return value of the function 'puts' is ignored, which violates
+MISRA C 2012 Rule 17.7.
+
+RISK ANALYSIS
+  If the function 'puts' returns an error code, it will not be
+handled, potentially leading to undesired behavior.
+
+RANKED FIX SUGGESTIONS
+  [1] Cast the return value of 'puts' to void.
+      Risk level : Medium
+      Rationale  : This option ensures that the return value of 'puts' is not used explicitly, making the code compliant with MISRA C 2012 Rule 17.7.
+      Code change:
+        void log_message(char * msg) {
+          int status = 0;
+          strcpy(log_buffer, msg);
+          (void)puts(log_buffer);
+        }
+
+  [2] Handle the return value of 'puts'.
+      Risk level : Medium
+      Rationale  : This option ensures that the return value of 'puts' is handled, making the code compliant with MISRA C 2012 Rule 17.7 and providing a way to handle potential errors.
+      Code change:
+        void log_message(char * msg) {
+          int status = 0;
+          strcpy(log_buffer, msg);
+          status = puts(log_buffer);
+          if (status == EOF) {
+            // Handle error
+          }
+        }
+
+  [3] Modify the function to return the status of 'puts'.
+      Risk level : High
+      Rationale  : This option ensures that the return value of 'puts' is used, making the code compliant with MISRA C 2012 Rule 17.7. However, it violates MISRA C 2012 Rule 15.5, which states that a function should have no more than one return statement.
+      Code change:
+        int log_message(char * msg) {
+          int status = 0;
+          strcpy(log_buffer, msg);
+          status = puts(log_buffer);
+          return status;
+        }
+
+DEVIATION ADVICE
+  A deviation from MISRA C 2012 Rule 15.5 might be justified if the
+function's purpose is to return the status of 'puts'. However, it is
+recommended to handle the return value of 'puts' instead of returning
+it to maintain compliance with both Rule 17.7 and Rule 15.5.
+
+────────────────────────────────────────────────────────────────────────
+WARNING : PS003  |  Rule 21.6  |  Severity: Medium
+File    : main.c  Line 24
+Message : Standard I/O function used
+Function: main
+
+EXPLANATION
+  The function printf is a standard I/O function and its usage is not
+allowed according to MISRA C 2012.
+
+RISK ANALYSIS
+  The use of printf may lead to unspecified, undefined, or
+implementation-defined behaviors.
+
+RANKED FIX SUGGESTIONS
+  [1] Replace printf with a MISRA-compliant function for outputting the total value.
+      Risk level : Medium
+      Rationale  : MISRA_puts and int_to_string are MISRA-compliant functions for outputting strings and integers respectively.
+      Code change:
+        Replace line 30 with: MISRA_puts("Total: "); MISRA_puts(int_to_string(total));
+
+  [2] Use a MISRA-compliant logging function to record the total value.
+      Risk level : Medium
+      Rationale  : This approach allows for logging the total value without using printf.
+      Code change:
+        Add a MISRA-compliant logging function call before line 32.
+
+  [3] Remove the printf statement and modify the code to not rely on outputting the total value.
+      Risk level : High
+      Rationale  : This approach eliminates the need for printf, but may require significant changes to the code.
+      Code change:
+        Remove line 30 and modify the code to not require the total value to be outputted.
+
+DEVIATION ADVICE
+  No deviation justified.
+
+────────────────────────────────────────────────────────────────────────
+WARNING : PS014  |  Rule 17.8  |  Severity: Medium
+File    : protocol.c  Line 6
+Message : Function parameter modified
+Function: parse_frame
+
+EXPLANATION
+  The function parameter 'len' is being modified, which is not
+recommended as it can lead to confusion and potential errors.
+
+RISK ANALYSIS
+  If not fixed, the function may behave unexpectedly, especially for
+programmers unfamiliar with C.
+
+RANKED FIX SUGGESTIONS
+  [1] Create a local variable to store the input length and modify that instead.
+      Risk level : Medium
+      Rationale  : This approach maintains the original parameter's value and reduces the risk of confusion.
+      Code change:
+        Replace line 6 with: uint8_t local_len = len;
+        for (i = 0U; i < local_len; i++)
+
+  [2] Pass a pointer to a local variable instead of the length itself.
+      Risk level : High
+      Rationale  : This approach allows the function to modify a local copy of the data, preserving the original input.
+      Code change:
+        Add a local variable before the function definition: uint8_t local_data[len];
+        Replace line 6 with: for (i = 0U; i < len; i++)
+
+  [3] Modify the function to return the modified data instead of modifying the input.
+      Risk level : Critical
+      Rationale  : This approach allows the caller to decide whether to use the modified data or not, reducing the potential for unintended side effects.
+      Code change:
+        Replace the function definition with: uint8_t* parse_frame(uint8_t * data, uint8_t len) {
+            uint8_t *result = malloc(len * sizeof(uint8_t));
+            for (uint8_t i = 0U; i < len; i++) {
+                result[i] = data[i] + 1U;
+            }
+            return result;
+        }
+
+DEVIATION ADVICE
+  A deviation might be justified if the function is intended to modify
+its input and the code is well-documented and reviewed by a competent
+authority.
+
+────────────────────────────────────────────────────────────────────────
+WARNING : PS015  |  Rule 12.2  |  Severity: Medium
+File    : protocol.c  Line 14
+Message : Shift range issue
+Function: make_mask
+
+EXPLANATION
+  [Parse error: Request timed out]
+
+RISK ANALYSIS
+
+
+RANKED FIX SUGGESTIONS
+DEVIATION ADVICE
+
+
+────────────────────────────────────────────────────────────────────────
+WARNING : PS009  |  Rule 10.3  |  Severity: Medium
+File    : sensor.c  Line 17
+Message : Narrowing conversion
+Function: scale_value
+
+EXPLANATION
+  The value of an expression (input) is being assigned to an object
+(scaled) with a narrower essential type (uint8_t). This can lead to
+unintended results, such as loss of value or precision.
+
+RISK ANALYSIS
+  If not fixed, this warning can result in incorrect data handling and
+potential system malfunctions.
+
+RANKED FIX SUGGESTIONS
+  [1] Cast the input to uint8_t before assignment
+      Risk level : Medium
+      Rationale  : This fix ensures that the value of input is correctly converted to the appropriate type before assignment.
+      Code change:
+        uint8_t scaled = (uint8_t)input;
+
+  [2] Use a larger data type for scaled
+      Risk level : Low
+      Rationale  : This fix reduces the risk of data loss but may require additional memory and processing resources.
+      Code change:
+        uint16_t scaled;
+
+  [3] Use a function to handle the conversion
+      Risk level : Low
+      Rationale  : This fix separates the conversion logic into a separate function, making the code more modular and easier to maintain.
+      Code change:
+        scaled = convert_uint16_to_uint8(input);
+
+DEVIATION ADVICE
+  A deviation might be justified if the loss of precision or data
+truncation is intentional and well-documented.
+
+────────────────────────────────────────────────────────────────────────
+WARNING : PS007  |  Rule 17.2  |  Severity: Medium
+File    : utils.c  Line 31
+Message : Recursive function detected
+Function: factorial
+
+EXPLANATION
+  The function 'factorial' calls itself recursively, which can lead to
+stack overflow.
+
+RISK ANALYSIS
+  If not fixed, this can cause a serious failure due to exceeding
+available stack space.
+
+RANKED FIX SUGGESTIONS
+  [1] Replace recursive function with an iterative solution
+      Risk level : Low
+      Rationale  : This option eliminates the recursion and reduces the risk of stack overflow.
+      Code change:
+        Replace line 37 with a loop:
+        ```c
+        int i;
+        for (i = 1; i <= n; ++i) {
+          n *= i;
+        }
+        return n;
+        ```
+
+  [2] Implement tail recursion
+      Risk level : Medium
+      Rationale  : Tail recursion can be optimized by the compiler to avoid stack overflow, but it still carries some risk.
+      Code change:
+        Modify the function to use tail recursion:
+        ```c
+        int factorial(int n, int result)
+        {
+          if (n <= 1)
+          {
+            return result;
+          }
+          return factorial(n - 1, n * result);
+        }
+        int factorial(int n)
+        {
+          return factorial(n, 1);
+        }
+        ```
+
+  [3] Limit recursion depth
+      Risk level : High
+      Rationale  : This option reduces the risk of stack overflow by limiting the recursion depth, but it does not eliminate the risk entirely.
+      Code change:
+        Add a limit to the recursion depth:
+        ```c
+        #define MAX_RECURSION 100
+        int factorial(int n)
+        {
+          if (n <= 1)
+          {
+            return 1;
+          }
+          if (n > MAX_RECURSION)
+          {
+            return -1;
+          }
+          return n * factorial(n - 1);
+        }
+        ```
+
+DEVIATION ADVICE
+  No deviation justified.
+
+────────────────────────────────────────────────────────────────────────
+WARNING : PS013  |  Rule 14.1  |  Severity: Low
+File    : control.c  Line 12
+Message : Loop never executes
+Function: spin_wait
+
+EXPLANATION
+  The loop counter 'i' is of floating-point type, which can lead to
+rounding errors and a mismatch between the expected and actual number
+of iterations.
+
+RISK ANALYSIS
+  The loop may not execute the expected number of times, leading to
+potential issues in the control flow.
+
+RANKED FIX SUGGESTIONS
+  [1] Replace the floating-point loop counter with an integer type.
+      Risk level : Low
+      Rationale  : Using an integer type eliminates the risk of rounding errors and ensures the loop executes the expected number of times.
+      Code change:
+        Replace `int i;` with `unsigned int i;`
+
+  [2] Modify the loop condition to ensure it is always executed.
+      Risk level : Medium
+      Rationale  : Modifying the loop condition ensures the loop always executes, but the risk of rounding errors remains.
+      Code change:
+        Replace `for (i = 10; i < 0; i--)` with `for (i = 10; i >= 0; i--)`
+
+  [3] Remove the loop if it serves no purpose.
+      Risk level : Low
+      Rationale  : If the loop serves no purpose, it should be removed to simplify the code and reduce potential errors.
+      Code change:
+        Delete the loop and its contents
+
+DEVIATION ADVICE
+  No deviation justified.
+
+────────────────────────────────────────────────────────────────────────
+WARNING : PS004  |  Rule 2.2  |  Severity: Low
+File    : utils.c  Line 6
+Message : Statement has no effect
+Function: helper_add
+
+EXPLANATION
+  The statement 'result = result' has no effect on the program's
+behavior as it assigns the same value back to the variable.
+
+RISK ANALYSIS
+  The presence of dead code may cause confusion and potential errors
+in the program's logic.
+
+RANKED FIX SUGGESTIONS
+  [1] Remove the redundant assignment statement.
+      Risk level : Low
+      Rationale  : Removing the redundant assignment statement simplifies the code and eliminates potential confusion.
+      Code change:
+        From:
+        ```c
+        result = result;
+        ```
+        To:
+        ```c
+        // result = result;
+        ```
+
+  [2] Comment out the redundant assignment statement and add a comment explaining its purpose if it serves a documentation or debugging purpose.
+      Risk level : Low
+      Rationale  : Commenting out the redundant assignment statement preserves any potential documentation or debugging information while eliminating its effect on the program's behavior.
+      Code change:
+        From:
+        ```c
+        result = result;
+        ```
+        To:
+        ```c
+        // result = result; // Documentation or debugging purpose
+        ```
+
+  [3] Replace the redundant assignment statement with a no-op to maintain the original code structure.
+      Risk level : Medium
+      Rationale  : Replacing the redundant assignment statement with a no-op maintains the original code structure while eliminating its effect on the program's behavior.
+      Code change:
+        From:
+        ```c
+        result = result;
+        ```
+        To:
+        ```c
+        (void)result;
+        ```
+
+DEVIATION ADVICE
+  No deviation justified.
+
+────────────────────────────────────────────────────────────────────────
+WARNING : PS006  |  Rule 2.1  |  Severity: Low
+File    : utils.c  Line 22
+Message : Unreachable code detected
+Function: early_return
+
+EXPLANATION
+  The code at line 22 is unreachable because the value of 'value' is
+already modified in the if statement at line 21, making the return
+statement redundant.
+
+RISK ANALYSIS
+  The unreachable code does not pose a direct safety risk, but it can
+lead to confusion and potential maintenance issues.
+
+RANKED FIX SUGGESTIONS
+  [1] Remove the unreachable return statement
+      Risk level : Low
+      Rationale  : This is the simplest and safest fix, as it removes the unreachable code.
+      Code change:
+        ```c
+        22      { // Remove this block
+        23      }
+        ```
+
+  [2] Move the return statement outside the if block
+      Risk level : Low
+      Rationale  : This fix ensures that the return statement is executed only when the if condition is true, eliminating the unreachable code.
+      Code change:
+        ```c
+        22      if (value == 0)
+        23      {
+        24          return 0;
+        25      }
+        26      value = 1;
+        27      return value; // Move this line here
+        ```
+
+  [3] Add a comment explaining the unreachable code
+      Risk level : Low
+      Rationale  : This fix does not remove the unreachable code, but it documents its purpose, which might be useful for testing or debugging.
+      Code change:
+        ```c
+        22      { // Unreachable code, but intentionally left for testing purposes
+        23          return 0;
+        24          value = 1;
+        25      } // End of unreachable code
+        ```
+
+DEVIATION ADVICE
+  No deviation justified.

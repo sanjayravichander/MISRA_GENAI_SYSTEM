@@ -1,0 +1,108 @@
+{
+  "warning_count": 2,
+  "results": [
+    {
+      "guideline_id": "Rule 17.8",
+      "guideline_title": "A function parameter should not be modified",
+      "explanation": {
+        "summary": "The function parameter 'data' is being modified, which violates MISRA2012-RULE-17_8.",
+        "rule_basis": "Function interfaces and calls must be explicit, safe, and consistently used.",
+        "code_evidence": "The code snippet provided shows that the function parameter 'data' is being modified within the 'parse_frame' function."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Create a function to modify the data outside the function",
+          "why": "This approach separates the modification logic from the main function, making it easier to understand and maintain.",
+          "patched_code": "1  #include <stdint.h>\n       2  \n       3  void parse_frame(uint8_t * data, uint8_t len)\n       4  {\n       5      for (uint8_t i = 0U; i < len; i++)\n       6      {\n       7          increment_data(data + i);\n       8      }\n      10  }\n      11  \n      12  void increment_data(uint8_t * data)\n      13  {\n      14      *data = *data + 1U;\n      15  }",
+          "compliance_notes": "The original function still takes 'data' as a parameter, but the modification is done in a separate function.",
+          "risk_reduction": "Medium"
+        }
+      ],
+      "risk_analysis": {
+        "severity": "Medium",
+        "why": "The modification of a function parameter can lead to unexpected behavior and potential bugs.",
+        "potential_failures": [
+          "Data corruption",
+          "Function misuse"
+        ],
+        "runtime_risk": "Medium",
+        "maintainability_risk": "Medium"
+      },
+      "deviation_advice": {
+        "deviation_possible": "Conditional",
+        "recommended_decision": "Avoid modifying function parameters if possible.",
+        "required_justification": "Modifying function parameters can lead to unexpected behavior and potential bugs.",
+        "review_notes": "Consider the impact of modifying the function parameter on the overall system behavior."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "d1a3e72b-bb5d-492d-a097-0f1939467895",
+          "d4c21f0f-1faa-49e9-be35-70aba8355be9",
+          "1f6d05d6-9e5c-49af-b020-a704501beb12"
+        ],
+        "retrieval_score_raw": 0.740902,
+        "retrieval_score_reranked": 1.170902,
+        "confidence": 0.9409019999999999,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear consistent.",
+          "Rejected 'Pass a local variable as the argument': Patch introduces variable-length array (MISRA Rule 18.8 violation).; Patch declares new variable(s) not present in original snippet. Cannot verify these are safe to introduce.",
+          "Rejected 'Return the modified data from the function': Patch introduces variable-length array (MISRA Rule 18.8 violation)."
+        ]
+      },
+      "warning_id": "PS014",
+      "source": "final_cache"
+    },
+    {
+      "guideline_id": "Rule 12.2",
+      "guideline_title": "The right hand operand of a shift operator shall lie between zero and one less than the width in bits of the essential type of the left hand operand",
+      "explanation": {
+        "summary": "The right hand operand of a shift operator should be within the range of the width in bits of the essential type of the left hand operand.",
+        "rule_basis": "To prevent undefined behavior and ensure safe shifts.",
+        "code_evidence": "The right hand operand of the shift operator (14) is greater than the width in bits of the essential type of the left hand operand (13)."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Limit shift count",
+          "why": "To ensure the shift operator operates within the range of the essential type of the left hand operand.",
+          "patched_code": "14  {\n       15      return (uint8_t)(1U << min(shift, 7U));\n       16  }",
+          "compliance_notes": "Ensures the shift operator operates within the range of the essential type of the left hand operand.",
+          "risk_reduction": "High"
+        }
+      ],
+      "risk_analysis": {
+        "severity": "High",
+        "why": "The shift operator is operating outside the range of the essential type of the left hand operand, which can lead to undefined behavior.",
+        "potential_failures": [
+          "Undefined behavior due to shift operator operating outside the range of the essential type of the left hand operand."
+        ],
+        "runtime_risk": "High",
+        "maintainability_risk": "High"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Implement the suggested fix.",
+        "required_justification": "To ensure the shift operator operates within the range of the essential type of the left hand operand.",
+        "review_notes": "The warning text and retrieved rule meaning appear consistent."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "b86cb560-3733-4718-a908-da8e47b79bfd",
+          "58d22287-4c6d-46ee-8ccd-8047a055cf55",
+          "fc77b2e5-eb95-4e0b-9ec5-9e861d837e06",
+          "993f1d06-78d9-408a-868e-488c1fe5fa32"
+        ],
+        "retrieval_score_raw": 0.748469,
+        "retrieval_score_reranked": 1.178469,
+        "confidence": 0.948469,
+        "limitations": [
+          "The warning text and the retrieved rule meaning appear consistent.",
+          "Warning text and retrieved rule statement may not fully align."
+        ]
+      },
+      "warning_id": "PS015",
+      "source": "final_cache"
+    }
+  ]
+}

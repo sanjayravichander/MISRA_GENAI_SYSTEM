@@ -1,0 +1,1021 @@
+{
+  "rule_count": 143,
+  "rules": [
+    {
+      "rule_id": "Rule 1.1",
+      "rule_type": "Required",
+      "rule_statement": "The program shall contain no violations of the standard C syntax and constraints, and shall not exceed the implementation’s translation limits",
+      "description": "This code violates Rule 1.1 because the program shall contain no violations of the standard C syntax and constraints, and shall not exceed the implementation’s translation limits. Violating core language and implementation rules can make the program non-portable, non-compliant, or undefined.",
+      "violated_code": "/* non-compliant: syntax/constraint violation */\nint main(void)\n{\n    int x = ;\n}"
+    },
+    {
+      "rule_id": "Rule 1.2",
+      "rule_type": "Advisory",
+      "rule_statement": "Language extensions should not be used",
+      "description": "This code violates Rule 1.2 because language extensions should not be used. Violating core language and implementation rules can make the program non-portable, non-compliant, or undefined.",
+      "violated_code": "__interrupt void isr(void) { }   /* language extension */"
+    },
+    {
+      "rule_id": "Rule 1.3",
+      "rule_type": "Required",
+      "rule_statement": "There shall be no occurrence of undefined or critical unspecified behaviour",
+      "description": "This code violates Rule 1.3 because there shall be no occurrence of undefined or critical unspecified behaviour. Violating core language and implementation rules can make the program non-portable, non-compliant, or undefined.",
+      "violated_code": "int x = 1 / 0;   /* undefined behaviour */"
+    },
+    {
+      "rule_id": "Rule 2.1",
+      "rule_type": "Required",
+      "rule_statement": "A project shall not contain unreachable code",
+      "description": "This code violates Rule 2.1 because a project shall not contain unreachable code. Unused, dead, or unreachable constructs increase maintenance cost and can hide real defects.",
+      "violated_code": "int f(int x)\n{\n    return x;\n    x++;   /* unreachable */\n}"
+    },
+    {
+      "rule_id": "Rule 2.2",
+      "rule_type": "Required",
+      "rule_statement": "There shall be no dead code",
+      "description": "This code violates Rule 2.2 because there shall be no dead code. Unused, dead, or unreachable constructs increase maintenance cost and can hide real defects.",
+      "violated_code": "void f(void)\n{\n    int x = 0;\n    x = x + 1;\n    x;      /* statement has no effect */\n}"
+    },
+    {
+      "rule_id": "Rule 2.3",
+      "rule_type": "Advisory",
+      "rule_statement": "A project should not contain unused type declarations",
+      "description": "This code violates Rule 2.3 because a project should not contain unused type declarations. Unused, dead, or unreachable constructs increase maintenance cost and can hide real defects.",
+      "violated_code": "typedef unsigned int speed_t; /* unused type */\nvoid f(void) { }"
+    },
+    {
+      "rule_id": "Rule 2.4",
+      "rule_type": "Advisory",
+      "rule_statement": "A project should not contain unused tag declarations",
+      "description": "This code violates Rule 2.4 because a project should not contain unused tag declarations. Unused, dead, or unreachable constructs increase maintenance cost and can hide real defects.",
+      "violated_code": "struct sensor_tag { int v; }; /* unused tag */\nvoid f(void) { }"
+    },
+    {
+      "rule_id": "Rule 2.5",
+      "rule_type": "Advisory",
+      "rule_statement": "A project should not contain unused macro declarations",
+      "description": "This code violates Rule 2.5 because a project should not contain unused macro declarations. Unused, dead, or unreachable constructs increase maintenance cost and can hide real defects.",
+      "violated_code": "#define UNUSED_LIMIT 10\nvoid f(void) { }"
+    },
+    {
+      "rule_id": "Rule 2.6",
+      "rule_type": "Advisory",
+      "rule_statement": "A function should not contain unused label declarations",
+      "description": "This code violates Rule 2.6 because a function should not contain unused label declarations. Unused, dead, or unreachable constructs increase maintenance cost and can hide real defects.",
+      "violated_code": "void f(void)\n{\nunused_label:\n    return;\n}"
+    },
+    {
+      "rule_id": "Rule 2.7",
+      "rule_type": "Advisory",
+      "rule_statement": "There should be no unused parameters in functions",
+      "description": "This code violates Rule 2.7 because there should be no unused parameters in functions. Unused, dead, or unreachable constructs increase maintenance cost and can hide real defects.",
+      "violated_code": "int add_one(int x, int y)\n{\n    return x + 1;   /* y unused */\n}"
+    },
+    {
+      "rule_id": "Rule 3.1",
+      "rule_type": "Required",
+      "rule_statement": "The character sequences /* and // shall not be used within a comment",
+      "description": "This code violates Rule 3.1 because the character sequences /* and // shall not be used within a comment. Ambiguous comment content can mislead reviewers and static analysis tools.",
+      "violated_code": "/* outer comment with // and /* nested marker */\nint x = 0;"
+    },
+    {
+      "rule_id": "Rule 3.2",
+      "rule_type": "Required",
+      "rule_statement": "Line-splicing shall not be used in // comments",
+      "description": "This code violates Rule 3.2 because line-splicing shall not be used in // comments. Ambiguous comment content can mislead reviewers and static analysis tools.",
+      "violated_code": "// comment with line splice \\\ncontinued text\nint x = 0;"
+    },
+    {
+      "rule_id": "Rule 4.1",
+      "rule_type": "Required",
+      "rule_statement": "Octal and hexadecimal escape sequences shall be terminated",
+      "description": "This code violates Rule 4.1 because octal and hexadecimal escape sequences shall be terminated. Non-portable lexical forms reduce readability and may be interpreted differently by tools or compilers.",
+      "violated_code": "char c = '\\x1f1';   /* escape sequence not terminated clearly */"
+    },
+    {
+      "rule_id": "Rule 4.2",
+      "rule_type": "Advisory",
+      "rule_statement": "Trigraphs shall not be used",
+      "description": "This code violates Rule 4.2 because trigraphs shall not be used. Non-portable lexical forms reduce readability and may be interpreted differently by tools or compilers.",
+      "violated_code": "??=define VALUE 1\nint x = VALUE;   /* trigraph used */"
+    },
+    {
+      "rule_id": "Rule 5.1",
+      "rule_type": "Required",
+      "rule_statement": "External identifiers shall be distinct",
+      "description": "This code violates Rule 5.1 because external identifiers shall be distinct. Poor identifier hygiene creates confusion, shadowing, or name collisions across the codebase.",
+      "violated_code": "/* Non-compliant example for Rule 5.1 */\n/* External identifiers shall be distinct C90 [ Undefined 7] , */\nvoid example(void)\n{\n    /* replace with project-specific code if needed */\n}"
+    },
+    {
+      "rule_id": "Rule 5.2",
+      "rule_type": "Required",
+      "rule_statement": "Identifiers declared in the same scope and name space shall be distinct",
+      "description": "This code violates Rule 5.2 because identifiers declared in the same scope and name space shall be distinct. Poor identifier hygiene creates confusion, shadowing, or name collisions across the codebase.",
+      "violated_code": "/* Non-compliant example for Rule 5.2 */\n/* identifier s declared in the same scope and name space shall be distinct C90 [ Undefined 7] , */\nvoid example(void)\n{\n    /* replace with project-specific code if needed */\n}"
+    },
+    {
+      "rule_id": "Rule 5.3",
+      "rule_type": "Required",
+      "rule_statement": "An identifier declared in an inner scope shall not hide an identifier declared in an outer scope",
+      "description": "This code violates Rule 5.3 because an identifier declared in an inner scope shall not hide an identifier declared in an outer scope. Poor identifier hygiene creates confusion, shadowing, or name collisions across the codebase.",
+      "violated_code": "/* Non-compliant example for Rule 5.3 */\n/* An identifier declared in an inner scope shall not hide an ident ifier declared in an outer scope */\nvoid example(void)\n{\n    /* replace with project-specific code if needed */\n}"
+    },
+    {
+      "rule_id": "Rule 5.4",
+      "rule_type": "Required",
+      "rule_statement": "A macro identifier shall be distinct",
+      "description": "This code violates Rule 5.4 because a macro identifier shall be distinct. Poor identifier hygiene creates confusion, shadowing, or name collisions across the codebase.",
+      "violated_code": "/* Non-compliant example for Rule 5.4 */\n/* Macro identifiers shall be distinct C90 [Undefined 7], */\nvoid example(void)\n{\n    /* replace with project-specific code if needed */\n}"
+    },
+    {
+      "rule_id": "Rule 5.5",
+      "rule_type": "Required",
+      "rule_statement": "Identifiers shall be distinct from macro names",
+      "description": "This code violates Rule 5.5 because identifiers shall be distinct from macro names. Poor identifier hygiene creates confusion, shadowing, or name collisions across the codebase.",
+      "violated_code": "/* Non-compliant example for Rule 5.5 */\n/* identifiers shall be distinct from macro names C90 [Undefined 7], */\nvoid example(void)\n{\n    /* replace with project-specific code if needed */\n}"
+    },
+    {
+      "rule_id": "Rule 5.6",
+      "rule_type": "Required",
+      "rule_statement": "A typedef name shall be a unique identifier",
+      "description": "This code violates Rule 5.6 because a typedef name shall be a unique identifier. Poor identifier hygiene creates confusion, shadowing, or name collisions across the codebase.",
+      "violated_code": "/* Non-compliant example for Rule 5.6 */\n/* A ty pedef name shall be a unique identifier */\nvoid example(void)\n{\n    /* replace with project-specific code if needed */\n}"
+    },
+    {
+      "rule_id": "Rule 5.7",
+      "rule_type": "Required",
+      "rule_statement": "A tag name shall be a unique identifier",
+      "description": "This code violates Rule 5.7 because a tag name shall be a unique identifier. Poor identifier hygiene creates confusion, shadowing, or name collisions across the codebase.",
+      "violated_code": "/* Non-compliant example for Rule 5.7 */\n/* A tag name shall be a unique identifier */\nvoid example(void)\n{\n    /* replace with project-specific code if needed */\n}"
+    },
+    {
+      "rule_id": "Rule 5.8",
+      "rule_type": "Required",
+      "rule_statement": "Identifiers that define objects or functions with external linkage shall be unique",
+      "description": "This code violates Rule 5.8 because identifiers that define objects or functions with external linkage shall be unique. Poor identifier hygiene creates confusion, shadowing, or name collisions across the codebase.",
+      "violated_code": "/* Non-compliant example for Rule 5.8 */\n/* identifiers that define objectsor functions with external linkage shall be unique */\nvoid example(void)\n{\n    /* replace with project-specific code if needed */\n}"
+    },
+    {
+      "rule_id": "Rule 5.9",
+      "rule_type": "Advisory",
+      "rule_statement": "Identifiers that define objects or functions with internal linkage should be unique",
+      "description": "This code violates Rule 5.9 because identifiers that define objects or functions with internal linkage should be unique. Poor identifier hygiene creates confusion, shadowing, or name collisions across the codebase.",
+      "violated_code": "/* Non-compliant example for Rule 5.9 */\n/* identifiers that define objectsor functions with internal linkage should be unique */\nvoid example(void)\n{\n    /* replace with project-specific code if needed */\n}"
+    },
+    {
+      "rule_id": "Rule 6.1",
+      "rule_type": "Required",
+      "rule_statement": "Bit-fields shall only be declared with an appropriate type",
+      "description": "This code violates Rule 6.1 because bit-fields shall only be declared with an appropriate type. Inappropriate bit-field typing can cause portability and sign-related issues.",
+      "violated_code": "struct flags {\n    unsigned long ready : 1;   /* inappropriate bit-field type */\n};"
+    },
+    {
+      "rule_id": "Rule 6.2",
+      "rule_type": "Required",
+      "rule_statement": "Single-bit named bit-fields shall not be of a signed type",
+      "description": "This code violates Rule 6.2 because single-bit named bit-fields shall not be of a signed type. Inappropriate bit-field typing can cause portability and sign-related issues.",
+      "violated_code": "struct flags {\n    signed int error : 1;   /* single-bit named field is signed */\n};"
+    },
+    {
+      "rule_id": "Rule 7.1",
+      "rule_type": "Required",
+      "rule_statement": "Octal constants shall not be used",
+      "description": "This code violates Rule 7.1 because octal constants shall not be used. Literal notation must make the intended type explicit and unambiguous.",
+      "violated_code": "int mode = 010;   /* octal constant */"
+    },
+    {
+      "rule_id": "Rule 7.2",
+      "rule_type": "Required",
+      "rule_statement": "A \"u\" or \"U\" suffix shall be applied to all integer constants that are represented in an unsigned type",
+      "description": "Unsigned integer constants shall use a u or U suffix so that the literal representation is explicit and unambiguous.",
+      "violated_code": "unsigned int mask = 1 << 7;   /* missing U suffix */",
+      "source_of_truth": "authoritative_override"
+    },
+    {
+      "rule_id": "Rule 7.3",
+      "rule_type": "Required",
+      "rule_statement": "The lowercase character \"l\" shall not be used in a literal suffix",
+      "description": "The lowercase letter l shall not be used in literal suffixes because it can be confused with the digit 1.",
+      "violated_code": "long value = 10l;   /* lowercase l suffix */",
+      "source_of_truth": "authoritative_override"
+    },
+    {
+      "rule_id": "Rule 7.4",
+      "rule_type": "Required",
+      "rule_statement": "A string literal shall not be assigned to an object unless the object type is pointer to const-qualified char",
+      "description": "This code violates Rule 7.4 because a string literal shall not be assigned to an object unless the object type is pointer to const-qualified char. Literal notation must make the intended type explicit and unambiguous.",
+      "violated_code": "char *msg = \"hello\";   /* should be pointer to const-qualified char */"
+    },
+    {
+      "rule_id": "Rule 8.1",
+      "rule_type": "Required",
+      "rule_statement": "Types shall be explicitly specified",
+      "description": "This code violates Rule 8.1 because types shall be explicitly specified. Inconsistent declarations and linkage decisions reduce maintainability and can break interface correctness.",
+      "violated_code": "static count;   /* type not explicitly specified */"
+    },
+    {
+      "rule_id": "Rule 8.2",
+      "rule_type": "Required",
+      "rule_statement": "Function types shall be in prototype form with named parameters",
+      "description": "This code violates Rule 8.2 because function types shall be in prototype form with named parameters. Inconsistent declarations and linkage decisions reduce maintainability and can break interface correctness.",
+      "violated_code": "int process(a, b)\nint a;\nint b;\n{\n    return a + b;\n}"
+    },
+    {
+      "rule_id": "Rule 8.3",
+      "rule_type": "Required",
+      "rule_statement": "All declarations of an object or function shall use the same names and type qualifiers",
+      "description": "This code violates Rule 8.3 because all declarations of an object or function shall use the same names and type qualifiers. Inconsistent declarations and linkage decisions reduce maintainability and can break interface correctness.",
+      "violated_code": "extern const int limit;\nextern int limit;   /* qualifiers differ */"
+    },
+    {
+      "rule_id": "Rule 8.4",
+      "rule_type": "Required",
+      "rule_statement": "A compatible declaration shall be visible when an object or function with external linkage is defined",
+      "description": "This code violates Rule 8.4 because a compatible declaration shall be visible when an object or function with external linkage is defined. Inconsistent declarations and linkage decisions reduce maintainability and can break interface correctness.",
+      "violated_code": "int api(void)\n{\n    return 0;\n}   /* external definition without visible compatible declaration */"
+    },
+    {
+      "rule_id": "Rule 8.5",
+      "rule_type": "Required",
+      "rule_statement": "An external object or function shall be declared once in one and only one file",
+      "description": "This code violates Rule 8.5 because an external object or function shall be declared once in one and only one file. Inconsistent declarations and linkage decisions reduce maintainability and can break interface correctness.",
+      "violated_code": "/* same external object declared in multiple files inconsistently */\nextern int status;\nextern int status;"
+    },
+    {
+      "rule_id": "Rule 8.6",
+      "rule_type": "Required",
+      "rule_statement": "An identifier with external linkage shall have exactly one external definition",
+      "description": "This code violates Rule 8.6 because an identifier with external linkage shall have exactly one external definition. Inconsistent declarations and linkage decisions reduce maintainability and can break interface correctness.",
+      "violated_code": "int status;\nint status;   /* multiple external definitions */"
+    },
+    {
+      "rule_id": "Rule 8.7",
+      "rule_type": "Advisory",
+      "rule_statement": "Functions and objects should not be defined with external linkage if they are referenced in only one translation unit",
+      "description": "This code violates Rule 8.7 because functions and objects should not be defined with external linkage if they are referenced in only one translation unit. Inconsistent declarations and linkage decisions reduce maintainability and can break interface correctness.",
+      "violated_code": "int local_only(void) { return 0; }   /* referenced in one translation unit only */"
+    },
+    {
+      "rule_id": "Rule 8.8",
+      "rule_type": "Required",
+      "rule_statement": "The static storage class specifier shall be used in all declarations of objects and functions that have internal linkage",
+      "description": "This code violates Rule 8.8 because the static storage class specifier shall be used in all declarations of objects and functions that have internal linkage. Inconsistent declarations and linkage decisions reduce maintainability and can break interface correctness.",
+      "violated_code": "int helper(void) { return 0; }   /* should be static if internal linkage intended */"
+    },
+    {
+      "rule_id": "Rule 8.9",
+      "rule_type": "Advisory",
+      "rule_statement": "An object should be defined at block scope if its identifier only appears in a single function",
+      "description": "This code violates Rule 8.9 because an object should be defined at block scope if its identifier only appears in a single function. Inconsistent declarations and linkage decisions reduce maintainability and can break interface correctness.",
+      "violated_code": "int temp_result;   /* only used inside one function */"
+    },
+    {
+      "rule_id": "Rule 8.10",
+      "rule_type": "Required",
+      "rule_statement": "An inline function shall be declared with the static storage class",
+      "description": "This code violates Rule 8.10 because an inline function shall be declared with the static storage class. Inconsistent declarations and linkage decisions reduce maintainability and can break interface correctness.",
+      "violated_code": "inline int square(int x) { return x * x; }   /* missing static */"
+    },
+    {
+      "rule_id": "Rule 8.11",
+      "rule_type": "Advisory",
+      "rule_statement": "When an array with external linkage is declared, its size should be explicitly specified",
+      "description": "Array declarations with external linkage should explicitly specify their size so that the declaration is clear and consistent across translation units.",
+      "violated_code": "extern uint8_t buffer[];   /* size omitted */",
+      "source_of_truth": "authoritative_override"
+    },
+    {
+      "rule_id": "Rule 8.12",
+      "rule_type": "Required",
+      "rule_statement": "Within an enumerator list, the value of an implicitly specified enumeration constant shall be unique",
+      "description": "This code violates Rule 8.12 because within an enumerator list, the value of an implicitly specified enumeration constant shall be unique. Inconsistent declarations and linkage decisions reduce maintainability and can break interface correctness.",
+      "violated_code": "enum state { IDLE = 0, RUN = 0 };   /* duplicate implicit/explicit value mix causing non-unique value */"
+    },
+    {
+      "rule_id": "Rule 8.13",
+      "rule_type": "Advisory",
+      "rule_statement": "A pointer should point to a const-qualified type whenever possible",
+      "description": "This code violates Rule 8.13 because a pointer should point to a const-qualified type whenever possible. Inconsistent declarations and linkage decisions reduce maintainability and can break interface correctness.",
+      "violated_code": "void f(int *p)\n{\n    /* p is not modified but not const-qualified */\n    int x = *p;\n}"
+    },
+    {
+      "rule_id": "Rule 8.14",
+      "rule_type": "Required",
+      "rule_statement": "The restrict type qualifier shall not be used",
+      "description": "This code violates Rule 8.14 because the restrict type qualifier shall not be used. Inconsistent declarations and linkage decisions reduce maintainability and can break interface correctness.",
+      "violated_code": "int sum(int * restrict a, int * restrict b);"
+    },
+    {
+      "rule_id": "Rule 9.1",
+      "rule_type": "Mandatory",
+      "rule_statement": "Non-initialized local variable",
+      "description": "Variable 'x' is read before being assigned a value. Reading an automatic variable before it is set leads to undefined behaviour and unpredictable results.",
+      "violated_code": "void func(void) {\n    int x;       /* no init */\n    int y;\n    y = x + 1;  /* x read before set */\n}"
+    },
+    {
+      "rule_id": "Rule 9.2",
+      "rule_type": "Required",
+      "rule_statement": "Braces shall be used to indicate and match the structure in the non-zero initialization of arrays and structures",
+      "description": "This code violates Rule 9.2 because braces shall be used to indicate and match the structure in the non-zero initialization of arrays and structures. Incorrect initialization can leave objects in unexpected states and introduce subtle runtime defects.",
+      "violated_code": "int a[2] = 1, 2;   /* aggregate initializer not enclosed in braces */"
+    },
+    {
+      "rule_id": "Rule 9.3",
+      "rule_type": "Required",
+      "rule_statement": "Arrays shall not be partially initialized",
+      "description": "This code violates Rule 9.3 because arrays shall not be partially initialized. Incorrect initialization can leave objects in unexpected states and introduce subtle runtime defects.",
+      "violated_code": "int a[3] = { 1, 2 };   /* partially initialized array */"
+    },
+    {
+      "rule_id": "Rule 9.4",
+      "rule_type": "Required",
+      "rule_statement": "An element of an object shall not be initialized more than once",
+      "description": "This code violates Rule 9.4 because an element of an object shall not be initialized more than once. Incorrect initialization can leave objects in unexpected states and introduce subtle runtime defects.",
+      "violated_code": "struct point p = { .x = 1, .x = 2 };   /* initialized more than once */"
+    },
+    {
+      "rule_id": "Rule 9.5",
+      "rule_type": "Required",
+      "rule_statement": "Where designated initializers are used to initialize an array object, the size of the array shall be specified explicitly",
+      "description": "This code violates Rule 9.5 because where designated initializers are used to initialize an array object, the size of the array shall be specified explicitly. Incorrect initialization can leave objects in unexpected states and introduce subtle runtime defects.",
+      "violated_code": "int a[] = { [2] = 1 };   /* designated initializer without explicit size */"
+    },
+    {
+      "rule_id": "Rule 10.1",
+      "rule_type": "Required",
+      "rule_statement": "Operands shall not be of an inappropriate essential type",
+      "description": "This code violates Rule 10.1 because operands shall not be of an inappropriate essential type. Essential type mismatches can silently change values, truncate data, or alter signedness and behaviour.",
+      "violated_code": "uint8_t u = 1U;\nif (~u) { }   /* inappropriate essential type use */"
+    },
+    {
+      "rule_id": "Rule 10.2",
+      "rule_type": "Required",
+      "rule_statement": "Expressions of essentially character type shall not be used inappropriately in addition and subtraction operations",
+      "description": "This code violates Rule 10.2 because expressions of essentially character type shall not be used inappropriately in addition and subtraction operations. Essential type mismatches can silently change values, truncate data, or alter signedness and behaviour.",
+      "violated_code": "char c = 'A';\nint x = c + 1;   /* character type used in arithmetic */"
+    },
+    {
+      "rule_id": "Rule 10.3",
+      "rule_type": "Required",
+      "rule_statement": "Implicit narrowing conversion",
+      "description": "The value of 'u16val' (uint16_t) is assigned to 'u8val' (uint8_t). This implicit narrowing conversion may silently truncate the value (300 → 44), causing data loss and incorrect program behaviour.",
+      "violated_code": "uint8_t u8val;\nuint16_t u16val = 300U;\n/* 300 does not fit in uint8_t */\nu8val = u16val;"
+    },
+    {
+      "rule_id": "Rule 10.4",
+      "rule_type": "Required",
+      "rule_statement": "Both operands of an operator in which the usual arithmetic conversions are performed shall have the same essential type category",
+      "description": "This code violates Rule 10.4 because both operands of an operator in which the usual arithmetic conversions are performed shall have the same essential type category. Essential type mismatches can silently change values, truncate data, or alter signedness and behaviour.",
+      "violated_code": "uint16_t u = 1U;\nint16_t  s = -1;\nif (u < s) { }   /* mixed essential type categories */"
+    },
+    {
+      "rule_id": "Rule 10.5",
+      "rule_type": "Advisory",
+      "rule_statement": "The value of an expression should not be cast to an inappropriate essential type",
+      "description": "This code violates Rule 10.5 because the value of an expression should not be cast to an inappropriate essential type. Essential type mismatches can silently change values, truncate data, or alter signedness and behaviour.",
+      "violated_code": "uint32_t wide = 300U;\nuint8_t  small = (uint8_t)wide;   /* cast to inappropriate essential type */"
+    },
+    {
+      "rule_id": "Rule 10.6",
+      "rule_type": "Required",
+      "rule_statement": "The value of a composite expression shall not be assigned to an object with a wider essential type",
+      "description": "This code violates Rule 10.6 because the value of a composite expression shall not be assigned to an object with a wider essential type. Essential type mismatches can silently change values, truncate data, or alter signedness and behaviour.",
+      "violated_code": "uint16_t a, b;\nuint32_t sum;\nsum = a + b;   /* composite expression assigned to wider essential type */"
+    },
+    {
+      "rule_id": "Rule 10.7",
+      "rule_type": "Required",
+      "rule_statement": "If a composite expression is used as one operand of an operator in which the usual arithmetic conversions are performed, then the other operand shall not have wider essential type",
+      "description": "This code violates Rule 10.7 because if a composite expression is used as one operand of an operator in which the usual arithmetic conversions are performed, then the other operand shall not have wider essential type. Essential type mismatches can silently change values, truncate data, or alter signedness and behaviour.",
+      "violated_code": "uint16_t a, b;\nuint32_t x;\nx = (a + b) + x;   /* other operand has wider essential type */"
+    },
+    {
+      "rule_id": "Rule 10.8",
+      "rule_type": "Required",
+      "rule_statement": "The value of a composite expression shall not be cast to a different essential type category or a wider essential type",
+      "description": "This code violates Rule 10.8 because the value of a composite expression shall not be cast to a different essential type category or a wider essential type. Essential type mismatches can silently change values, truncate data, or alter signedness and behaviour.",
+      "violated_code": "uint16_t a, b;\nuint32_t x = (uint32_t)(a + b);   /* cast composite expression to wider category */"
+    },
+    {
+      "rule_id": "Rule 11.1",
+      "rule_type": "Required",
+      "rule_statement": "Conversions shall not be performed between a pointer to a function and any other type",
+      "description": "This code violates Rule 11.1 because conversions shall not be performed between a pointer to a function and any other type. Unsafe pointer conversions can break aliasing, qualification, and portability assumptions.",
+      "violated_code": "void (*fp)(void);\nint x = (int)fp;   /* function pointer converted to other type */"
+    },
+    {
+      "rule_id": "Rule 11.2",
+      "rule_type": "Required",
+      "rule_statement": "Conversions shall not be performed between a pointer to an incomplete type and any other type",
+      "description": "This code violates Rule 11.2 because conversions shall not be performed between a pointer to an incomplete type and any other type. Unsafe pointer conversions can break aliasing, qualification, and portability assumptions.",
+      "violated_code": "struct node;\nstruct node *p;\nint *q = (int *)p;   /* incomplete type pointer conversion */"
+    },
+    {
+      "rule_id": "Rule 11.3",
+      "rule_type": "Required",
+      "rule_statement": "A cast shall not be performed between a pointer to object type and a pointer to a different object type",
+      "description": "This code violates Rule 11.3 because a cast shall not be performed between a pointer to object type and a pointer to a different object type. Unsafe pointer conversions can break aliasing, qualification, and portability assumptions.",
+      "violated_code": "int *ip;\nfloat *fp = (float *)ip;   /* object pointer cast to different object type */"
+    },
+    {
+      "rule_id": "Rule 11.4",
+      "rule_type": "Advisory",
+      "rule_statement": "A conversion should not be performed between a pointer to object and an integer type",
+      "description": "This code violates Rule 11.4 because a conversion should not be performed between a pointer to object and an integer type. Unsafe pointer conversions can break aliasing, qualification, and portability assumptions.",
+      "violated_code": "int *p;\nuintptr_t addr = (uintptr_t)p;   /* pointer-object to integer conversion */"
+    },
+    {
+      "rule_id": "Rule 11.5",
+      "rule_type": "Advisory",
+      "rule_statement": "A conversion should not be performed from pointer to void into pointer to object",
+      "description": "This code violates Rule 11.5 because a conversion should not be performed from pointer to void into pointer to object. Unsafe pointer conversions can break aliasing, qualification, and portability assumptions.",
+      "violated_code": "void *vp;\nint *ip = (int *)vp;   /* void* to object pointer conversion */"
+    },
+    {
+      "rule_id": "Rule 11.6",
+      "rule_type": "Required",
+      "rule_statement": "A cast shall not be performed between pointer to void and an arithmetic type",
+      "description": "This code violates Rule 11.6 because a cast shall not be performed between pointer to void and an arithmetic type. Unsafe pointer conversions can break aliasing, qualification, and portability assumptions.",
+      "violated_code": "void *vp = (void *)1U;   /* arithmetic type to void pointer */"
+    },
+    {
+      "rule_id": "Rule 11.7",
+      "rule_type": "Required",
+      "rule_statement": "A cast shall not be performed between pointer to object and a non-integer arithmetic type",
+      "description": "This code violates Rule 11.7 because a cast shall not be performed between pointer to object and a non-integer arithmetic type. Unsafe pointer conversions can break aliasing, qualification, and portability assumptions.",
+      "violated_code": "int *ip;\nfloat32_t f = (float32_t)ip;   /* object pointer to non-integer arithmetic type */"
+    },
+    {
+      "rule_id": "Rule 11.8",
+      "rule_type": "Required",
+      "rule_statement": "A cast shall not remove any const or volatile qualification from the type pointed to by a pointer",
+      "description": "This code violates Rule 11.8 because a cast shall not remove any const or volatile qualification from the type pointed to by a pointer. Unsafe pointer conversions can break aliasing, qualification, and portability assumptions.",
+      "violated_code": "const int *cp;\nint *p = (int *)cp;   /* const removed */"
+    },
+    {
+      "rule_id": "Rule 11.9",
+      "rule_type": "Required",
+      "rule_statement": "The macro NULL shall be the only permitted form of integer null pointer constant",
+      "description": "This code violates Rule 11.9 because the macro NULL shall be the only permitted form of integer null pointer constant. Unsafe pointer conversions can break aliasing, qualification, and portability assumptions.",
+      "violated_code": "int *p = 0;   /* should use NULL */"
+    },
+    {
+      "rule_id": "Rule 12.1",
+      "rule_type": "Advisory",
+      "rule_statement": "The precedence of operators within expressions should be made explicit",
+      "description": "This code violates Rule 12.1 because the precedence of operators within expressions should be made explicit. Expression complexity and unsafe shifts can hide errors and make evaluation harder to reason about.",
+      "violated_code": "int x = a + b << 1;   /* precedence not made explicit */"
+    },
+    {
+      "rule_id": "Rule 12.2",
+      "rule_type": "Required",
+      "rule_statement": "The right hand operand of a shift operator shall lie between zero and one less than the width in bits of the essential type of the left hand operand",
+      "description": "This code violates Rule 12.2 because the right hand operand of a shift operator shall lie between zero and one less than the width in bits of the essential type of the left hand operand. Expression complexity and unsafe shifts can hide errors and make evaluation harder to reason about.",
+      "violated_code": "uint8_t x = 1U;\nuint8_t y = x << 8;   /* shift count out of range */"
+    },
+    {
+      "rule_id": "Rule 12.3",
+      "rule_type": "Advisory",
+      "rule_statement": "The comma operator should not be used",
+      "description": "This code violates Rule 12.3 because the comma operator should not be used. Expression complexity and unsafe shifts can hide errors and make evaluation harder to reason about.",
+      "violated_code": "int x = (a++, b);   /* comma operator */"
+    },
+    {
+      "rule_id": "Rule 12.4",
+      "rule_type": "Advisory",
+      "rule_statement": "Evaluation of constant unsigned integer expressions should not wrap around",
+      "description": "This code violates Rule 12.4 because evaluation of constant unsigned integer expressions should not wrap around. Expression complexity and unsafe shifts can hide errors and make evaluation harder to reason about.",
+      "violated_code": "const uint8_t x = 255U + 1U;   /* unsigned wrap-around in constant expression */"
+    },
+    {
+      "rule_id": "Rule 13.1",
+      "rule_type": "Required",
+      "rule_statement": "Initializer lists shall not contain persistent side effects",
+      "description": "This code violates Rule 13.1 because initializer lists shall not contain persistent side effects. Side effects in complex expressions make behaviour harder to predict and verify.",
+      "violated_code": "int i = 0;\nint a[2] = { i++, i };   /* persistent side effect in initializer */"
+    },
+    {
+      "rule_id": "Rule 13.2",
+      "rule_type": "Required",
+      "rule_statement": "The value of an expression and its persistent side effects shall be the same under all permitted evaluation orders",
+      "description": "This code violates Rule 13.2 because the value of an expression and its persistent side effects shall be the same under all permitted evaluation orders. Side effects in complex expressions make behaviour harder to predict and verify.",
+      "violated_code": "a[i] = i++;   /* value depends on evaluation order */"
+    },
+    {
+      "rule_id": "Rule 13.3",
+      "rule_type": "Advisory",
+      "rule_statement": "A full expression containing an increment or decrement operator should have no other potential side effects other than that caused by the increment or decrement operator",
+      "description": "This code violates Rule 13.3 because a full expression containing an increment or decrement operator should have no other potential side effects other than that caused by the increment or decrement operator. Side effects in complex expressions make behaviour harder to predict and verify.",
+      "violated_code": "x = y++ + z;   /* ++ mixed with other side effects */"
+    },
+    {
+      "rule_id": "Rule 13.4",
+      "rule_type": "Advisory",
+      "rule_statement": "The result of an assignment operator should not be used",
+      "description": "This code violates Rule 13.4 because the result of an assignment operator should not be used. Side effects in complex expressions make behaviour harder to predict and verify.",
+      "violated_code": "if ((x = f()) != 0) { }   /* result of assignment used */"
+    },
+    {
+      "rule_id": "Rule 13.5",
+      "rule_type": "Required",
+      "rule_statement": "The right hand operand of a logical && or || operator shall not contain persistent side effects",
+      "description": "This code violates Rule 13.5 because the right hand operand of a logical && or || operator shall not contain persistent side effects. Side effects in complex expressions make behaviour harder to predict and verify.",
+      "violated_code": "if ((ptr != NULL) && (i++ < 10)) { }   /* side effect in RHS of logical operator */"
+    },
+    {
+      "rule_id": "Rule 13.6",
+      "rule_type": "Mandatory",
+      "rule_statement": "Side effects in sizeof operand",
+      "description": "The operand of sizeof contains the expression 'a++' which has a side effect. The sizeof operator does not evaluate its operand at run-time, so the increment never happens, causing silent logic errors.",
+      "violated_code": "int a = 5;\nsize_t s;\n/* side-effect inside sizeof */\ns = sizeof(a++);"
+    },
+    {
+      "rule_id": "Rule 14.1",
+      "rule_type": "Required",
+      "rule_statement": "A loop counter shall not have essentially floating type",
+      "description": "This code violates Rule 14.1 because a loop counter shall not have essentially floating type. Loop and condition forms should make control flow explicit, safe, and reviewable.",
+      "violated_code": "for (float32_t i = 0.0f; i < 10.0f; i += 1.0f) { }"
+    },
+    {
+      "rule_id": "Rule 14.2",
+      "rule_type": "Required",
+      "rule_statement": "A for loop shall be well-formed",
+      "description": "This code violates Rule 14.2 because a for loop shall be well-formed. Loop and condition forms should make control flow explicit, safe, and reviewable.",
+      "violated_code": "for (i = 0, j = 0; i < 10; ++i, ++j) { }   /* not well-formed */"
+    },
+    {
+      "rule_id": "Rule 14.3",
+      "rule_type": "Required",
+      "rule_statement": "Controlling expressions shall not be invariant",
+      "description": "This code violates Rule 14.3 because controlling expressions shall not be invariant. Loop and condition forms should make control flow explicit, safe, and reviewable.",
+      "violated_code": "while (1) { task(); }   /* invariant controlling expression */"
+    },
+    {
+      "rule_id": "Rule 14.4",
+      "rule_type": "Required",
+      "rule_statement": "Non-Boolean if-controlling expression",
+      "description": "The controlling expression of the 'if' statement is 'count', an integer, not an essentially Boolean type. Using non-Boolean values as conditions reduces readability and may mask logic errors where the value is non-zero but not the intended condition.",
+      "violated_code": "int count = 10;\n/* non-Boolean controlling expression */\nif (count) {\n    do_something();\n}"
+    },
+    {
+      "rule_id": "Rule 15.1",
+      "rule_type": "Advisory",
+      "rule_statement": "The goto statement should not be used",
+      "description": "This code violates Rule 15.1 because the goto statement should not be used. Unstructured control flow makes code harder to reason about and maintain.",
+      "violated_code": "/* Non-compliant example for Rule 15.1 */\n/* The goto statement should not be used */\nvoid example(void)\n{\n    /* replace with project-specific code if needed */\n}"
+    },
+    {
+      "rule_id": "Rule 15.2",
+      "rule_type": "Required",
+      "rule_statement": "The goto statement shall jump to a label declared later in the same function",
+      "description": "This code violates Rule 15.2 because the goto statement shall jump to a label declared later in the same function. Unstructured control flow makes code harder to reason about and maintain.",
+      "violated_code": "/* Non-compliant example for Rule 15.2 */\n/* The goto statement shall jump to a label declared later in the same function */\nvoid example(void)\n{\n    /* replace with project-specific code if needed */\n}"
+    },
+    {
+      "rule_id": "Rule 15.3",
+      "rule_type": "Required",
+      "rule_statement": "Any label referenced by a goto statement shall be declared in the same block, or in any block enclosing the goto statement",
+      "description": "This code violates Rule 15.3 because any label referenced by a goto statement shall be declared in the same block, or in any block enclosing the goto statement. Unstructured control flow makes code harder to reason about and maintain.",
+      "violated_code": "/* Non-compliant example for Rule 15.3 */\n/* Any label referenced by a goto statement shall be declared in the same block, or inany block enclosing the goto statement */\nvoid example(void)\n{\n    /* replace with project-specific code if needed */\n}"
+    },
+    {
+      "rule_id": "Rule 15.4",
+      "rule_type": "Advisory",
+      "rule_statement": "There should be no more than one break or goto statement used to terminate any iteration statement",
+      "description": "This code violates Rule 15.4 because there should be no more than one break or goto statement used to terminate any iteration statement. Unstructured control flow makes code harder to reason about and maintain.",
+      "violated_code": "/* Non-compliant example for Rule 15.4 */\n/* There should be no more than one breakor goto statement used to terminate any iteration statement */\nvoid example(void)\n{\n    /* replace with project-specific code if needed */\n}"
+    },
+    {
+      "rule_id": "Rule 15.5",
+      "rule_type": "Advisory",
+      "rule_statement": "A function should have a single point of exit at the end",
+      "description": "This code violates Rule 15.5 because a function should have a single point of exit at the end. Unstructured control flow makes code harder to reason about and maintain.",
+      "violated_code": "/* Non-compliant example for Rule 15.5 */\n/* A function should have a single point of exit at the end [IEC 61508-3 Table B.9], */\nvoid example(void)\n{\n    /* replace with project-specific code if needed */\n}"
+    },
+    {
+      "rule_id": "Rule 15.6",
+      "rule_type": "Required",
+      "rule_statement": "The body of an iteration statement or selection statement shall be a compound statement",
+      "description": "This code violates Rule 15.6 because the body of an iteration statement or selection statement shall be a compound statement. Unstructured control flow makes code harder to reason about and maintain.",
+      "violated_code": "/* Non-compliant example for Rule 15.6 */\n/* The body of an iteration-statement or a selection-statement shall be a compound-statement */\nvoid example(void)\n{\n    /* replace with project-specific code if needed */\n}"
+    },
+    {
+      "rule_id": "Rule 15.7",
+      "rule_type": "Required",
+      "rule_statement": "All if ... else if constructs shall be terminated with an else statement",
+      "description": "This code violates Rule 15.7 because all if ... else if constructs shall be terminated with an else statement. Unstructured control flow makes code harder to reason about and maintain.",
+      "violated_code": "/* Non-compliant example for Rule 15.7 */\n/* All if ... else if constructs shall be terminated with an else statement */\nvoid example(void)\n{\n    /* replace with project-specific code if needed */\n}"
+    },
+    {
+      "rule_id": "Rule 16.1",
+      "rule_type": "Required",
+      "rule_statement": "All switch statements shall be well-formed",
+      "description": "This code violates Rule 16.1 because all switch statements shall be well-formed. Switch logic must be complete, explicit, and easy to follow.",
+      "violated_code": "switch (x) case 1: y++;   /* malformed switch */"
+    },
+    {
+      "rule_id": "Rule 16.2",
+      "rule_type": "Required",
+      "rule_statement": "A switch label shall only be used when the most closely-enclosing compound statement is the body of a switch statement",
+      "description": "This code violates Rule 16.2 because a switch label shall only be used when the most closely-enclosing compound statement is the body of a switch statement. Switch logic must be complete, explicit, and easy to follow.",
+      "violated_code": "case 1: y++;   /* switch label outside switch body */"
+    },
+    {
+      "rule_id": "Rule 16.3",
+      "rule_type": "Required",
+      "rule_statement": "An unconditional break statement shall terminate every switch-clause",
+      "description": "This code violates Rule 16.3 because an unconditional break statement shall terminate every switch-clause. Switch logic must be complete, explicit, and easy to follow.",
+      "violated_code": "switch (x) { case 1: y++; case 2: z++; break; }"
+    },
+    {
+      "rule_id": "Rule 16.4",
+      "rule_type": "Required",
+      "rule_statement": "Every switch statement shall have a default label",
+      "description": "This code violates Rule 16.4 because every switch statement shall have a default label. Switch logic must be complete, explicit, and easy to follow.",
+      "violated_code": "switch (x) { case 0: y++; break; }   /* no default */"
+    },
+    {
+      "rule_id": "Rule 16.5",
+      "rule_type": "Required",
+      "rule_statement": "A default label shall appear either as the first or the last switch label of a switch statement",
+      "description": "This code violates Rule 16.5 because a default label shall appear either as the first or the last switch label of a switch statement. Switch logic must be complete, explicit, and easy to follow.",
+      "violated_code": "switch (x) { case 0: break; default: break; case 1: break; }"
+    },
+    {
+      "rule_id": "Rule 16.6",
+      "rule_type": "Required",
+      "rule_statement": "Every switch statement shall have at least two switch-clauses",
+      "description": "This code violates Rule 16.6 because every switch statement shall have at least two switch-clauses. Switch logic must be complete, explicit, and easy to follow.",
+      "violated_code": "switch (x) { default: break; }   /* only one switch-clause */"
+    },
+    {
+      "rule_id": "Rule 16.7",
+      "rule_type": "Required",
+      "rule_statement": "A switch expression shall not have essentially Boolean type",
+      "description": "This code violates Rule 16.7 because a switch expression shall not have essentially Boolean type. Switch logic must be complete, explicit, and easy to follow.",
+      "violated_code": "bool flag;\nswitch (flag) { case 0: break; default: break; }"
+    },
+    {
+      "rule_id": "Rule 17.1",
+      "rule_type": "Required",
+      "rule_statement": "The standard header file <stdarg.h> shall not be used",
+      "description": "This code violates Rule 17.1 because the standard header file <stdarg.h> shall not be used. Function interfaces and calls must be explicit, safe, and consistently used.",
+      "violated_code": "int log_values(int count, ...);   /* stdarg feature */"
+    },
+    {
+      "rule_id": "Rule 17.2",
+      "rule_type": "Required",
+      "rule_statement": "Functions shall not call themselves, either directly or indirectly",
+      "description": "This code violates Rule 17.2 because functions shall not call themselves, either directly or indirectly. Function interfaces and calls must be explicit, safe, and consistently used.",
+      "violated_code": "int fact(int n) { return (n <= 1) ? 1 : n * fact(n - 1); }"
+    },
+    {
+      "rule_id": "Rule 17.3",
+      "rule_type": "Mandatory",
+      "rule_statement": "A function shall not be declared implicitly",
+      "description": "This code violates Rule 17.3 because a function shall not be declared implicitly. Function interfaces and calls must be explicit, safe, and consistently used.",
+      "violated_code": "int main(void)\n{\n    helper();   /* implicit declaration */\n}"
+    },
+    {
+      "rule_id": "Rule 17.4",
+      "rule_type": "Mandatory",
+      "rule_statement": "All exit paths from a function with non-void return type shall have an explicit return statement with an expression",
+      "description": "This code violates Rule 17.4 because all exit paths from a function with non-void return type shall have an explicit return statement with an expression. Function interfaces and calls must be explicit, safe, and consistently used.",
+      "violated_code": "int f(int x)\n{\n    if (x > 0) { return x; }\n}   /* missing explicit return on one exit path */"
+    },
+    {
+      "rule_id": "Rule 17.5",
+      "rule_type": "Advisory",
+      "rule_statement": "The function argument corresponding to a parameter declared to have an array type shall have an appropriate number of elements",
+      "description": "This code violates Rule 17.5 because the function argument corresponding to a parameter declared to have an array type shall have an appropriate number of elements. Function interfaces and calls must be explicit, safe, and consistently used.",
+      "violated_code": "void copy4(uint8_t a[4]);\nuint8_t small[2];\ncopy4(small);"
+    },
+    {
+      "rule_id": "Rule 17.6",
+      "rule_type": "Mandatory",
+      "rule_statement": "The declaration of an array parameter shall not contain the static keyword between the [ ]",
+      "description": "This code violates Rule 17.6 because the declaration of an array parameter shall not contain the static keyword between the [ ]. Function interfaces and calls must be explicit, safe, and consistently used.",
+      "violated_code": "void f(uint8_t buf[static 4]);"
+    },
+    {
+      "rule_id": "Rule 17.7",
+      "rule_type": "Required",
+      "rule_statement": "The value returned by a function having non-void return type shall be used",
+      "description": "This code violates Rule 17.7 because the value returned by a function having non-void return type shall be used. Function interfaces and calls must be explicit, safe, and consistently used.",
+      "violated_code": "compute_crc(data, len);   /* return value ignored */"
+    },
+    {
+      "rule_id": "Rule 17.8",
+      "rule_type": "Advisory",
+      "rule_statement": "A function parameter should not be modified",
+      "description": "This code violates Rule 17.8 because a function parameter should not be modified. Function interfaces and calls must be explicit, safe, and consistently used.",
+      "violated_code": "void scale(int *value)\n{\n    *value = *value * 2;   /* parameter modified */\n}"
+    },
+    {
+      "rule_id": "Rule 18.1",
+      "rule_type": "Required",
+      "rule_statement": "A pointer resulting from arithmetic on a pointer operand shall address an element of the same array as that pointer operand",
+      "description": "This code violates Rule 18.1 because a pointer resulting from arithmetic on a pointer operand shall address an element of the same array as that pointer operand. Pointer lifetime and pointer arithmetic mistakes can easily produce undefined behaviour.",
+      "violated_code": "int a[4];\nint *p = &a[0];\np = p + 5;   /* points outside same array */"
+    },
+    {
+      "rule_id": "Rule 18.2",
+      "rule_type": "Required",
+      "rule_statement": "Subtraction between pointers shall only be applied to pointers that address elements of the same array",
+      "description": "This code violates Rule 18.2 because subtraction between pointers shall only be applied to pointers that address elements of the same array. Pointer lifetime and pointer arithmetic mistakes can easily produce undefined behaviour.",
+      "violated_code": "int a[4], b[4];\nptrdiff_t d = &a[1] - &b[1];"
+    },
+    {
+      "rule_id": "Rule 18.3",
+      "rule_type": "Required",
+      "rule_statement": "The relational operators > >= < <= shall not be applied to objects of pointer type except where they point into the same array",
+      "description": "This code violates Rule 18.3 because the relational operators > >= < <= shall not be applied to objects of pointer type except where they point into the same array. Pointer lifetime and pointer arithmetic mistakes can easily produce undefined behaviour.",
+      "violated_code": "int a[2], b[2];\nif (&a[0] < &b[0]) { }"
+    },
+    {
+      "rule_id": "Rule 18.4",
+      "rule_type": "Advisory",
+      "rule_statement": "The +, -, += and -= operators should not be applied to an expression of pointer type",
+      "description": "This code violates Rule 18.4 because the +, -, += and -= operators should not be applied to an expression of pointer type. Pointer lifetime and pointer arithmetic mistakes can easily produce undefined behaviour.",
+      "violated_code": "p = p + 1;   /* pointer arithmetic */"
+    },
+    {
+      "rule_id": "Rule 18.5",
+      "rule_type": "Advisory",
+      "rule_statement": "Declarations should contain no more than two levels of pointer nesting",
+      "description": "This code violates Rule 18.5 because declarations should contain no more than two levels of pointer nesting. Pointer lifetime and pointer arithmetic mistakes can easily produce undefined behaviour.",
+      "violated_code": "int ***ppp;   /* more than two levels of pointer nesting */"
+    },
+    {
+      "rule_id": "Rule 18.6",
+      "rule_type": "Required",
+      "rule_statement": "The address of an object with automatic storage shall not be copied to another object that persists after the first object has ceased to exist",
+      "description": "This code violates Rule 18.6 because the address of an object with automatic storage shall not be copied to another object that persists after the first object has ceased to exist. Pointer lifetime and pointer arithmetic mistakes can easily produce undefined behaviour.",
+      "violated_code": "int *gp;\nvoid f(void)\n{\n    int x;\n    gp = &x;   /* address escapes lifetime */\n}"
+    },
+    {
+      "rule_id": "Rule 18.7",
+      "rule_type": "Required",
+      "rule_statement": "Flexible array members shall not be used",
+      "description": "This code violates Rule 18.7 because flexible array members shall not be used. Pointer lifetime and pointer arithmetic mistakes can easily produce undefined behaviour.",
+      "violated_code": "struct packet { uint16_t len; uint8_t data[]; };"
+    },
+    {
+      "rule_id": "Rule 18.8",
+      "rule_type": "Required",
+      "rule_statement": "Variable-length arrays shall not be used",
+      "description": "This code violates Rule 18.8 because variable-length arrays shall not be used. Pointer lifetime and pointer arithmetic mistakes can easily produce undefined behaviour.",
+      "violated_code": "void f(int n)\n{\n    int a[n];   /* variable-length array */\n}"
+    },
+    {
+      "rule_id": "Rule 19.1",
+      "rule_type": "Mandatory",
+      "rule_statement": "An object shall not be assigned or copied to an overlapping object",
+      "description": "This code violates Rule 19.1 because an object shall not be assigned or copied to an overlapping object. Overlapping or unsafe object manipulation can corrupt data and invoke undefined behaviour.",
+      "violated_code": "memcpy(&a[0], &a[1], 4U);   /* overlapping copy */"
+    },
+    {
+      "rule_id": "Rule 19.2",
+      "rule_type": "Advisory",
+      "rule_statement": "The union keyword should not be used C90 [Undefined 39, 40; Implementation 27],",
+      "description": "This code violates Rule 19.2 because the union keyword should not be used C90 [Undefined 39, 40; Implementation 27],. Overlapping or unsafe object manipulation can corrupt data and invoke undefined behaviour.",
+      "violated_code": "union value_u { uint32_t u32; float32_t f32; };"
+    },
+    {
+      "rule_id": "Rule 20.1",
+      "rule_type": "Advisory",
+      "rule_statement": "#include directives should only be preceded by preprocessor directives or comments",
+      "description": "This code violates Rule 20.1 because #include directives should only be preceded by preprocessor directives or comments. Preprocessor misuse can obscure intent and create fragile expansions.",
+      "violated_code": "int x = 0;\n#include \"cfg.h\"   /* include not at start with only pp/comment before it */"
+    },
+    {
+      "rule_id": "Rule 20.2",
+      "rule_type": "Required",
+      "rule_statement": "The ', \" or \\ characters and the /* or // character sequences shall not occur in a header file name",
+      "description": "Header file names shall not contain quote characters, backslashes, or comment-like sequences such as /* or // because they can interfere with preprocessing and include handling.",
+      "violated_code": "#include \"my\\header.h\"",
+      "source_of_truth": "authoritative_override"
+    },
+    {
+      "rule_id": "Rule 20.3",
+      "rule_type": "Required",
+      "rule_statement": "The #include directive shall be followed by either a <filename> or",
+      "description": "This code violates Rule 20.3 because the #include directive shall be followed by either a <filename> or \"filename\" sequence. Preprocessor misuse can obscure intent and create fragile expansions.",
+      "violated_code": "#include MY_HEADER   /* not <file> or \"file\" */"
+    },
+    {
+      "rule_id": "Rule 20.4",
+      "rule_type": "Required",
+      "rule_statement": "A macro shall not be defined with the same name as a keyword",
+      "description": "This code violates Rule 20.4 because a macro shall not be defined with the same name as a keyword. Preprocessor misuse can obscure intent and create fragile expansions.",
+      "violated_code": "#define for(x)  (x)"
+    },
+    {
+      "rule_id": "Rule 20.5",
+      "rule_type": "Advisory",
+      "rule_statement": "#undef should not be used",
+      "description": "This code violates Rule 20.5 because #undef should not be used. Preprocessor misuse can obscure intent and create fragile expansions.",
+      "violated_code": "#undef LIMIT"
+    },
+    {
+      "rule_id": "Rule 20.6",
+      "rule_type": "Required",
+      "rule_statement": "Tokens that look like a preprocessing directive shall not occur within a macro argument",
+      "description": "This code violates Rule 20.6 because tokens that look like a preprocessing directive shall not occur within a macro argument. Preprocessor misuse can obscure intent and create fragile expansions.",
+      "violated_code": "#define F(x) x\nF(#include)"
+    },
+    {
+      "rule_id": "Rule 20.7",
+      "rule_type": "Required",
+      "rule_statement": "Expressions resulting from the expansion of macro parameters shall be enclosed in parentheses",
+      "description": "This code violates Rule 20.7 because expressions resulting from the expansion of macro parameters shall be enclosed in parentheses. Preprocessor misuse can obscure intent and create fragile expansions.",
+      "violated_code": "#define ADD(x,y) x + y\nint z = ADD(a,b) * c;"
+    },
+    {
+      "rule_id": "Rule 20.8",
+      "rule_type": "Required",
+      "rule_statement": "The controlling expression of a #if or #elif preprocessing directive shall evaluate to 0 or 1",
+      "description": "This code violates Rule 20.8 because the controlling expression of a #if or #elif preprocessing directive shall evaluate to 0 or 1. Preprocessor misuse can obscure intent and create fragile expansions.",
+      "violated_code": "#if VALUE + 2\n#endif"
+    },
+    {
+      "rule_id": "Rule 20.9",
+      "rule_type": "Required",
+      "rule_statement": "All identifiers used in the controlling expression of #if or #elif shall be #define'd before evaluation",
+      "description": "This code violates Rule 20.9 because all identifiers used in the controlling expression of #if or #elif shall be #define'd before evaluation. Preprocessor misuse can obscure intent and create fragile expansions.",
+      "violated_code": "#if FEATURE_FLAG\n#endif   /* identifier not defined before use */"
+    },
+    {
+      "rule_id": "Rule 20.10",
+      "rule_type": "Advisory",
+      "rule_statement": "The # and ## preprocessor operators should not be used",
+      "description": "This code violates Rule 20.10 because the # and ## preprocessor operators should not be used. Preprocessor misuse can obscure intent and create fragile expansions.",
+      "violated_code": "#define JOIN(a,b) a ## b"
+    },
+    {
+      "rule_id": "Rule 20.11",
+      "rule_type": "Required",
+      "rule_statement": "A macro parameter immediately following a # operator should not be subject to further macro replacement",
+      "description": "This code violates Rule 20.11 because a macro parameter immediately following a # operator should not be subject to further macro replacement. Preprocessor misuse can obscure intent and create fragile expansions.",
+      "violated_code": "#define STRCAT(x) #x ## suffix"
+    },
+    {
+      "rule_id": "Rule 20.12",
+      "rule_type": "Required",
+      "rule_statement": "A macro parameter used as an operand to the # or ## operators, which is itself subject to further macro replacement, shall only be used as an operand to these operators",
+      "description": "This code violates Rule 20.12 because a macro parameter used as an operand to the # or ## operators, which is itself subject to further macro replacement, shall only be used as an operand to these operators. Preprocessor misuse can obscure intent and create fragile expansions.",
+      "violated_code": "#define M(x) #x\n#define ID y\nM(ID)   /* operand subject to further replacement */"
+    },
+    {
+      "rule_id": "Rule 20.13",
+      "rule_type": "Required",
+      "rule_statement": "A line whose first token is # shall be a valid preprocessing directive",
+      "description": "This code violates Rule 20.13 because a line whose first token is # shall be a valid preprocessing directive. Preprocessor misuse can obscure intent and create fragile expansions.",
+      "violated_code": "# bad_directive"
+    },
+    {
+      "rule_id": "Rule 20.14",
+      "rule_type": "Required",
+      "rule_statement": "All #else, #elif and #endif preprocessor directives shall reside in the same file a s the #if, #ifdefor #ifndef directive to which they are related",
+      "description": "This code violates Rule 20.14 because all #else, #elif and #endif preprocessor directives shall reside in the same file a s the #if, #ifdefor #ifndef directive to which they are related. Preprocessor misuse can obscure intent and create fragile expansions.",
+      "violated_code": "/* file1.h */\n#if X\n/* file2.h */\n#endif"
+    },
+    {
+      "rule_id": "Rule 21.1",
+      "rule_type": "Required",
+      "rule_statement": "#define and #undef shall not be used on a reserved identifier or reserved macro name",
+      "description": "This code violates Rule 21.1 because #define and #undef shall not be used on a reserved identifier or reserved macro name. Restricted standard-library features are disallowed because they reduce determinism, analyzability, or portability.",
+      "violated_code": "#define __LINE__  10"
+    },
+    {
+      "rule_id": "Rule 21.2",
+      "rule_type": "Required",
+      "rule_statement": "A reserved identifier or macro name shall not be declared",
+      "description": "This code violates Rule 21.2 because a reserved identifier or macro name shall not be declared. Restricted standard-library features are disallowed because they reduce determinism, analyzability, or portability.",
+      "violated_code": "int errno;   /* reserved identifier declared */"
+    },
+    {
+      "rule_id": "Rule 21.3",
+      "rule_type": "Required",
+      "rule_statement": "The memory allocation and deallocation functions of <stdlib.h> shall not be used",
+      "description": "This code violates Rule 21.3 because the memory allocation and deallocation functions of <stdlib.h> shall not be used. Restricted standard-library features are disallowed because they reduce determinism, analyzability, or portability.",
+      "violated_code": "void *p = malloc(16U);"
+    },
+    {
+      "rule_id": "Rule 21.4",
+      "rule_type": "Required",
+      "rule_statement": "The standard header file <setjmp.h> shall not be used",
+      "description": "This code violates Rule 21.4 because the standard header file <setjmp.h> shall not be used. Restricted standard-library features are disallowed because they reduce determinism, analyzability, or portability.",
+      "violated_code": "#include <setjmp.h>"
+    },
+    {
+      "rule_id": "Rule 21.5",
+      "rule_type": "Required",
+      "rule_statement": "The standard signal handling facilities of <signal.h> shall not be used",
+      "description": "This code violates Rule 21.5 because the standard signal handling facilities of <signal.h> shall not be used. Restricted standard-library features are disallowed because they reduce determinism, analyzability, or portability.",
+      "violated_code": "#include <signal.h>"
+    },
+    {
+      "rule_id": "Rule 21.6",
+      "rule_type": "Required",
+      "rule_statement": "The standard input/output library <stdio.h> shall not be used",
+      "description": "This code violates Rule 21.6 because the standard input/output library <stdio.h> shall not be used. Restricted standard-library features are disallowed because they reduce determinism, analyzability, or portability.",
+      "violated_code": "printf(\"value=%d\\n\", x);"
+    },
+    {
+      "rule_id": "Rule 21.7",
+      "rule_type": "Required",
+      "rule_statement": "The atof, atoi, atol and atoll functions of <stdlib.h> shall not be used",
+      "description": "This code violates Rule 21.7 because the atof, atoi, atol and atoll functions of <stdlib.h> shall not be used. Restricted standard-library features are disallowed because they reduce determinism, analyzability, or portability.",
+      "violated_code": "int n = atoi(text);"
+    },
+    {
+      "rule_id": "Rule 21.8",
+      "rule_type": "Required",
+      "rule_statement": "The abort, exit, getenv and system functions of <stdlib.h> shall not be used",
+      "description": "This code violates Rule 21.8 because the abort, exit, getenv and system functions of <stdlib.h> shall not be used. Restricted standard-library features are disallowed because they reduce determinism, analyzability, or portability.",
+      "violated_code": "system(\"dir\");"
+    },
+    {
+      "rule_id": "Rule 21.9",
+      "rule_type": "Required",
+      "rule_statement": "The bsearch function of <stdlib.h> shall not be used",
+      "description": "This code violates Rule 21.9 because the bsearch function of <stdlib.h> shall not be used. Restricted standard-library features are disallowed because they reduce determinism, analyzability, or portability.",
+      "violated_code": "qsort(a, n, sizeof(a[0]), cmp);"
+    },
+    {
+      "rule_id": "Rule 21.10",
+      "rule_type": "Required",
+      "rule_statement": "The time and date functions of <time.h> shall not be used",
+      "description": "This code violates Rule 21.10 because the time and date functions of <time.h> shall not be used. Restricted standard-library features are disallowed because they reduce determinism, analyzability, or portability.",
+      "violated_code": "time_t now = time(NULL);"
+    },
+    {
+      "rule_id": "Rule 21.11",
+      "rule_type": "Required",
+      "rule_statement": "The standard header file <tgmath.h> should not be used",
+      "description": "The standard header file <tgmath.h> should not be used because type-generic macros can reduce clarity and make behavior harder to analyze in safety-critical code.",
+      "violated_code": "#include <tgmath.h>",
+      "source_of_truth": "authoritative_override"
+    },
+    {
+      "rule_id": "Rule 21.12",
+      "rule_type": "Advisory",
+      "rule_statement": "The exception handling functions of <fenv.h> shall not be used",
+      "description": "This code violates Rule 21.12 because the exception handling functions of <fenv.h> shall not be used. Restricted standard-library features are disallowed because they reduce determinism, analyzability, or portability.",
+      "violated_code": "#include <fenv.h>\nfetestexcept(FE_OVERFLOW);"
+    },
+    {
+      "rule_id": "Rule 22.1",
+      "rule_type": "Required",
+      "rule_statement": "All resources obtained dynamically by means of Standard Library functions shall be explicitly released",
+      "description": "This code violates Rule 22.1 because all resources obtained dynamically by means of Standard Library functions shall be explicitly released. Resource and stream handling errors can leak resources or use invalid handles.",
+      "violated_code": "FILE *fp = fopen(\"tmp\", \"r\");   /* never closed */"
+    },
+    {
+      "rule_id": "Rule 22.2",
+      "rule_type": "Mandatory",
+      "rule_statement": "A block of memory shall only be freed if it was allocated by means of a Standard Library function",
+      "description": "This code violates Rule 22.2 because a block of memory shall only be freed if it was allocated by means of a Standard Library function. Resource and stream handling errors can leak resources or use invalid handles.",
+      "violated_code": "int x;\nfree(&x);   /* freeing non-allocated memory */"
+    },
+    {
+      "rule_id": "Rule 22.3",
+      "rule_type": "Required",
+      "rule_statement": "The same file shall not be open for read and write access at the same time on different streams",
+      "description": "This code violates Rule 22.3 because the same file shall not be open for read and write access at the same time on different streams. Resource and stream handling errors can leak resources or use invalid handles.",
+      "violated_code": "FILE *fw = fopen(\"tmp\", \"r+\");\nFILE *fr = fopen(\"tmp\", \"r\");"
+    },
+    {
+      "rule_id": "Rule 22.4",
+      "rule_type": "Mandatory",
+      "rule_statement": "There shall be no attempt to write to a stream which has been opened as read-only",
+      "description": "This code violates Rule 22.4 because there shall be no attempt to write to a stream which has been opened as read-only. Resource and stream handling errors can leak resources or use invalid handles.",
+      "violated_code": "FILE *fp = fopen(\"tmp\", \"r\");\nfprintf(fp, \"x\");"
+    },
+    {
+      "rule_id": "Rule 22.5",
+      "rule_type": "Mandatory",
+      "rule_statement": "A pointer to a FILE object shall not be dereferenced",
+      "description": "This code violates Rule 22.5 because a pointer to a FILE object shall not be dereferenced. Resource and stream handling errors can leak resources or use invalid handles.",
+      "violated_code": "FILE *fp;\nFILE copy = *fp;   /* FILE object dereferenced */"
+    },
+    {
+      "rule_id": "Rule 22.6",
+      "rule_type": "Mandatory",
+      "rule_statement": "The value of a pointer to a FILE shall not be used after the associated stream has been closed",
+      "description": "This code violates Rule 22.6 because the value of a pointer to a FILE shall not be used after the associated stream has been closed. Resource and stream handling errors can leak resources or use invalid handles.",
+      "violated_code": "FILE *fp = fopen(\"tmp\", \"w\");\nfclose(fp);\nfprintf(fp, \"?\");"
+    }
+  ],
+  "metadata": {
+    "override_applied_count": 5,
+    "override_applied_ids": [
+      "20.2",
+      "21.11",
+      "7.2",
+      "7.3",
+      "8.11"
+    ]
+  }
+}

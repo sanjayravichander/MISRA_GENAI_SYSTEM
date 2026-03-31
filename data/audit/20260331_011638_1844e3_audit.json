@@ -1,0 +1,16 @@
+{
+  "run_id": "20260331_011638_1844e3",
+  "excel_report": "C:\\Users\\sanjay.ravichander\\misra_genai_system\\misra_genai_system\\data\\_upload_tmp\\1844e3e115ff4916833bab3266c3322c\\mock_warning_report.xlsx",
+  "source_dir": "C:\\Users\\sanjay.ravichander\\misra_genai_system\\misra_genai_system\\data\\_upload_tmp\\1844e3e115ff4916833bab3266c3322c\\source",
+  "misra_categories": [
+    "required",
+    "mandatory"
+  ],
+  "started_at": "2026-03-31T01:16:38.583303",
+  "phases": {
+    "6a": {
+      "duration_s": 1.8,
+      "warnings": 2
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+    "7.2": {
+        "rule_statement": "A \"u\" or \"U\" suffix shall be applied to all integer constants that are represented in an unsigned type",
+        "description": "Unsigned integer constants shall use a u or U suffix so that the literal representation is explicit and unambiguous."
+    },
+    "7.3": {
+        "rule_statement": "The lowercase character \"l\" shall not be used in a literal suffix",
+        "description": "The lowercase letter l shall not be used in literal suffixes because it can be confused with the digit 1."
+    },
+    "8.11": {
+        "rule_statement": "When an array with external linkage is declared, its size should be explicitly specified",
+        "description": "Array declarations with external linkage should explicitly specify their size so that the declaration is clear and consistent across translation units."
+    },
+    "20.2": {
+        "rule_statement": "The ', \" or \\ characters and the /* or // character sequences shall not occur in a header file name",
+        "description": "Header file names shall not contain quote characters, backslashes, or comment-like sequences such as /* or // because they can interfere with preprocessing and include handling."
+    },
+    "21.11": {
+        "rule_statement": "The standard header file <tgmath.h> should not be used",
+        "description": "The standard header file <tgmath.h> should not be used because type-generic macros can reduce clarity and make behavior harder to analyze in safety-critical code."
+    }
+}

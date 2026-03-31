@@ -1,0 +1,53 @@
+{
+  "warning_count": 2,
+  "warnings": [
+    {
+      "warning_id": "PS014",
+      "tool_name": "Polyspace",
+      "category": "MISRA",
+      "checker_name": "MISRA2012-RULE-17_8",
+      "rule_id": "Rule 17.8",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "message": "Function parameter modified",
+      "file_path": "protocol.c",
+      "line_start": 6,
+      "line_end": 6,
+      "function_name": "parse_frame",
+      "source_context": {
+        "file": "protocol.c",
+        "found": true,
+        "context_text": "       1  #include <stdint.h>\n       2  \n       3  void parse_frame(uint8_t * data, uint8_t len)\n       4  {\n       5      uint8_t i;\n       6  \n>>>    7      for (i = 0U; i < len; i++)\n       8      {\n       9          data[i] = (uint8_t)(data[i] + 1U);\n      10      }\n      11  }\n      12  \n      13  uint8_t make_mask(uint8_t shift)\n      14  {\n      15      return (uint8_t)(1U << shift);\n      16  }",
+        "context_start_line": 1,
+        "context_end_line": 16,
+        "flagged_lines": [
+          7
+        ]
+      }
+    },
+    {
+      "warning_id": "PS015",
+      "tool_name": "Polyspace",
+      "category": "MISRA",
+      "checker_name": "MISRA2012-RULE-12_2",
+      "rule_id": "Rule 12.2",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "message": "Shift range issue",
+      "file_path": "protocol.c",
+      "line_start": 14,
+      "line_end": 14,
+      "function_name": "make_mask",
+      "source_context": {
+        "file": "protocol.c",
+        "found": true,
+        "context_text": "       4  {\n       5      uint8_t i;\n       6  \n       7      for (i = 0U; i < len; i++)\n       8      {\n       9          data[i] = (uint8_t)(data[i] + 1U);\n      10      }\n      11  }\n      12  \n      13  uint8_t make_mask(uint8_t shift)\n>>>   14  {\n      15      return (uint8_t)(1U << shift);\n      16  }",
+        "context_start_line": 4,
+        "context_end_line": 16,
+        "flagged_lines": [
+          14
+        ]
+      }
+    }
+  ]
+}

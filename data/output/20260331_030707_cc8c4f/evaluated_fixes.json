@@ -1,0 +1,269 @@
+{
+  "warning_count": 2,
+  "confidence_high": 0,
+  "confidence_medium": 2,
+  "confidence_low": 0,
+  "needs_manual_review": 0,
+  "results": [
+    {
+      "guideline_id": "Rule 9.1",
+      "guideline_title": "Non-initialized local variable",
+      "explanation": {
+        "summary": "The variable 'raw_value' is used before it is initialized.",
+        "rule_basis": "MISRA2012-RULE-9_1",
+        "code_evidence": "The code snippet provided shows that the variable 'raw_value' is read before it is assigned a value."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Initialize the variable before using it",
+          "why": "To prevent undefined behavior and unpredictable results.",
+          "patched_code": "5      int raw_value = 0;",
+          "compliance_notes": "Initializing the variable to a known value will ensure that it is not used before it is set.",
+          "risk_reduction": "Low",
+          "original_patched_code": "5      int raw_value = 0;",
+          "original_title": "Initialize the variable before using it",
+          "confidence": "Medium",
+          "is_correct": true,
+          "issues_found": []
+        },
+        {
+          "rank": 2,
+          "title": "Move the usage of 'raw_value' after its initialization",
+          "why": "To ensure that the variable is always initialized before it is used.",
+          "patched_code": "8      if (output == 0)\n       9      {\n      10          int raw_value;\n      11          output = raw_value;\n      12      }",
+          "compliance_notes": "Moving the usage of 'raw_value' after its initialization will prevent it from being used before it is set.",
+          "risk_reduction": "Low",
+          "original_patched_code": "8      if (output == 0)\n       9      {\n      10          int raw_value;\n      11          output = raw_value;\n      12      }",
+          "original_title": "Move the usage of 'raw_value' after its initialization",
+          "confidence": "Medium",
+          "is_correct": true,
+          "issues_found": []
+        },
+        {
+          "rank": 3,
+          "title": "Add an initializer for 'raw_value'",
+          "why": "To ensure that 'raw_value' is always initialized.",
+          "patched_code": "5      int raw_value = -1;",
+          "compliance_notes": "Initializing 'raw_value' to a known value will ensure that it is not used before it is set.",
+          "risk_reduction": "Low",
+          "original_patched_code": "5      int raw_value = -1;",
+          "original_title": "Add an initializer for 'raw_value'",
+          "confidence": "Medium",
+          "is_correct": true,
+          "issues_found": []
+        }
+      ],
+      "risk_analysis": {
+        "severity": "High",
+        "why": "The use of 'raw_value' before it is initialized can lead to undefined behavior and unpredictable results.",
+        "potential_failures": [
+          "Unpredictable behavior in the program due to the use of an uninitialized variable."
+        ],
+        "runtime_risk": "High",
+        "maintainability_risk": "High"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Implement one of the provided fix suggestions.",
+        "required_justification": "The use of an uninitialized variable can lead to unpredictable behavior and should be avoided.",
+        "review_notes": "Ensure that all variables are initialized before they are used."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "bcb19b99-61ee-499b-aa06-29fc74218955",
+          "4677ce74-ebe0-4eb6-8b0e-aaef70fa1c4e",
+          "88d1ca4c-ebbc-4f16-b59b-8329d126a45b"
+        ],
+        "retrieval_score_raw": 0.754408,
+        "retrieval_score_reranked": 1.184408,
+        "confidence": 0.9544079999999999,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear consistent.",
+          "Warning text and retrieved rule statement may not fully align."
+        ]
+      },
+      "warning_id": "PS008",
+      "source": "final_cache",
+      "evaluation": {
+        "version": "3.0.0",
+        "title": "MISRA Fix Evaluation",
+        "description": "Evaluation of MISRA fixes for the given code snippet",
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "string"
+          },
+          "rule_basis": {
+            "type": "string"
+          },
+          "code_evidence": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "summary",
+          "rule_basis",
+          "code_evidence"
+        ],
+        "examples": [
+          {
+            "summary": "The variable 'raw_value' is used before it is initialized.",
+            "rule_basis": "MISRA2012-RULE-9_1",
+            "code_evidence": "The code snippet provided shows that the variable 'raw_value' is read before it is assigned a value."
+          }
+        ],
+        "warning_id": "PS008",
+        "rule_id": "",
+        "overall_confidence": "Medium",
+        "needs_manual_review": false,
+        "evaluated_fixes": [],
+        "evaluator_notes": ""
+      },
+      "overall_confidence": "Medium",
+      "needs_manual_review": false,
+      "evaluator_notes": ""
+    },
+    {
+      "guideline_id": "Rule 10.3",
+      "guideline_title": "Implicit narrowing conversion",
+      "explanation": {
+        "summary": "The value of 'output' (uint16_t) is assigned to 'scaled' (uint8_t). This implicit narrowing conversion may silently truncate the value, causing data loss and incorrect program behavior.",
+        "rule_basis": "The rationale is described in the introduction on composite operators and expressions (see Section 8.1 0.3). Casting to a wider type is not permitted as the result may vary between implementations. Consider the following: ( uint32_t ) ( u16a + u16b ); On a 16-bit machine the addition will be performed in 16 bits with the result wrapping modulo- 2 before it is cast to 32 bits. However, on a 32-bit machine the addition will take place in 32 bits and would preserve high-order bits that would have been lost on a 16-bit machine. Casting to a narrower type with the same essential type of the result always leads to the same loss of information.",
+        "code_evidence": "The code snippet provided shows an implicit narrowing conversion from uint16_t to uint8_t."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Explicit cast",
+          "why": "To avoid data loss and incorrect program behavior due to implicit narrowing conversion.",
+          "patched_code": "17  {\n      18      uint8_t scaled = (uint8_t)input;\n      19      return scaled;\n      20  }",
+          "compliance_notes": "This fix ensures that the value is correctly cast to the appropriate type.",
+          "risk_reduction": "High",
+          "original_patched_code": "17  {\n      18      uint8_t scaled = (uint8_t)input;\n      19      return scaled;\n      20  }",
+          "original_title": "Explicit cast",
+          "confidence": "Medium",
+          "is_correct": true,
+          "issues_found": []
+        },
+        {
+          "rank": 2,
+          "title": "Use a wider data type",
+          "why": "To prevent data loss and incorrect program behavior due to implicit narrowing conversion.",
+          "patched_code": "17  {\n      18      uint32_t scaled = input;\n      19      return (uint8_t)scaled;\n      20  }",
+          "compliance_notes": "This fix ensures that the value is temporarily stored in a wider data type before being cast to the appropriate type.",
+          "risk_reduction": "Medium",
+          "original_patched_code": "17  {\n      18      uint32_t scaled = input;\n      19      return (uint8_t)scaled;\n      20  }",
+          "original_title": "Use a wider data type",
+          "confidence": "Medium",
+          "is_correct": true,
+          "issues_found": []
+        },
+        {
+          "rank": 3,
+          "title": "Use a function to handle the conversion",
+          "why": "To prevent data loss and incorrect program behavior due to implicit narrowing conversion.",
+          "patched_code": "17  {\n      18      uint8_t scaled = scale_value(input);\n      19      return scaled;\n      20  }",
+          "compliance_notes": "This fix ensures that the conversion is handled in a separate function, making the code easier to maintain and understand.",
+          "risk_reduction": "Low",
+          "original_patched_code": "17  {\n      18      uint8_t scaled = scale_value(input);\n      19      return scaled;\n      20  }",
+          "original_title": "Use a function to handle the conversion",
+          "confidence": "Medium",
+          "is_correct": true,
+          "issues_found": []
+        }
+      ],
+      "risk_analysis": {
+        "severity": "High",
+        "why": "The implicit narrowing conversion may silently truncate the value, causing data loss and incorrect program behavior.",
+        "potential_failures": [
+          "Data loss",
+          "Incorrect program behavior"
+        ],
+        "runtime_risk": "High",
+        "maintainability_risk": "Medium"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Implement one of the provided fix suggestions.",
+        "required_justification": "Implicit narrowing conversion is not allowed according to MISRA2012-RULE-10_3.",
+        "review_notes": "Ensure that the fix does not introduce any new issues or unexpected behavior."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "ac195ae8-bb0d-484f-9b1e-b777db09c5cc",
+          "1242f6ed-74c9-4a97-afe6-91ca52087ab7",
+          "5f982fcc-83fe-4c58-a8d3-c057556e444c",
+          "7480b763-7b63-494b-8064-bff9ee198385"
+        ],
+        "retrieval_score_raw": 0.804013,
+        "retrieval_score_reranked": 1.234013,
+        "confidence": 0.99,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear inconsistent. The warning text mentions 'Narrowing conversion', while the retrieved context refers to 'Implicit narrowing conversion'."
+        ]
+      },
+      "warning_id": "PS009",
+      "source": "final_cache",
+      "evaluation": {
+        "version": "http://json-schema.org/draft-07/schema#",
+        "title": "MISRA Fix Evaluation",
+        "type": "object",
+        "properties": {
+          "SOURCE": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "FIXES_TO_EVALUATE": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "fix_id": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "patched_code": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "compliance": {
+                  "type": "string"
+                },
+                "risk_reduction": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "fix_id",
+                "description",
+                "patched_code",
+                "compliance",
+                "risk_reduction"
+              ]
+            }
+          }
+        },
+        "required": [
+          "SOURCE",
+          "FIXES_TO_EVALUATE"
+        ],
+        "warning_id": "PS009",
+        "rule_id": "",
+        "overall_confidence": "Medium",
+        "needs_manual_review": false,
+        "evaluated_fixes": [],
+        "evaluator_notes": ""
+      },
+      "overall_confidence": "Medium",
+      "needs_manual_review": false,
+      "evaluator_notes": ""
+    }
+  ]
+}

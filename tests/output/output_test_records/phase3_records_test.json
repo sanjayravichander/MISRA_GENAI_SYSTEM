@@ -1,0 +1,82 @@
+[
+  {
+    "warning_id": "PS014",
+    "rule_id": "Rule 17.8",
+    "severity": "Medium",
+    "message": "Function parameter modified",
+    "file_name": "protocol.c",
+    "line_number": 6,
+    "function_name": "parse_frame",
+    "checker_name": "MISRA2012-RULE-17_8",
+    "code_snippet": "       2: \n       3: void parse_frame(uint8_t * data, uint8_t len)\n       4: {\n       5:     uint8_t i;\n>>>    6: \n       7:     for (i = 0U; i < len; i++)\n       8:     {\n       9:         data[i] = (uint8_t)(data[i] + 1U);\n      10:     }",
+    "guideline_id": "Rule 17.8",
+    "category": "Advisory",
+    "rule_text": "Rule 17.8 A function parameter should not be modi ﬁ ed\nCategory Advisory\nAnalysis Undecidable, System\nApplies to C90, C99\nRationale\nA function parameter behaves in the same manner as an object that has automatic storage duration.\nWhile the C language permits parameters to be modiﬁ ed, such use can be confusing and conﬂ ict with\nprogra mmer expectations. It may be less confusing to copy the parameter to an automatic object\nand modify that copy. With a modern compiler, this will not usually result in any storage or execution\ntime penalty.\nProgrammers who are unfamiliar with C, but who are used to other languages, may modify a parameter\nbelieving that the e ﬀ ects of the modi ﬁ cation will be felt in the calling function.\nExample\nint16_t glob = 0;\nvoid proc ( int16_t para )\n{\npara = glob; /* Non-compliant */\n}\nvoid f ( char *p, char *q )\n{\np = q; /* Non-compliant */\n*p = *q; /* Compliant */\n}\nSection 8: Rules\n8.18 Pointers and arrays",
+    "llm_output": {
+      "deviation": "The code modifies the data through the pointer, which is compliant with MISRA Rule 17.8.",
+      "fix_summary": "No change needed. The code is compliant with MISRA Rule 17.8.",
+      "explanation": "The function parameter 'data' is a pointer to an array of uint8_t. The code modifies the data through this pointer, which is compliant with MISRA Rule 17.8. However, the warning might be misleading if the intention was to modify the pointer itself rather than the data it points to.",
+      "confidence_label": "high",
+      "risk": "Low",
+      "fixed_code": "void parse_frame(uint8_t * data, uint8_t len)\n{\n    uint8_t i;\n\n    for (i = 0; i < len; i++)\n    {\n        // Process data[i]\n    }\n}"
+    },
+    "validation": {
+      "json_valid": true,
+      "rule_grounded": true,
+      "fix_relevant": false,
+      "code_parseable": true,
+      "warning_resolved_likely": null,
+      "ambiguity_detected": true,
+      "validation_score": 55,
+      "notes": "The explanation and fix do not address the specific warning about modifying the function parameter. The warning is about modifying the data pointed to by 'data', but the fix removes the modification. The warning record is ambiguous as it does not specify whether modifying the pointer itself is allowed or not."
+    },
+    "validation_llm_raw": {
+      "code_parseable": "yes",
+      "fix_relevant": "no",
+      "warning_resolved_likely": "unclear",
+      "validation_notes": "The explanation and fix do not address the specific warning about modifying the function parameter. The warning is about modifying the data pointed to by 'data', but the fix removes the modification. The warning record is ambiguous as it does not specify whether modifying the pointer itself is allowed or not.",
+      "ambiguity_detected": "yes",
+      "rule_grounded": "yes"
+    }
+  },
+  {
+    "warning_id": "PS015",
+    "rule_id": "Rule 12.2",
+    "severity": "Medium",
+    "message": "Shift range issue",
+    "file_name": "protocol.c",
+    "line_number": 14,
+    "function_name": "make_mask",
+    "checker_name": "MISRA2012-RULE-12_2",
+    "code_snippet": "      10:     }\n      11: }\n      12: \n      13: uint8_t make_mask(uint8_t shift)\n>>>   14: {\n      15:     return (uint8_t)(1U << shift);\n      16: }",
+    "guideline_id": "Rule 12.2",
+    "category": "Required",
+    "rule_text": "Rule 12.2 The right hand operand of a shift operator shall lie in the range zero\nto one less than the width in bits of the essential type of the left hand\noperand\nC90 [Undeﬁ ned 32], C99 [Undeﬁ ned 48]\nCategory Required\nAnalysis Undecidable, System\nApplies to C90, C99\nRationale\nIf the right hand operand is negative, or greater than or equal to the width of the left hand operand,\nthen the behaviour is unde ﬁ ned.\nIf, for example, the left hand operand of a left-shift or right-shift is a 16-bit integer, then it is important\nto ensure that this is shifted only by a number in the range 0 to 15.\nSee Section 8.10 for a description of essential type and the limitations on the essential types for the\noperands of shift operators.\nThere are various ways of ensuring this rule is followed. The simplest is for the right hand operand to\nbe a constant (whose value can then be statically checked). Use of an unsigned integer type will ensure\nSection 8: Rulesthat the operand is non-negative, so then only the upper limit needs to be checked (dynamically at\nrun time or by review). Otherwise both limits will need to be checked.\nExample\nu8a = u8a << 7; /* Compliant */\nu8a = u8a << 8; /* Non-compliant */\nu16a = ( uint16_t ) u8a << 9; /* Compliant */\nTo assist in understanding the following examples, it should be noted that the essential type of 1u is\nessentially unsigned char, whereas the essential type of 1UL is essentially unsigned long.\n1u << 10u; /* Non-compliant */\n( uint16_t ) 1u << 10u; /* Compliant */\n1UL << 10u; /* Compliant */",
+    "llm_output": {
+      "deviation": "The original code does not check if the shift value is within the valid range.",
+      "fix_summary": "Ensure that the shift value is within the valid range (0 to 7) before performing the shift operation.",
+      "explanation": "The warning indicates that the right-hand operand of the shift operator in the function make_mask can be out of the valid range (0 to 7 for uint8_t). If shift is greater than 7, the behavior is undefined.",
+      "confidence_label": "high",
+      "risk": "Undefined behavior if shift is greater than 7.",
+      "fixed_code": "uint8_t make_mask(uint8_t shift) {\n    if (shift > 7) {\n        shift = 7;\n    }\n    return 1 << shift;\n}"
+    },
+    "validation": {
+      "json_valid": true,
+      "rule_grounded": true,
+      "fix_relevant": true,
+      "code_parseable": true,
+      "warning_resolved_likely": null,
+      "ambiguity_detected": true,
+      "validation_score": 80,
+      "notes": "The warning record specifies that the right-hand operand of a shift operator shall lie in the range zero to one less than the width in bits of the essential type of the left-hand operand. The generated analysis correctly identifies that the shift value can be out of the valid range and provides a fix to ensure the shift value is within the valid range. However, the"
+    },
+    "validation_llm_raw": {
+      "code_parseable": "yes",
+      "fix_relevant": "yes",
+      "warning_resolved_likely": "unclear",
+      "validation_notes": "The warning record specifies that the right-hand operand of a shift operator shall lie in the range zero to one less than the width in bits of the essential type of the left-hand operand. The generated analysis correctly identifies that the shift value can be out of the valid range and provides a fix to ensure the shift value is within the valid range. However, the",
+      "ambiguity_detected": "yes",
+      "rule_grounded": "yes"
+    }
+  }
+]

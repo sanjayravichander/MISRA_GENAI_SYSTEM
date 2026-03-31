@@ -1,0 +1,53 @@
+{
+  "warning_count": 2,
+  "warnings": [
+    {
+      "warning_id": "PS008",
+      "tool_name": "Polyspace",
+      "category": "MISRA",
+      "checker_name": "MISRA2012-RULE-9_1",
+      "rule_id": "Rule 9.1",
+      "severity": "High",
+      "severity_rank": 3,
+      "message": "Variable used before initialization",
+      "file_path": "sensor.c",
+      "line_start": 8,
+      "line_end": 8,
+      "function_name": "read_sensor",
+      "source_context": {
+        "file": "sensor.c",
+        "found": true,
+        "context_text": "       1  #include <stdint.h>\n       2  \n       3  int read_sensor(void)\n       4  {\n       5      int raw_value;\n       6      int output = 0;\n       7  \n>>>    8      if (output == 0)\n       9      {\n      10          output = raw_value;\n      11      }\n      12  \n      13      return output;\n      14  }\n      15  \n      16  uint8_t scale_value(uint16_t input)\n      17  {\n      18      uint8_t scaled;",
+        "context_start_line": 1,
+        "context_end_line": 18,
+        "flagged_lines": [
+          8
+        ]
+      }
+    },
+    {
+      "warning_id": "PS016",
+      "tool_name": "Polyspace",
+      "category": "MISRA",
+      "checker_name": "MISRA2012-RULE-9_1",
+      "rule_id": "Rule 9.1",
+      "severity": "High",
+      "severity_rank": 3,
+      "message": "Variable used before initialization",
+      "file_path": "uninit_read.c",
+      "line_start": 7,
+      "line_end": 7,
+      "function_name": "func",
+      "source_context": {
+        "file": "uninit_read.c",
+        "found": true,
+        "context_text": "       1  #include <stdio.h>\n       2  \n       3  void func(void)\n       4  {\n       5      int x;       /* no init */\n       6      int y;\n       7  \n>>>    8      y = x + 1;   /* x read before set */\n       9  \n      10      printf(\"%d\\n\", y);\n      11  }",
+        "context_start_line": 1,
+        "context_end_line": 11,
+        "flagged_lines": [
+          8
+        ]
+      }
+    }
+  ]
+}

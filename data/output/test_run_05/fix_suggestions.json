@@ -1,0 +1,570 @@
+{
+  "warning_count": 10,
+  "results": [
+    {
+      "guideline_id": "Rule 10.3",
+      "guideline_title": "Implicit narrowing conversion",
+      "explanation": {
+        "summary": "The value of 'total' (int) is assigned to 'small' (uint8_t). This implicit narrowing conversion may silently truncate the value (332 → 44), causing data loss and incorrect program behaviour.",
+        "rule_basis": "Rule 10.3 (Required): Implicit narrowing conversion.",
+        "code_evidence": "The code snippet provided shows an implicit narrowing conversion from int to uint8_t."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Explicit cast",
+          "why": "Prevent data loss by using an explicit cast.",
+          "patched_code": "28      small = (uint8_t)total + 300;\n      29",
+          "compliance_notes": "This fix ensures that the value of 'total' is correctly converted to 'uint8_t' without data loss.",
+          "risk_reduction": "High"
+        },
+        {
+          "rank": 2,
+          "title": "Use a larger data type",
+          "why": "Avoid implicit narrowing conversions by using a larger data type that can hold the original value.",
+          "patched_code": "24      int8_t small;\n      25",
+          "compliance_notes": "Changing the data type of 'small' to 'int8_t' allows it to hold the original value of 'total' without data loss.",
+          "risk_reduction": "Medium"
+        }
+      ],
+      "risk_analysis": {
+        "severity": "High",
+        "why": "The implicit narrowing conversion may cause data loss and incorrect program behaviour.",
+        "potential_failures": [
+          "Data loss due to truncation",
+          "Incorrect program behaviour due to data loss"
+        ],
+        "runtime_risk": "High",
+        "maintainability_risk": "High"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Implement one of the provided fix suggestions.",
+        "required_justification": "Implicit narrowing conversions are not allowed according to MISRA2012-RULE-10_3.",
+        "review_notes": "Ensure that the fix does not introduce new issues or complications."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "ac195ae8-bb0d-484f-9b1e-b777db09c5cc",
+          "5f982fcc-83fe-4c58-a8d3-c057556e444c",
+          "aaa6f4e4-6864-48f8-a3fe-9638bf2ac909"
+        ],
+        "retrieval_score_raw": 0.806273,
+        "retrieval_score_reranked": 1.236273,
+        "confidence": 0.99,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear consistent.",
+          "Rejected 'Use a temporary variable': Patch declares new variable(s) not present in original snippet. Cannot verify these are safe to introduce."
+        ]
+      },
+      "warning_id": "PS002",
+      "source": "final_cache"
+    },
+    {
+      "guideline_id": "Rule 9.1",
+      "guideline_title": "Non-initialized local variable",
+      "explanation": {
+        "summary": "The variable 'raw_value' is used before it is initialized.",
+        "rule_basis": "MISRA2012-RULE-9_1",
+        "code_evidence": "The code snippet provided shows that the variable 'raw_value' is read before it is assigned a value."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Initialize the variable before using it",
+          "why": "To prevent undefined behavior and unpredictable results.",
+          "patched_code": "5      int raw_value = 0;",
+          "compliance_notes": "Initializing the variable to a known value will ensure that it is not used before it is set.",
+          "risk_reduction": "Low"
+        },
+        {
+          "rank": 2,
+          "title": "Move the usage of 'raw_value' after its initialization",
+          "why": "To ensure that the variable is always initialized before it is used.",
+          "patched_code": "8      if (output == 0)\n       9      {\n      10          int raw_value;\n      11          output = raw_value;\n      12      }",
+          "compliance_notes": "Moving the usage of 'raw_value' after its initialization will prevent it from being used before it is set.",
+          "risk_reduction": "Low"
+        },
+        {
+          "rank": 3,
+          "title": "Add an initializer for 'raw_value'",
+          "why": "To ensure that 'raw_value' is always initialized.",
+          "patched_code": "5      int raw_value = -1;",
+          "compliance_notes": "Initializing 'raw_value' to a known value will ensure that it is not used before it is set.",
+          "risk_reduction": "Low"
+        }
+      ],
+      "risk_analysis": {
+        "severity": "High",
+        "why": "The use of 'raw_value' before it is initialized can lead to undefined behavior and unpredictable results.",
+        "potential_failures": [
+          "Unpredictable behavior in the program due to the use of an uninitialized variable."
+        ],
+        "runtime_risk": "High",
+        "maintainability_risk": "High"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Implement one of the provided fix suggestions.",
+        "required_justification": "The use of an uninitialized variable can lead to unpredictable behavior and should be avoided.",
+        "review_notes": "Ensure that all variables are initialized before they are used."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "bcb19b99-61ee-499b-aa06-29fc74218955",
+          "4677ce74-ebe0-4eb6-8b0e-aaef70fa1c4e",
+          "88d1ca4c-ebbc-4f16-b59b-8329d126a45b"
+        ],
+        "retrieval_score_raw": 0.754408,
+        "retrieval_score_reranked": 1.184408,
+        "confidence": 0.9544079999999999,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear consistent.",
+          "Warning text and retrieved rule statement may not fully align."
+        ]
+      },
+      "warning_id": "PS008",
+      "source": "final_cache"
+    },
+    {
+      "guideline_id": "Rule 9.1",
+      "guideline_title": "Non-initialized local variable",
+      "explanation": {
+        "summary": "The variable 'x' is used before it is initialized, leading to undefined behavior.",
+        "rule_basis": "MISRA2012-RULE-9_1",
+        "code_evidence": "The code snippet provided shows the variable 'x' being used before it is initialized."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Initialize the variable 'x' before using it",
+          "why": "To prevent undefined behavior caused by using a variable before it is initialized.",
+          "patched_code": "5      int x = 0;       /* initialize x */\n       6      int y;",
+          "compliance_notes": "This fix ensures that the variable 'x' is initialized before it is used.",
+          "risk_reduction": "Low"
+        },
+        {
+          "rank": 2,
+          "title": "Declare 'x' as a global variable and initialize it",
+          "why": "To ensure that the variable 'x' is initialized before it is used, even if the function is called before it is defined.",
+          "patched_code": "int x = 0;\n\nvoid func(void)\n{\n    int y;",
+          "compliance_notes": "This fix ensures that the variable 'x' is initialized before it is used, even if the function is called before it is defined.",
+          "risk_reduction": "Medium"
+        }
+      ],
+      "risk_analysis": {
+        "severity": "High",
+        "why": "Using a variable before it is initialized can lead to undefined behavior and unpredictable results.",
+        "potential_failures": [
+          "Unpredictable results due to undefined behavior"
+        ],
+        "runtime_risk": "High",
+        "maintainability_risk": "High"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Implement one of the fix suggestions to ensure the code is compliant with the guideline.",
+        "required_justification": "Using a variable before it is initialized can lead to undefined behavior and unpredictable results.",
+        "review_notes": "Ensure that all variables are initialized before they are used."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "bcb19b99-61ee-499b-aa06-29fc74218955",
+          "91fbf5f8-6da4-41be-bdb4-a702ca7dbbac",
+          "4677ce74-ebe0-4eb6-8b0e-aaef70fa1c4e",
+          "58d88693-c14c-4d42-85fb-a0f55c4262e9"
+        ],
+        "retrieval_score_raw": 0.799025,
+        "retrieval_score_reranked": 1.229025,
+        "confidence": 0.99,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear inconsistent. The warning text suggests a variable is used before it is initialized, while the retrieved context also mentions Rule 9.2 which is about braces in the initialization of arrays and structures.",
+          "Warning text and retrieved rule statement may not fully align.",
+          "Rejected 'Use a temporary variable to hold the value of 'y' until 'x' is initialized': Patch declares new variable(s) not present in original snippet. Cannot verify these are safe to introduce."
+        ]
+      },
+      "warning_id": "PS016",
+      "source": "final_cache"
+    },
+    {
+      "warning_id": "PS005",
+      "rule_id": "Rule 13.2",
+      "fix_suggestions": [],
+      "parse_error": true,
+      "explanation": {
+        "summary": "Expecting ',' delimiter: line 43 column 4 (char 3958)"
+      }
+    },
+    {
+      "guideline_id": "Rule 8.7",
+      "guideline_title": "Functions and objects should not be defined with external linkage if they are referenced in only one translation unit",
+      "explanation": {
+        "summary": "The global variable 'g_total' is only used in one function, which violates MISRA2012-RULE-8_7.",
+        "rule_basis": "MISRA2012-RULE-8_7 requires that functions and objects should not be defined with external linkage if they are referenced in only one translation unit.",
+        "code_evidence": "The code snippet provided shows that the variable 'g_total' is defined globally and only used in the 'calculate_total' function."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Move variable declaration to local scope",
+          "why": "This reduces the scope of the variable and ensures it is not accessible outside the function.",
+          "patched_code": "int calculate_total(int a, int b)\n    {\n      int g_total = 0;\n      int result = a + b;\n      g_total = result;\n      return result;\n    }",
+          "compliance_notes": "This fix brings the code into compliance with MISRA2012-RULE-8_7.",
+          "risk_reduction": "Low"
+        },
+        {
+          "rank": 2,
+          "title": "Make the variable static",
+          "why": "This limits the variable's scope to the current translation unit.",
+          "patched_code": "static int g_total = 0;\n    int calculate_total(int a, int b)\n    {\n      int result = a + b;\n      g_total = result;\n      return result;\n    }",
+          "compliance_notes": "This fix brings the code into compliance with MISRA2012-RULE-8_7.",
+          "risk_reduction": "High"
+        }
+      ],
+      "risk_analysis": {
+        "severity": "High",
+        "why": "The global variable 'g_total' can potentially be modified by any function in the program, which can lead to unintended consequences.",
+        "potential_failures": [
+          "Data corruption due to unintended modifications of 'g_total' by other functions."
+        ],
+        "runtime_risk": "High",
+        "maintainability_risk": "High"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Implement one of the provided fixes to bring the code into compliance with MISRA2012-RULE-8_7.",
+        "required_justification": "The global variable 'g_total' is only used in one function, which violates MISRA2012-RULE-8_7. Compliance with this rule is essential to ensure maintainability and avoid unintended consequences.",
+        "review_notes": "Ensure that all global variables are used consistently across the program and that their scope is limited as much as possible."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "8072e593-7e21-46fc-b73c-e74659b38fb6",
+          "092757aa-230f-49b5-aee5-23110d831687",
+          "6c95379b-960b-446d-89f2-97a354a8af8c",
+          "d2c3228b-e066-4986-ba3d-3ee5f08c0905"
+        ],
+        "retrieval_score_raw": 0.741847,
+        "retrieval_score_reranked": 1.091847,
+        "confidence": 0.9418470000000001,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear consistent.",
+          "Warning text and retrieved rule statement may not fully align.",
+          "Rejected 'Rename the variable': Patch declares new variable(s) not present in original snippet. Cannot verify these are safe to introduce."
+        ]
+      },
+      "warning_id": "PS001",
+      "source": "final_cache"
+    },
+    {
+      "guideline_id": "Rule 14.4",
+      "guideline_title": "Non-Boolean if-controlling expression",
+      "explanation": {
+        "summary": "The controlling expression of the 'if' statement is 'state', an integer, not a Boolean type. Using non-Boolean values as conditions reduces readability and may mask logic errors where the value is non-zero but not the intended condition.",
+        "rule_basis": "Strong typing requires the controlling expression of an if statement or iteration-statement to have essentially Boolean type.",
+        "code_evidence": "The code snippet provided contains an 'if' statement with a non-Boolean controlling expression."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Convert the controlling expression to a Boolean type",
+          "why": "This will ensure that the 'if' statement is only executed when the intended condition is met.",
+          "patched_code": "7  void stop_motor(int state)\n       8  {\n       9      if (state != 0)\n      10      {\n      11      }\n      12  }\n      13",
+          "compliance_notes": "This fix ensures compliance with MISRA2012-RULE-14_4.",
+          "risk_reduction": "This fix reduces the risk of logic errors and improves readability."
+        },
+        {
+          "rank": 2,
+          "title": "Use a Boolean variable to control the 'if' statement",
+          "why": "This will make the intent of the code more clear and reduce the risk of errors.",
+          "patched_code": "7  void stop_motor(int state)\n       8  {\n       9      bool isStateTrue = (state != 0);\n      10      if (isStateTrue)\n      11      {\n      12      }\n      13  }\n      14",
+          "compliance_notes": "This fix ensures compliance with MISRA2012-RULE-14_4.",
+          "risk_reduction": "This fix reduces the risk of logic errors and improves readability."
+        },
+        {
+          "rank": 3,
+          "title": "Add a check for zero before the 'if' statement",
+          "why": "This will ensure that the 'if' statement is only executed when the intended condition is met.",
+          "patched_code": "7  void stop_motor(int state)\n       8  {\n       9      if (state == 0) {\n      10          // Handle the case where state is zero\n      11      } else {\n      12          // Execute the code inside the 'if' statement\n      13      }\n      14  }\n      15",
+          "compliance_notes": "This fix ensures compliance with MISRA2012-RULE-14_4.",
+          "risk_reduction": "This fix reduces the risk of logic errors and improves readability."
+        }
+      ],
+      "risk_analysis": {
+        "severity": "Medium",
+        "why": "The use of a non-Boolean controlling expression in an 'if' statement can lead to logic errors and reduced readability.",
+        "potential_failures": [
+          "The 'if' statement may execute when it should not, leading to unexpected behavior."
+        ],
+        "runtime_risk": "Medium",
+        "maintainability_risk": "Medium"
+      },
+      "deviation_advice": {
+        "deviation_possible": "Conditional",
+        "recommended_decision": "It is recommended to fix the code to comply with MISRA2012-RULE-14_4.",
+        "required_justification": "A justification should be provided if the code is not fixed, explaining why the rule is not being followed and the risks associated with the deviation.",
+        "review_notes": "The use of a non-Boolean controlling expression in an 'if' statement is a potential source of errors and reduced readability. It is recommended to fix the code to comply with MISRA2012-RULE-14_4."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "ca495443-61eb-4f47-a1c5-63f95be23040",
+          "d60078ca-7fbd-4c75-871c-6fdd1a403f3f",
+          "a82e1d95-b6be-4897-8593-18838ba3b554",
+          "06082696-1b8c-4d0a-896a-5f2ef9ce898b",
+          "8ec8440d-148a-474f-a13e-c324b18340c4"
+        ],
+        "retrieval_score_raw": 0.755381,
+        "retrieval_score_reranked": 1.185381,
+        "confidence": 0.955381,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear inconsistent. It is unclear why the warning was issued for a non-Boolean controlling expression when the retrieved context also mentions Rule 14.3, which is about invariant controlling expressions."
+        ]
+      },
+      "warning_id": "PS012",
+      "source": "final_cache"
+    },
+    {
+      "guideline_id": "Rule 8.13",
+      "guideline_title": "A pointer should point to a const-qualified type whenever possible",
+      "explanation": {
+        "summary": "The pointer parameter 'msg' in the function 'log_message' should be const-qualified.",
+        "rule_basis": "This code violates Rule 8.13 because a pointer should point to a const-qualified type whenever possible. Inconsistent declarations and linkage decisions reduce maintainability and can break interface correctness.",
+        "code_evidence": "The provided code snippet uses a non-const pointer 'msg' in the function 'log_message'."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Change the parameter type to const char*",
+          "why": "By changing the parameter type to const char*, the pointer will be const-qualified, reducing the risk of unintended modifications.",
+          "patched_code": "6  void log_message(const char * msg)",
+          "compliance_notes": "This change ensures compliance with MISRA2012-RULE-8_13.",
+          "risk_reduction": "High"
+        },
+        {
+          "rank": 2,
+          "title": "Make a local copy of the message before modifying it",
+          "why": "By making a local copy of the message before modifying it, the original pointer remains const-qualified.",
+          "patched_code": "6  void log_message(char * msg)\n       7  {\n       8      const char * msg_copy = msg;\n       9      int status = 0;\n      10      strcpy(log_buffer, msg_copy);\n      11      ...",
+          "compliance_notes": "This change ensures compliance with MISRA2012-RULE-8_13, but it may increase memory usage.",
+          "risk_reduction": "Medium"
+        },
+        {
+          "rank": 3,
+          "title": "Use a const char[] for the log_buffer",
+          "why": "By using a const char[] for the log_buffer, the pointer will be const-qualified.",
+          "patched_code": "4  const char log_buffer[64];",
+          "compliance_notes": "This change ensures compliance with MISRA2012-RULE-8_13, but it may affect the behavior of the function if the log_buffer is modified elsewhere.",
+          "risk_reduction": "Low"
+        }
+      ],
+      "risk_analysis": {
+        "severity": "High",
+        "why": "The use of a non-const pointer can lead to unintended modifications, which can break the interface correctness and reduce maintainability.",
+        "potential_failures": [
+          "Data corruption due to unintended modifications",
+          "Interface correctness issues due to inconsistent declarations and linkage decisions"
+        ],
+        "runtime_risk": "High",
+        "maintainability_risk": "High"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Implement one of the provided fix suggestions to ensure compliance with MISRA2012-RULE-8_13.",
+        "required_justification": "The use of a non-const pointer can lead to unintended modifications, which can break the interface correctness and reduce maintainability.",
+        "review_notes": "Ensure that all pointers in the code are properly qualified as const or non-const to maintain consistency and reduce the risk of errors."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "bff8d6a1-c782-4fd3-aac4-e9cde544b5f2",
+          "6f25d7b9-09bb-4c90-933b-d65a9c0f2e56",
+          "e11f3b72-bad1-4f01-a8b6-b5317555a97a",
+          "50d38630-03b8-4e06-a8b6-7b98ac4578c7"
+        ],
+        "retrieval_score_raw": 0.750176,
+        "retrieval_score_reranked": 1.180176,
+        "confidence": 0.9501759999999999,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear consistent."
+        ]
+      },
+      "warning_id": "PS010",
+      "source": "final_cache"
+    },
+    {
+      "guideline_id": "Rule 17.7",
+      "guideline_title": "The value returned by a function having non-void return type shall be used",
+      "explanation": {
+        "summary": "The return value of the 'puts' function is ignored, which violates MISRA2012-RULE-17_7.",
+        "rule_basis": "The function interfaces and calls must be explicit, safe, and consistently used.",
+        "code_evidence": "The code snippet provided returns the value of 'puts' but does not use it."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Assign the return value to a variable",
+          "why": "To ensure the return value is checked for errors.",
+          "patched_code": "10      int status = strcpy(log_buffer, msg);\n      11      status = puts(log_buffer);",
+          "compliance_notes": "The return value of 'strcpy' is now assigned to a variable.",
+          "risk_reduction": "Low"
+        },
+        {
+          "rank": 2,
+          "title": "Replace 'puts' with 'fprintf'",
+          "why": "To provide more control over error handling.",
+          "patched_code": "10      int status = fprintf(stderr, \"%s\", log_buffer);",
+          "compliance_notes": "The 'puts' function is replaced with 'fprintf' which allows for more control over error handling.",
+          "risk_reduction": "Medium"
+        },
+        {
+          "rank": 3,
+          "title": "Check the return value of 'puts'",
+          "why": "To ensure the function call is successful.",
+          "patched_code": "12      if (puts(log_buffer) == EOF) {\n          /* handle error */\n        }",
+          "compliance_notes": "The return value of 'puts' is now checked for errors.",
+          "risk_reduction": "High"
+        }
+      ],
+      "risk_analysis": {
+        "severity": "Medium",
+        "why": "The ignored return value could potentially lead to undetected errors.",
+        "potential_failures": [
+          "Undetected errors due to ignored return value"
+        ],
+        "runtime_risk": "Medium",
+        "maintainability_risk": "Medium"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Implement one of the suggested fixes.",
+        "required_justification": "Ignoring the return value of a function with a non-void return type violates MISRA2012-RULE-17_7.",
+        "review_notes": "Ensure the return value is checked or handled appropriately."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "7f705978-bf3b-4a1c-b2e2-e26890f24da4",
+          "7c4ef163-6909-4460-bf30-6f32170a5681",
+          "dada1bc3-6e2e-4d90-b11f-63a2dfb08ec7"
+        ],
+        "retrieval_score_raw": 0.7089,
+        "retrieval_score_reranked": 1.1389,
+        "confidence": 0.9089,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear consistent."
+        ]
+      },
+      "warning_id": "PS011",
+      "source": "final_cache"
+    },
+    {
+      "guideline_id": "Rule 21.6",
+      "guideline_title": "The standard input/output library <stdio.h> shall not be used",
+      "explanation": {
+        "summary": "The standard input/output library <stdio.h> is being used, which is a violation of MISRA2012-RULE-21_6.",
+        "rule_basis": "This code violates MISRA2012-RULE-21_6 because the standard input/output library <stdio.h> shall not be used. Restricted standard-library features are disallowed because they reduce determinism, analyzability, or portability.",
+        "code_evidence": "The use of printf function in line 30."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Replace printf with a safer alternative",
+          "why": "The printf function is not compliant with MISRA2012-RULE-21_6. Replacing it with a safer alternative will ensure compliance.",
+          "patched_code": "std::cout << total << std::endl;",
+          "compliance_notes": "Using the standard library's iostream instead of printf ensures compliance with MISRA2012-RULE-21_6.",
+          "risk_reduction": "Using a safer alternative reduces the risk of non-compliance and potential runtime errors."
+        },
+        {
+          "rank": 2,
+          "title": "Use a logging library",
+          "why": "Using a logging library will ensure that the standard input/output library is not used directly and provide additional logging capabilities.",
+          "patched_code": "// Add a logging library and use it instead of printf",
+          "compliance_notes": "Using a logging library ensures compliance with MISRA2012-RULE-21_6.",
+          "risk_reduction": "Using a logging library reduces the risk of non-compliance and potential runtime errors."
+        }
+      ],
+      "risk_analysis": {
+        "severity": "Medium",
+        "why": "The use of the standard input/output library <stdio.h> can lead to non-compliance and potential runtime errors.",
+        "potential_failures": [
+          "Non-compliance with MISRA2012-RULE-21_6",
+          "Runtime errors due to the use of the standard input/output library"
+        ],
+        "runtime_risk": "Medium",
+        "maintainability_risk": "Medium"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Implement one of the provided fix suggestions to ensure compliance with MISRA2012-RULE-21_6.",
+        "required_justification": "Non-compliance with MISRA2012-RULE-21_6 can lead to potential runtime errors and reduced portability.",
+        "review_notes": "Ensure that all instances of the standard input/output library <stdio.h> are replaced with compliant alternatives."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "73009af8-3657-49d1-9e1e-3bbb9703614d",
+          "ae5fc129-e704-4b08-9b30-c09715775425",
+          "cbe32b38-a8cf-4356-8262-b59826738cb7",
+          "86425e25-e71e-4250-8a49-4bb78c2f1a17"
+        ],
+        "retrieval_score_raw": 0.749718,
+        "retrieval_score_reranked": 1.179718,
+        "confidence": 0.9497180000000001,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear inconsistent. The warning text suggests a violation of Rule 21.6, but the retrieved context also mentions Rule 21.7. It is unclear if the code violates both rules or just Rule 21.6.",
+          "Rejected 'Use a custom function to print the value': Patch declares new variable(s) not present in original snippet. Cannot verify these are safe to introduce."
+        ]
+      },
+      "warning_id": "PS003",
+      "source": "final_cache"
+    },
+    {
+      "guideline_id": "Rule 17.8",
+      "guideline_title": "A function parameter should not be modified",
+      "explanation": {
+        "summary": "The function parameter 'data' is being modified, which violates MISRA2012-RULE-17_8.",
+        "rule_basis": "Function interfaces and calls must be explicit, safe, and consistently used.",
+        "code_evidence": "The code snippet provided shows that the function parameter 'data' is being modified within the 'parse_frame' function."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Create a function to modify the data outside the function",
+          "why": "This approach separates the modification logic from the main function, making it easier to understand and maintain.",
+          "patched_code": "1  #include <stdint.h>\n       2  \n       3  void parse_frame(uint8_t * data, uint8_t len)\n       4  {\n       5      for (uint8_t i = 0U; i < len; i++)\n       6      {\n       7          increment_data(data + i);\n       8      }\n      10  }\n      11  \n      12  void increment_data(uint8_t * data)\n      13  {\n      14      *data = *data + 1U;\n      15  }",
+          "compliance_notes": "The original function still takes 'data' as a parameter, but the modification is done in a separate function.",
+          "risk_reduction": "Medium"
+        }
+      ],
+      "risk_analysis": {
+        "severity": "Medium",
+        "why": "The modification of a function parameter can lead to unexpected behavior and potential bugs.",
+        "potential_failures": [
+          "Data corruption",
+          "Function misuse"
+        ],
+        "runtime_risk": "Medium",
+        "maintainability_risk": "Medium"
+      },
+      "deviation_advice": {
+        "deviation_possible": "Conditional",
+        "recommended_decision": "Avoid modifying function parameters if possible.",
+        "required_justification": "Modifying function parameters can lead to unexpected behavior and potential bugs.",
+        "review_notes": "Consider the impact of modifying the function parameter on the overall system behavior."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "d1a3e72b-bb5d-492d-a097-0f1939467895",
+          "d4c21f0f-1faa-49e9-be35-70aba8355be9",
+          "1f6d05d6-9e5c-49af-b020-a704501beb12"
+        ],
+        "retrieval_score_raw": 0.740902,
+        "retrieval_score_reranked": 1.170902,
+        "confidence": 0.9409019999999999,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear consistent.",
+          "Rejected 'Pass a local variable as the argument': Patch introduces variable-length array (MISRA Rule 18.8 violation).; Patch declares new variable(s) not present in original snippet. Cannot verify these are safe to introduce.",
+          "Rejected 'Return the modified data from the function': Patch introduces variable-length array (MISRA Rule 18.8 violation)."
+        ]
+      },
+      "warning_id": "PS014",
+      "source": "final_cache"
+    }
+  ]
+}

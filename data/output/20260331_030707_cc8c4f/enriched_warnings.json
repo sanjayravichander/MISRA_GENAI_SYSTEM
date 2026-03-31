@@ -1,0 +1,105 @@
+{
+  "warning_count": 2,
+  "warnings": [
+    {
+      "warning_id": "PS008",
+      "tool_name": "Polyspace",
+      "category": "MISRA",
+      "checker_name": "MISRA2012-RULE-9_1",
+      "rule_id": "Rule 9.1",
+      "severity": "High",
+      "severity_rank": 3,
+      "message": "Variable used before initialization",
+      "file_path": "sensor.c",
+      "line_start": 8,
+      "line_end": 8,
+      "function_name": "read_sensor",
+      "source_context": {
+        "file": "sensor.c",
+        "found": true,
+        "context_text": "       1  #include <stdint.h>\n       2  \n       3  int read_sensor(void)\n       4  {\n       5      int raw_value;\n       6      int output = 0;\n       7  \n>>>    8      if (output == 0)\n       9      {\n      10          output = raw_value;\n      11      }\n      12  \n      13      return output;\n      14  }\n      15  \n      16  uint8_t scale_value(uint16_t input)\n      17  {\n      18      uint8_t scaled;",
+        "context_start_line": 1,
+        "context_end_line": 18,
+        "flagged_lines": [
+          8
+        ]
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 9.1",
+          "description": "Non-initialized local variable",
+          "guidelines": "Rule 9.1 (Mandatory): Non-initialized local variable. Variable 'x' is read before being assigned a value. Reading an automatic variable before it is set leads to undefined behaviour and unpredictable results.",
+          "score": 1.235335269761249
+        },
+        {
+          "rule_id": "Rule 9.4",
+          "description": "An element of an object shall not be initialized more than once",
+          "guidelines": "Rule 9.4 (Required): An element of an object shall not be initialized more than once. This code violates Rule 9.4 because an element of an object shall not be initialized more than once. Incorrect initialization can leave objects in unexpected states and introduce subtle runtime defects.",
+          "score": 0.9825358790250922
+        },
+        {
+          "rule_id": "Rule 9.2",
+          "description": "Braces shall be used to indicate and match the structure in the non-zero initialization of arrays and structures",
+          "guidelines": "Rule 9.2 (Required): Braces shall be used to indicate and match the structure in the non-zero initialization of arrays and structures. This code violates Rule 9.2 because braces shall be used to indicate and match the structure in the non-zero initialization of arrays and structures. Incorrect initialization can leave objects in unexpected states and introduce subtle runtime defects.",
+          "score": 0.954699325850275
+        },
+        {
+          "rule_id": "Rule 9.5",
+          "description": "Where designated initializers are used to initialize an array object, the size of the array shall be specified explicitly",
+          "guidelines": "Rule 9.5 (Required): Where designated initializers are used to initialize an array object, the size of the array shall be specified explicitly. This code violates Rule 9.5 because where designated initializers are used to initialize an array object, the size of the array shall be specified explicitly. Incorrect initialization can leave objects in unexpected states and introduce subtle runtime defects.",
+          "score": 0.9534321086537573
+        }
+      ]
+    },
+    {
+      "warning_id": "PS009",
+      "tool_name": "Polyspace",
+      "category": "MISRA",
+      "checker_name": "MISRA2012-RULE-10_3",
+      "rule_id": "Rule 10.3",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "message": "Narrowing conversion",
+      "file_path": "sensor.c",
+      "line_start": 17,
+      "line_end": 17,
+      "function_name": "scale_value",
+      "source_context": {
+        "file": "sensor.c",
+        "found": true,
+        "context_text": "       7  \n       8      if (output == 0)\n       9      {\n      10          output = raw_value;\n      11      }\n      12  \n      13      return output;\n      14  }\n      15  \n      16  uint8_t scale_value(uint16_t input)\n>>>   17  {\n      18      uint8_t scaled;\n      19  \n      20      scaled = input;\n      21      return scaled;\n      22  }",
+        "context_start_line": 7,
+        "context_end_line": 22,
+        "flagged_lines": [
+          17
+        ]
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 10.3",
+          "description": "Implicit narrowing conversion",
+          "guidelines": "Rule 10.3 (Required): Implicit narrowing conversion. The value of 'u16val' (uint16_t) is assigned to 'u8val' (uint8_t). This implicit narrowing conversion may silently truncate the value (300 → 44), causing data loss and incorrect program behaviour.",
+          "score": 1.2123138035416243
+        },
+        {
+          "rule_id": "Rule 10.5",
+          "description": "The value of an expression should not be cast to an inappropriate essential type",
+          "guidelines": "uint32_t wide = 300U;\nuint8_t  small = (uint8_t)wide;   /* cast to inappropriate essential type */",
+          "score": 0.8652249576509231
+        },
+        {
+          "rule_id": "Rule 10.8",
+          "description": "The value of a composite expression shall not be cast to a different essential type category or a wider essential type",
+          "guidelines": "uint16_t a, b;\nuint32_t x = (uint32_t)(a + b);   /* cast composite expression to wider category */",
+          "score": 0.8574560409870318
+        },
+        {
+          "rule_id": "Rule 10.4",
+          "description": "Both operands of an operator in which the usual arithmetic conversions are performed shall have the same essential type category",
+          "guidelines": "uint16_t u = 1U;\nint16_t  s = -1;\nif (u < s) { }   /* mixed essential type categories */",
+          "score": 0.8421430539127827
+        }
+      ]
+    }
+  ]
+}

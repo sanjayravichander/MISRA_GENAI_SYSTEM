@@ -1,0 +1,53 @@
+{
+  "warning_count": 2,
+  "warnings": [
+    {
+      "warning_id": "PS002",
+      "tool_name": "Polyspace",
+      "category": "MISRA",
+      "checker_name": "MISRA2012-RULE-10_3",
+      "rule_id": "Rule 10.3",
+      "severity": "High",
+      "severity_rank": 3,
+      "message": "Narrowing conversion",
+      "file_path": "main.c",
+      "line_start": 22,
+      "line_end": 22,
+      "function_name": "main",
+      "source_context": {
+        "file": "main.c",
+        "found": true,
+        "context_text": "      12      if ((uint8_t)value > 200U)\n      13      {\n      14          return 0;\n      15      }\n      16  \n      17      return 1;\n      18  }\n      19  \n      20  int main(void)\n      21  {\n>>>   22      int x = 10;\n      23      int y = 20;\n      24      uint8_t small;\n      25  \n      26      int total = calculate_total(x, y);\n      27  \n      28      small = total + 300;\n      29  \n      30      printf(\"%d\\n\", total);\n      31  \n      32      if (validate_input(total) == 1)",
+        "context_start_line": 12,
+        "context_end_line": 32,
+        "flagged_lines": [
+          22
+        ]
+      }
+    },
+    {
+      "warning_id": "PS003",
+      "tool_name": "Polyspace",
+      "category": "MISRA",
+      "checker_name": "MISRA2012-RULE-21_6",
+      "rule_id": "Rule 21.6",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "message": "Standard I/O function used",
+      "file_path": "main.c",
+      "line_start": 24,
+      "line_end": 24,
+      "function_name": "main",
+      "source_context": {
+        "file": "main.c",
+        "found": true,
+        "context_text": "      14          return 0;\n      15      }\n      16  \n      17      return 1;\n      18  }\n      19  \n      20  int main(void)\n      21  {\n      22      int x = 10;\n      23      int y = 20;\n>>>   24      uint8_t small;\n      25  \n      26      int total = calculate_total(x, y);\n      27  \n      28      small = total + 300;\n      29  \n      30      printf(\"%d\\n\", total);\n      31  \n      32      if (validate_input(total) == 1)\n      33      {\n      34          total = total * total;",
+        "context_start_line": 14,
+        "context_end_line": 34,
+        "flagged_lines": [
+          24
+        ]
+      }
+    }
+  ]
+}

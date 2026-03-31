@@ -1,0 +1,190 @@
+{
+  "warning_count": 3,
+  "results": [
+    {
+      "guideline_id": "Rule 10.3",
+      "guideline_title": "Implicit narrowing conversion",
+      "explanation": {
+        "summary": "The value of 'total' (int) is assigned to 'small' (uint8_t). This implicit narrowing conversion may silently truncate the value (332 → 44), causing data loss and incorrect program behaviour.",
+        "rule_basis": "Rule 10.3 (Required): Implicit narrowing conversion.",
+        "code_evidence": "The code snippet provided shows an implicit narrowing conversion from int to uint8_t."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Explicit cast",
+          "why": "Prevent data loss by using an explicit cast.",
+          "patched_code": "28      small = (uint8_t)total + 300;\n      29",
+          "compliance_notes": "This fix ensures that the value of 'total' is correctly converted to 'uint8_t' without data loss.",
+          "risk_reduction": "High"
+        },
+        {
+          "rank": 2,
+          "title": "Use a larger data type",
+          "why": "Avoid implicit narrowing conversions by using a larger data type that can hold the original value.",
+          "patched_code": "24      int8_t small;\n      25",
+          "compliance_notes": "Changing the data type of 'small' to 'int8_t' allows it to hold the original value of 'total' without data loss.",
+          "risk_reduction": "Medium"
+        }
+      ],
+      "risk_analysis": {
+        "severity": "High",
+        "why": "The implicit narrowing conversion may cause data loss and incorrect program behaviour.",
+        "potential_failures": [
+          "Data loss due to truncation",
+          "Incorrect program behaviour due to data loss"
+        ],
+        "runtime_risk": "High",
+        "maintainability_risk": "High"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Implement one of the provided fix suggestions.",
+        "required_justification": "Implicit narrowing conversions are not allowed according to MISRA2012-RULE-10_3.",
+        "review_notes": "Ensure that the fix does not introduce new issues or complications."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "ac195ae8-bb0d-484f-9b1e-b777db09c5cc",
+          "5f982fcc-83fe-4c58-a8d3-c057556e444c",
+          "aaa6f4e4-6864-48f8-a3fe-9638bf2ac909"
+        ],
+        "retrieval_score_raw": 0.806273,
+        "retrieval_score_reranked": 1.236273,
+        "confidence": 0.99,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear consistent.",
+          "Rejected 'Use a temporary variable': Patch declares new variable(s) not present in original snippet. Cannot verify these are safe to introduce."
+        ]
+      },
+      "warning_id": "PS002",
+      "source": "final_cache"
+    },
+    {
+      "guideline_id": "Rule 9.1",
+      "guideline_title": "Non-initialized local variable",
+      "explanation": {
+        "summary": "The variable 'raw_value' is used before it is initialized.",
+        "rule_basis": "MISRA2012-RULE-9_1",
+        "code_evidence": "The code snippet provided shows that the variable 'raw_value' is read before it is assigned a value."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Initialize the variable before using it",
+          "why": "To prevent undefined behavior and unpredictable results.",
+          "patched_code": "5      int raw_value = 0;",
+          "compliance_notes": "Initializing the variable to a known value will ensure that it is not used before it is set.",
+          "risk_reduction": "Low"
+        },
+        {
+          "rank": 2,
+          "title": "Move the usage of 'raw_value' after its initialization",
+          "why": "To ensure that the variable is always initialized before it is used.",
+          "patched_code": "8      if (output == 0)\n       9      {\n      10          int raw_value;\n      11          output = raw_value;\n      12      }",
+          "compliance_notes": "Moving the usage of 'raw_value' after its initialization will prevent it from being used before it is set.",
+          "risk_reduction": "Low"
+        },
+        {
+          "rank": 3,
+          "title": "Add an initializer for 'raw_value'",
+          "why": "To ensure that 'raw_value' is always initialized.",
+          "patched_code": "5      int raw_value = -1;",
+          "compliance_notes": "Initializing 'raw_value' to a known value will ensure that it is not used before it is set.",
+          "risk_reduction": "Low"
+        }
+      ],
+      "risk_analysis": {
+        "severity": "High",
+        "why": "The use of 'raw_value' before it is initialized can lead to undefined behavior and unpredictable results.",
+        "potential_failures": [
+          "Unpredictable behavior in the program due to the use of an uninitialized variable."
+        ],
+        "runtime_risk": "High",
+        "maintainability_risk": "High"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Implement one of the provided fix suggestions.",
+        "required_justification": "The use of an uninitialized variable can lead to unpredictable behavior and should be avoided.",
+        "review_notes": "Ensure that all variables are initialized before they are used."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "bcb19b99-61ee-499b-aa06-29fc74218955",
+          "4677ce74-ebe0-4eb6-8b0e-aaef70fa1c4e",
+          "88d1ca4c-ebbc-4f16-b59b-8329d126a45b"
+        ],
+        "retrieval_score_raw": 0.754408,
+        "retrieval_score_reranked": 1.184408,
+        "confidence": 0.9544079999999999,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear consistent.",
+          "Warning text and retrieved rule statement may not fully align."
+        ]
+      },
+      "warning_id": "PS008",
+      "source": "final_cache"
+    },
+    {
+      "guideline_id": "Rule 9.1",
+      "guideline_title": "Non-initialized local variable",
+      "explanation": {
+        "summary": "The variable 'x' is used before it is initialized, leading to undefined behavior.",
+        "rule_basis": "MISRA2012-RULE-9_1",
+        "code_evidence": "The code snippet provided shows the variable 'x' being used before it is initialized."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Initialize the variable 'x' before using it",
+          "why": "To prevent undefined behavior caused by using a variable before it is initialized.",
+          "patched_code": "5      int x = 0;       /* initialize x */\n       6      int y;",
+          "compliance_notes": "This fix ensures that the variable 'x' is initialized before it is used.",
+          "risk_reduction": "Low"
+        },
+        {
+          "rank": 2,
+          "title": "Declare 'x' as a global variable and initialize it",
+          "why": "To ensure that the variable 'x' is initialized before it is used, even if the function is called before it is defined.",
+          "patched_code": "int x = 0;\n\nvoid func(void)\n{\n    int y;",
+          "compliance_notes": "This fix ensures that the variable 'x' is initialized before it is used, even if the function is called before it is defined.",
+          "risk_reduction": "Medium"
+        }
+      ],
+      "risk_analysis": {
+        "severity": "High",
+        "why": "Using a variable before it is initialized can lead to undefined behavior and unpredictable results.",
+        "potential_failures": [
+          "Unpredictable results due to undefined behavior"
+        ],
+        "runtime_risk": "High",
+        "maintainability_risk": "High"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Implement one of the fix suggestions to ensure the code is compliant with the guideline.",
+        "required_justification": "Using a variable before it is initialized can lead to undefined behavior and unpredictable results.",
+        "review_notes": "Ensure that all variables are initialized before they are used."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "bcb19b99-61ee-499b-aa06-29fc74218955",
+          "91fbf5f8-6da4-41be-bdb4-a702ca7dbbac",
+          "4677ce74-ebe0-4eb6-8b0e-aaef70fa1c4e",
+          "58d88693-c14c-4d42-85fb-a0f55c4262e9"
+        ],
+        "retrieval_score_raw": 0.799025,
+        "retrieval_score_reranked": 1.229025,
+        "confidence": 0.99,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear inconsistent. The warning text suggests a variable is used before it is initialized, while the retrieved context also mentions Rule 9.2 which is about braces in the initialization of arrays and structures.",
+          "Warning text and retrieved rule statement may not fully align.",
+          "Rejected 'Use a temporary variable to hold the value of 'y' until 'x' is initialized': Patch declares new variable(s) not present in original snippet. Cannot verify these are safe to introduce."
+        ]
+      },
+      "warning_id": "PS016",
+      "source": "final_cache"
+    }
+  ]
+}

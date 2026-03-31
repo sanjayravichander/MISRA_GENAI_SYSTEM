@@ -1,0 +1,7 @@
+{
+  "source_pdf": "C:\\Users\\sanjay.ravichander\\misra_genai_system\\misra_genai_system\\data\\knowledge\\Misra-c-2012-guidelines.pdf",
+  "guideline_count": 629,
+  "chunk_count": 919,
+  "structured_output": "C:\\Users\\sanjay.ravichander\\misra_genai_system\\misra_genai_system\\data\\knowledge\\processed\\rules_structured.json",
+  "chunks_output": "C:\\Users\\sanjay.ravichander\\misra_genai_system\\misra_genai_system\\data\\knowledge\\processed\\rules_chunks.jsonl"
+}

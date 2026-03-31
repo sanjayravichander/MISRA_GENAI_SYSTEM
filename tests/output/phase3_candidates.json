@@ -1,0 +1,152 @@
+[
+  {
+    "warning_id": "PS001",
+    "rule_id": "Rule 8.7",
+    "severity": "Medium",
+    "message": "Global object only used in one function",
+    "file_name": "calc.c",
+    "line_number": 3,
+    "function_name": "calculate_total",
+    "checker_name": "MISRA2012-RULE-8_7",
+    "code_snippet": "int g_total = 0;\n\n/* Related function context */\nint calculate_total(int a, int b)\n{\n    int result = a + b;\n    g_total = result;\n    return result;\n}",
+    "guideline_id": "Rule 8.7",
+    "category": "Advisory",
+    "rule_text": "Guideline: Rule 8.7\n\nCategory: Advisory\n\nAnalysis: Decidable, System\n\nHeadline:\nRule 8.7 Functions and objects should not be de \ufb01 ned with external linkage if\nthey are referenced in only one translation unit\n[Koenig 56, 57]\nCategory Advisory\nAnalysis Decidable, System\nApplies to C90, C99\n\nRationale:\nRestricting the visibility of an object by giving it internal linkage or no linkage reduces the chance that\nit might be accessed inadvertently. Similarly, reducing the visibilit y of a function by giving it internal\nlinkage reduces the chance of it being called inadvertently.\nCompliance with this rule also avoids any possibility of confusion between an identi\ufb01 er and an identical\nidenti\ufb01 er in another translation unit or a library.",
+    "file_path": "data\\input\\source_code\\calc.c",
+    "source_report": "C:\\Users\\sanjay.ravichander\\misra_genai_system\\misra_genai_system\\data\\input\\warning_reports\\mock_warning_report.xlsx",
+    "snippet_error": null,
+    "prompt_code": {
+      "text": "int g_total = 0;\n\n/* Related function context */\nint calculate_total(int a, int b)\n{\n    int result = a + b;\n    g_total = result;\n    return result;\n}",
+      "start_line": 3,
+      "end_line": 10,
+      "source": "best_clean_snippet"
+    },
+    "debug_snippet": {
+      "start_line": 1,
+      "end_line": 7,
+      "focus_line": 3,
+      "text": "    1: #include \"calc.h\"\n    2: \n>>> 3: int g_total = 0;\n    4: \n    5: int calculate_total(int a, int b)\n    6: {\n    7:     int result = a + b;"
+    },
+    "clean_snippet": {
+      "start_line": 3,
+      "end_line": 3,
+      "text": "int g_total = 0;"
+    },
+    "best_clean_snippet": {
+      "start_line": 3,
+      "end_line": 10,
+      "text": "int g_total = 0;\n\n/* Related function context */\nint calculate_total(int a, int b)\n{\n    int result = a + b;\n    g_total = result;\n    return result;\n}"
+    },
+    "context_strategy": "reported_function_plus_focus_statement",
+    "enclosing_function": null,
+    "related_function": {
+      "name": "calculate_total",
+      "start_line": 5,
+      "end_line": 10,
+      "signature": "int calculate_total(int a, int b)",
+      "text": "int calculate_total(int a, int b)\n{\n    int result = a + b;\n    g_total = result;\n    return result;\n}"
+    },
+    "rule_context": {
+      "guideline_id": "Rule 8.7",
+      "guideline_type": "Rule",
+      "category": "Advisory",
+      "analysis_decidability": "Decidable",
+      "analysis_scope": "System",
+      "applies_to": [
+        "C90",
+        "C99"
+      ],
+      "headline": "Rule 8.7 Functions and objects should not be de \ufb01 ned with external linkage if\nthey are referenced in only one translation unit\n[Koenig 56, 57]\nCategory Advisory\nAnalysis Decidable, System\nApplies to C90, C99",
+      "rationale": "Restricting the visibility of an object by giving it internal linkage or no linkage reduces the chance that\nit might be accessed inadvertently. Similarly, reducing the visibilit y of a function by giving it internal\nlinkage reduces the chance of it being called inadvertently.\nCompliance with this rule also avoids any possibility of confusion between an identi\ufb01 er and an identical\nidenti\ufb01 er in another translation unit or a library.",
+      "amplification": "",
+      "exception": "",
+      "page_start": 78,
+      "page_end": 78,
+      "prompt_text": "Guideline: Rule 8.7\n\nCategory: Advisory\n\nAnalysis: Decidable, System\n\nHeadline:\nRule 8.7 Functions and objects should not be de \ufb01 ned with external linkage if\nthey are referenced in only one translation unit\n[Koenig 56, 57]\nCategory Advisory\nAnalysis Decidable, System\nApplies to C90, C99\n\nRationale:\nRestricting the visibility of an object by giving it internal linkage or no linkage reduces the chance that\nit might be accessed inadvertently. Similarly, reducing the visibilit y of a function by giving it internal\nlinkage reduces the chance of it being called inadvertently.\nCompliance with this rule also avoids any possibility of confusion between an identi\ufb01 er and an identical\nidenti\ufb01 er in another translation unit or a library."
+    },
+    "raw_row": {
+      "Tool Name": "Polyspace",
+      "Warning ID": "PS001",
+      "Category": "MISRA",
+      "Checker Name": "MISRA2012-RULE-8_7",
+      "Rule ID": "Rule 8.7",
+      "Severity": "Medium",
+      "Message": "Global object only used in one function",
+      "File Path": "calc.c",
+      "Line Start": 3,
+      "Line End": 3,
+      "Function Name": "calculate_total"
+    },
+    "ranked_fixes": [
+      {
+        "rank": 1,
+        "fix_id": "F1",
+        "title": "Change global variable to local variable",
+        "strategy_type": "Conservative",
+        "patched_code": "int calculate_total(int a, int b)\n{\n    int result = a + b;\n    static int g_total = 0; // Change to static to limit scope\n    g_total = result;\n    return result;\n}",
+        "misra_alignment": {
+          "rule_addressed": "Rule 8.7",
+          "why_aligned": "The global variable is now limited to the scope of the function, reducing its visibility."
+        },
+        "risk_analysis": {
+          "functional_risk": "Low",
+          "new_warning_risk": "Low",
+          "maintainability_risk": "Low"
+        },
+        "confidence": 0.9
+      },
+      {
+        "rank": 2,
+        "fix_id": "F2",
+        "title": "Pass global variable as parameter",
+        "strategy_type": "Conservative",
+        "patched_code": "int calculate_total(int a, int b, int* g_total)\n{\n    int result = a + b;\n    *g_total = result;\n    return result;\n}",
+        "misra_alignment": {
+          "rule_addressed": "Rule 8.7",
+          "why_aligned": "The global variable is now passed as a parameter, reducing its visibility."
+        },
+        "risk_analysis": {
+          "functional_risk": "Low",
+          "new_warning_risk": "Low",
+          "maintainability_risk": "Low"
+        },
+        "confidence": 0.8
+      },
+      {
+        "rank": 3,
+        "fix_id": "F3",
+        "title": "Use a local buffer to store the result",
+        "strategy_type": "Conservative",
+        "patched_code": "int calculate_total(int a, int b)\n{\n    int result = a + b;\n    int local_total = result; // Use a local buffer\n    return local_total;\n}",
+        "misra_alignment": {
+          "rule_addressed": "Rule 8.7",
+          "why_aligned": "The result is stored in a local buffer, reducing the visibility of the global variable."
+        },
+        "risk_analysis": {
+          "functional_risk": "Low",
+          "new_warning_risk": "Low",
+          "maintainability_risk": "Low"
+        },
+        "confidence": 0.7
+      },
+      {
+        "rank": 4,
+        "fix_id": "F4",
+        "title": "Use a local variable and return the result",
+        "strategy_type": "Conservative",
+        "patched_code": "int calculate_total(int a, int b)\n{\n    int result = a + b;\n    return result;\n}",
+        "misra_alignment": {
+          "rule_addressed": "Rule 8.7",
+          "why_aligned": "The global variable is removed, and the result is returned directly."
+        },
+        "risk_analysis": {
+          "functional_risk": "Low",
+          "new_warning_risk": "Low",
+          "maintainability_risk": "Low"
+        },
+        "confidence": 0.6
+      }
+    ],
+    "generation_error": null
+  }
+]

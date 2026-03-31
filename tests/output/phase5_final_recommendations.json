@@ -1,0 +1,96 @@
+[
+  {
+    "warning_id": "PS001",
+    "rule_id": "Rule 8.7",
+    "file_name": "calc.c",
+    "line_number": 3,
+    "function_name": "calculate_total",
+    "message": "Global object only used in one function",
+    "phase4_summary": {
+      "recommended_fix_id": "F3",
+      "recommended_title": "Use a local buffer to store the result",
+      "recommended_rank": 1,
+      "recommended_score": 91.0,
+      "selection_reason": "Selected as top recommendation with total score 91.0. Candidate appears structurally valid and relevant to the target rule."
+    },
+    "final_recommendation": {
+      "rank": 1,
+      "fix_id": "F3",
+      "title": "Use a local buffer to store the result",
+      "patched_code": "int calculate_total(int a, int b)\n{\n    int result = a + b;\n    int local_total = result; // Use a local buffer\n    return local_total;\n}",
+      "score": 91.0,
+      "scoring_breakdown": {
+        "misra_alignment_score": 18.0,
+        "minimal_change_score": 20.0,
+        "behavior_preservation_score": 20.0,
+        "new_warning_risk_score": 20.0,
+        "maintainability_score": 10.0,
+        "confidence_score": 3.0,
+        "total_score": 91.0
+      },
+      "notes": [
+        "Candidate appears structurally valid and relevant to the target rule."
+      ]
+    },
+    "alternative_fixes": [
+      {
+        "rank": 2,
+        "fix_id": "F1",
+        "title": "Change global variable to local variable",
+        "score": 88.0,
+        "notes": [
+          "Uses function-local static storage, which still preserves state across calls."
+        ]
+      },
+      {
+        "rank": 3,
+        "fix_id": "F4",
+        "title": "Use a local variable and return the result",
+        "score": 83.0,
+        "notes": [
+          "Candidate appears structurally valid and relevant to the target rule."
+        ]
+      },
+      {
+        "rank": 4,
+        "fix_id": "F2",
+        "title": "Pass global variable as parameter",
+        "score": 62.5,
+        "notes": [
+          "Changes interface by introducing pointer parameter or extra function argument."
+        ]
+      }
+    ],
+    "status": {
+      "approval_status": "recommended",
+      "review_required": false,
+      "validation_checks": [
+        {
+          "check": "patched_code_present",
+          "status": "pass",
+          "details": "Patched code is present."
+        },
+        {
+          "check": "behavior_change_risk",
+          "status": "pass",
+          "details": "No obvious accumulation-style behavior change detected."
+        },
+        {
+          "check": "interface_change",
+          "status": "pass",
+          "details": "No obvious interface expansion detected."
+        },
+        {
+          "check": "persistent_state",
+          "status": "pass",
+          "details": "No obvious persistent state introduced."
+        },
+        {
+          "check": "score_threshold",
+          "status": "pass",
+          "details": "Top fix score 91.0 meets recommendation threshold."
+        }
+      ]
+    }
+  }
+]
