@@ -328,13 +328,62 @@ def commit_fix():
 
                     if src_file_path:
                         orig_lines = src_file_path.read_text(encoding="utf-8", errors="replace").splitlines()
-
-                        # Parse patched_code — LLM often emits lines like:
-                        #   "28      small = (uint8_t)total + 300;"
-                        # Extract the embedded line number and code for each patch line.
                         import re as _re2
-                        patch_map  = {}   # { 1-indexed line number : new code string }
-                        bare_lines = []   # code strings without any line-number prefix
+
+                        # ── Helper: preserve original line indentation ──────────────
+                        def _apply_indent(orig_ln, new_code):
+                            indent = _re2.match(r"^(\s*)", orig_ln).group(1)
+                            return indent + new_code.lstrip()
+
+                        # ── Helper: clean prose-style patched_code ──────────────────
+                        # LLM sometimes returns "replace X; with Y;" instead of code.
+                        # Extract the last C statement (after "with ") as the fix.
+                        def _clean_patched(raw):
+                            # "replace printf(...); with printf(...);"  → "printf(...);"
+                            m_with = _re2.search(r"\bwith\s+(.*)", raw, _re2.IGNORECASE | _re2.DOTALL)
+                            if m_with:
+                                candidate = m_with.group(1).strip()
+                                # If it still has multiple statements, take the last
+                                stmts = [s.strip() for s in _re2.split(r";", candidate) if s.strip()]
+                                return (stmts[-1] + ";") if stmts else raw
+                            # If multiple semicolons, the last statement is the fix
+                            stmts = [s.strip() for s in _re2.split(r";", raw) if s.strip()]
+                            return (stmts[-1] + ";") if len(stmts) > 1 else raw
+
+                        # ── Helper: structural + token score ───────────────────────
+                        # Uses ALL tokens (including C type keywords) for matching,
+                        # plus a structural bonus when both patch and source line are
+                        # the same syntactic form (declaration vs assignment vs call).
+                        def _score_line(src_ln, patch_code):
+                            # Token overlap — ALL identifiers, including uint8_t/uint16_t etc.
+                            all_patch_toks = set(_re2.findall(r"[a-zA-Z_][a-zA-Z0-9_]*", patch_code))
+                            all_src_toks   = set(_re2.findall(r"[a-zA-Z_][a-zA-Z0-9_]*", src_ln))
+                            token_score = len(all_patch_toks & all_src_toks)
+
+                            # Structural bonus (+2): both lines are the SAME syntactic category
+                            # declaration:  "type var;"   or  "type var = expr;"
+                            # assignment:   "var = expr;"
+                            # call:         "func(...);"
+                            _DECL  = _re2.compile(r"^\s*[a-zA-Z_]\w*(?:\s*\*)?\s+[a-zA-Z_]\w*\s*(?:=|;)")
+                            _ASGN  = _re2.compile(r"^\s*[a-zA-Z_]\w*\s*(?:\[.*?\])?\s*=")
+                            _CALL  = _re2.compile(r"^\s*[a-zA-Z_]\w*\s*\(")
+                            def _kind(s):
+                                s = s.strip()
+                                if _DECL.match(s): return "decl"
+                                if _ASGN.match(s): return "asgn"
+                                if _CALL.match(s): return "call"
+                                return "other"
+                            struct_bonus = 2 if _kind(patch_code) == _kind(src_ln) else 0
+
+                            return token_score + struct_bonus
+
+                        # ── Parse patched_code lines ────────────────────────────────
+                        # The LLM may emit:
+                        #   A) "28      small = (uint8_t)total + 300;"  ← explicit line number
+                        #   B) "uint16_t small;"                        ← bare code, no number
+                        #   C) "replace printf(...); with printf(...);" ← English prose
+                        patch_map  = {}   # { 1-indexed line number: new code }
+                        bare_lines = []   # code strings stripped of any line-number prefix
                         for ln in patched.splitlines():
                             m = _re2.match(r"^\s*(\d+)\s+(.*)", ln)
                             if m:
@@ -345,27 +394,68 @@ def commit_fix():
                             else:
                                 bare_lines.append(ln)
 
+                        # ── STRATEGY A: SURGICAL (LLM gave explicit line numbers) ───
+                        # Replace only those exact numbered lines, everything else stays.
                         if patch_map:
-                            # ── SURGICAL MODE ──────────────────────────────────────────
-                            # The LLM returned specific numbered lines (e.g. only line 28).
-                            # Replace ONLY those exact lines in the original file.
-                            # Every other line stays byte-for-byte identical.
                             merged = list(orig_lines)
                             for lnum, new_code in patch_map.items():
-                                idx = lnum - 1          # 1-indexed → 0-indexed
+                                idx = lnum - 1
                                 if 0 <= idx < len(merged):
-                                    merged[idx] = new_code
+                                    merged[idx] = _apply_indent(merged[idx], new_code)
                             patch_line_start    = min(patch_map.keys())
                             patch_line_count_val = len(patch_map)
+                            app.logger.info(f"[commit] SURGICAL: replaced lines {sorted(patch_map.keys())}")
+
+                        # ── STRATEGY B: FUZZY (no line numbers — 1-3 line fix) ──────
+                        # Clean prose ("replace X with Y"), then score every line in the
+                        # context window using token overlap + structural form bonus.
+                        # The highest-scoring line is the violated line to replace.
+                        elif len(bare_lines) <= 3:
+                            raw_patch  = "\n".join(bare_lines)
+                            clean_code = _clean_patched(raw_patch)
+
+                            # Score every non-blank line inside the context window
+                            ctx_range = orig_lines[max(0, ctx_start - 1): ctx_end]
+                            best_score, best_idx = 0, None
+                            for rel_i, src_ln in enumerate(ctx_range):
+                                if not src_ln.strip():
+                                    continue
+                                score = _score_line(src_ln, clean_code)
+                                if score > best_score:
+                                    best_score, best_idx = score, rel_i
+
+                            if best_idx is not None and best_score > 0:
+                                abs_idx = (ctx_start - 1) + best_idx
+                                merged  = list(orig_lines)
+                                merged[abs_idx] = _apply_indent(orig_lines[abs_idx], clean_code)
+                                patch_line_start    = abs_idx + 1
+                                patch_line_count_val = 1
+                                app.logger.info(
+                                    f"[commit] FUZZY: matched line {patch_line_start} "
+                                    f"score={best_score} patch={repr(clean_code[:60])}"
+                                )
+                            else:
+                                # No confident match — fall back to warning line_start
+                                abs_idx = max(0, (line_start or ctx_start) - 1)
+                                merged  = list(orig_lines)
+                                merged[abs_idx] = _apply_indent(orig_lines[abs_idx], clean_code)
+                                patch_line_start    = abs_idx + 1
+                                patch_line_count_val = 1
+                                app.logger.warning(
+                                    f"[commit] FUZZY fallback (no match): "
+                                    f"replaced line {patch_line_start}"
+                                )
+
+                        # ── STRATEGY C: BLOCK REPLACE (LLM returned the full fixed block) ─
+                        # bare_lines > 3 means the LLM gave the whole context rewritten.
+                        # Replace the context window with the bare lines verbatim.
                         else:
-                            # ── FALLBACK MODE ──────────────────────────────────────────
-                            # LLM returned no line numbers — it gave the full fixed block.
-                            # Replace the original context window with the bare lines.
                             before = orig_lines[: max(0, ctx_start - 1)]
-                            after  = orig_lines[ctx_end:]   # ctx_end is inclusive 1-indexed
+                            after  = orig_lines[ctx_end:]
                             merged = before + bare_lines + after
                             patch_line_start    = ctx_start
                             patch_line_count_val = len(bare_lines)
+                            app.logger.info(f"[commit] BLOCK REPLACE mode: lines {ctx_start}-{ctx_end}")
 
                         full_patched = "\n".join(merged)
         except Exception as merge_err:
