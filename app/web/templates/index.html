@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <title>SRM Technologies — MISRA Compliance Reviewer</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='config_modal.css') }}" />
 </head>
 
 <body>
@@ -38,6 +39,79 @@
     </div>
   </header>
 
+  <!-- ── CONFIGURE MISRA RULES MODAL ────────────────────── -->
+  <div class="cm-overlay" id="config-modal-overlay">
+    <div class="cm-dialog" id="config-modal" role="dialog" aria-modal="true" aria-labelledby="cm-title">
+
+      <div class="cm-header">
+        <div>
+          <div class="cm-title" id="cm-title">Configure MISRA Rules</div>
+          <div class="cm-subtitle">Rules are automatically loaded from the <b>data</b> folder.</div>
+        </div>
+        <button class="cm-close" id="modal-close-btn" aria-label="Close">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="cm-note-bar" id="config-note">Loading configuration…</div>
+
+      <div class="cm-body">
+        <table class="cm-table">
+          <thead>
+            <tr>
+              <th>Rule List</th>
+              <th>MISRA Category</th>
+              <th>User Specification</th>
+            </tr>
+          </thead>
+          <tbody id="config-body">
+            <tr>
+              <td colspan="3" class="cm-loading-row">
+                <div class="cm-spinner"></div> Loading rules…
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="cm-footer">
+        <div class="cm-footer-left">
+          <span class="cm-legend-dot cm-dot-m"></span><span class="cm-legend-txt">Mandatory</span>
+          <span class="cm-legend-dot cm-dot-r"></span><span class="cm-legend-txt">Required</span>
+          <span class="cm-legend-dot cm-dot-a"></span><span class="cm-legend-txt">Advisory</span>
+          <span class="cm-legend-txt" style="margin-left:8px;color:#94a3b8;">· Click a rule number to see warning IDs</span>
+        </div>
+        <div class="cm-footer-right">
+          <span class="cm-save-status" id="config-status"></span>
+          <button class="btn btn-primary" id="save-config-btn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            Apply Configuration
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── WARNING NUMBERS POPCARD ────────────────────────── -->
+  <div class="wn-card" id="warning-card" style="display:none;">
+    <div class="wn-card-header">
+      <span class="wn-card-title" id="wn-card-title">Warning Message Nos.</span>
+      <button class="wn-close" id="wn-close-btn">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+    </div>
+    <div class="wn-card-body" id="wn-card-body"></div>
+  </div>
+
   <!-- ── HERO ──────────────────────────────────────────── -->
   <section class="page-hero">
     <div class="hero-grid"></div>
@@ -64,6 +138,18 @@
   <main class="main-content">
     <div class="container">
 
+      <!-- ── Configure button row above Upload Panel ── -->
+      <div class="pre-panel-row">
+        <button type="button" class="btn-configure-misra" id="config-open-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
+          Configure MISRA Rules
+        </button>
+      </div>
+
       <!-- Upload Panel -->
       <div class="panel" id="upload-card">
         <div class="panel-heading">
@@ -71,9 +157,7 @@
           <span class="panel-tag">Step 1 of 1</span>
         </div>
 
-        <!-- File zones -->
         <div class="upload-grid">
-          <!-- Warning report -->
           <div>
             <div class="drop-zone" id="excel-zone">
               <input type="file" id="excel-input" accept=".xlsx,.xls" />
@@ -92,7 +176,6 @@
             </div>
           </div>
 
-          <!-- Source file -->
           <div>
             <div class="drop-zone" id="c-zone">
               <input type="file" id="c-input" accept=".c,.h" multiple />
@@ -113,7 +196,6 @@
           </div>
         </div>
 
-        <!-- MISRA Rule Category Selector -->
         <div class="misra-category-section">
           <div class="misra-category-label">Which type of MISRA rules should be reviewed?</div>
           <div class="misra-category-sub">
@@ -176,7 +258,6 @@
           </div>
         </div>
 
-        <!-- Batch size (shown when multiple files) -->
         <div class="config-row" id="batch-row" style="display:none;">
           <div>
             <div class="config-label">How many warnings to process in one go?</div>
@@ -193,10 +274,8 @@
           </div>
         </div>
 
-        <!-- Error -->
         <div id="upload-error" class="error-panel mt-16 hidden"></div>
 
-        <!-- Action row -->
         <div class="action-row">
           <button class="btn btn-primary" id="run-btn" disabled>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -206,7 +285,7 @@
           </button>
           <span class="file-meta-text" id="file-summary"></span>
         </div>
-      </div><!-- /upload-card -->
+      </div>
 
       <!-- Progress Panel -->
       <div class="panel" id="progress-panel">
@@ -215,7 +294,6 @@
           <span class="panel-tag">Live</span>
         </div>
 
-        <!-- Amazon-style stepper -->
         <div class="pipeline-track" id="phase-list">
 
           <div class="phase-item" id="ph-6a">
@@ -260,7 +338,6 @@
 
         </div>
 
-        <!-- Live feed -->
         <div id="stream-table-wrap" class="stream-section hidden">
           <div class="stream-header">
             <span class="live-dot"></span>
@@ -280,7 +357,6 @@
           </table>
         </div>
 
-        <!-- Overall progress bar -->
         <div class="progress-section">
           <div class="progress-header">
             <span class="progress-label-text">Overall Progress</span>
@@ -291,7 +367,7 @@
           </div>
           <div class="status-text" id="status-line">Starting up…</div>
         </div>
-      </div><!-- /progress-panel -->
+      </div>
 
     </div>
   </main>
@@ -301,6 +377,8 @@
   </footer>
 
   <script src="{{ url_for('static', filename='script.js') }}"></script>
+  <script src="{{ url_for('static', filename='config_modal.js') }}"></script>
+
 </body>
 
 </html>

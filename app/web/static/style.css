@@ -2086,3 +2086,330 @@ a:hover {
     border-color: var(--accent);
     box-shadow: 0 0 0 3px var(--accent-glow)
 }
+/* ── CONFIGURATION PANEL ───────────────────────────────── */
+.panel-subtitle {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    line-height: 1.5;
+}
+
+.config-note {
+    font-size: 12px;
+    color: var(--text-sub);
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--r3);
+    padding: 12px 14px;
+    margin-bottom: 16px;
+}
+
+.config-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--r3);
+    background: var(--surface);
+}
+
+.config-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 720px;
+}
+
+.config-table thead th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    background: var(--bg-subtle);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 14px;
+}
+
+.config-table tbody td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+    font-size: 13px;
+    color: var(--text);
+}
+
+.config-table tbody tr:hover td {
+    background: var(--bg-subtle);
+}
+
+.config-empty-row td {
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+    padding: 18px 14px;
+}
+
+.config-action-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+}
+
+.config-status {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.config-status.ok {
+    color: var(--green);
+    font-weight: 700;
+}
+
+.config-status.err {
+    color: var(--red);
+    font-weight: 700;
+}
+
+.user-spec-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.user-spec-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--bg-subtle);
+    cursor: pointer;
+    user-select: none;
+    transition: all var(--t) var(--ease);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-sub);
+}
+
+.user-spec-option:hover {
+    border-color: var(--accent-line);
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.user-spec-option input {
+    accent-color: var(--accent);
+    cursor: pointer;
+}
+
+.user-spec-option.active {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.user-spec-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+    background: var(--bg-2);
+    color: var(--text-sub);
+}
+
+.user-spec-badge.active {
+    background: var(--accent);
+    color: #fff;
+}
+/* ── CONFIG COLLAPSE / EXPAND ───────────────────────────── */
+.config-heading {
+    margin-bottom: 0;
+    align-items: flex-start;
+}
+
+.config-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--bg-subtle);
+    color: var(--text-sub);
+    font-family: var(--font-ui);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all var(--t) var(--ease);
+    white-space: nowrap;
+}
+
+.config-toggle-btn:hover:not(:disabled) {
+    border-color: var(--accent-line);
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.config-toggle-btn:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+}
+
+.config-card.open .config-toggle-btn {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+.config-panel-body {
+    display: none;
+    margin-top: 18px;
+}
+
+.config-card.open .config-panel-body {
+    display: block;
+}
+
+.config-note {
+    font-size: 12px;
+    color: var(--text-sub);
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--r3);
+    padding: 12px 14px;
+    margin-bottom: 16px;
+}
+
+.config-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--r3);
+    background: var(--surface);
+}
+
+.config-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 720px;
+}
+
+.config-table thead th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    background: var(--bg-subtle);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 14px;
+}
+
+.config-table tbody td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+    font-size: 13px;
+    color: var(--text);
+}
+
+.config-table tbody tr:hover td {
+    background: var(--bg-subtle);
+}
+
+.config-empty-row td {
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+    padding: 18px 14px;
+}
+
+.config-action-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+}
+
+.config-status {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.config-status.ok {
+    color: var(--green);
+    font-weight: 700;
+}
+
+.config-status.err {
+    color: var(--red);
+    font-weight: 700;
+}
+
+.user-spec-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.user-spec-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--bg-subtle);
+    cursor: pointer;
+    user-select: none;
+    transition: all var(--t) var(--ease);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-sub);
+}
+
+.user-spec-option:hover {
+    border-color: var(--accent-line);
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.user-spec-option input {
+    accent-color: var(--accent);
+    cursor: pointer;
+}
+
+.user-spec-option.active {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.user-spec-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+    background: var(--bg-2);
+    color: var(--text-sub);
+}
+
+.user-spec-badge.active {
+    background: var(--accent);
+    color: #fff;
+}
