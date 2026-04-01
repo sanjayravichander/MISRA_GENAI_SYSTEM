@@ -1,0 +1,769 @@
+{
+  "warning_count": 16,
+  "warnings": [
+    {
+      "warning_id": "",
+      "warning_no": "",
+      "tool_name": "",
+      "category": "MISRA",
+      "checker_name": "",
+      "rule_id": "Rule 8.7",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Global object only used in one function",
+      "file_path": "",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "calculate_total",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "unknown",
+        "found": false,
+        "context_text": "[Source file not found: ]",
+        "context_start_line": null,
+        "context_end_line": null,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 8.7",
+          "description": "Functions and objects should not be defined with external linkage if they are referenced in only one translation unit",
+          "guidelines": "Rule 8.7 (Advisory): Functions and objects should not be defined with external linkage if they are referenced in only one translation unit. This code violates Rule 8.7 because functions and objects should not be defined with external linkage if they are referenced in only one translation unit. Inconsistent declarations and linkage decisions reduce maintainability and can break interface correctness.",
+          "score": 1.1413461334104356
+        },
+        {
+          "rule_id": "Rule 8.9",
+          "description": "An object should be defined at block scope if its identifier only appears in a single function",
+          "guidelines": "Rule 8.9 (Advisory): An object should be defined at block scope if its identifier only appears in a single function. This code violates Rule 8.9 because an object should be defined at block scope if its identifier only appears in a single function. Inconsistent declarations and linkage decisions reduce maintainability and can break interface correctness.",
+          "score": 0.982814438203399
+        },
+        {
+          "rule_id": "Rule 8.5",
+          "description": "An external object or function shall be declared once in one and only one file",
+          "guidelines": "Rule 8.5 (Required): An external object or function shall be declared once in one and only one file. This code violates Rule 8.5 because an external object or function shall be declared once in one and only one file. Inconsistent declarations and linkage decisions reduce maintainability and can break interface correctness.",
+          "score": 0.9784770476149159
+        }
+      ]
+    },
+    {
+      "warning_id": "",
+      "warning_no": "",
+      "tool_name": "",
+      "category": "MISRA",
+      "checker_name": "",
+      "rule_id": "Rule 10.3",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Narrowing conversion",
+      "file_path": "",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "main",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "unknown",
+        "found": false,
+        "context_text": "[Source file not found: ]",
+        "context_start_line": null,
+        "context_end_line": null,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 10.3",
+          "description": "Implicit narrowing conversion",
+          "guidelines": "Rule 10.3 (Required): Implicit narrowing conversion. The value of 'u16val' (uint16_t) is assigned to 'u8val' (uint8_t). This implicit narrowing conversion may silently truncate the value (300 → 44), causing data loss and incorrect program behaviour.",
+          "score": 1.2123138035416243
+        },
+        {
+          "rule_id": "Rule 10.5",
+          "description": "The value of an expression should not be cast to an inappropriate essential type",
+          "guidelines": "uint32_t wide = 300U;\nuint8_t  small = (uint8_t)wide;   /* cast to inappropriate essential type */",
+          "score": 0.8652249576509231
+        },
+        {
+          "rule_id": "Rule 10.8",
+          "description": "The value of a composite expression shall not be cast to a different essential type category or a wider essential type",
+          "guidelines": "uint16_t a, b;\nuint32_t x = (uint32_t)(a + b);   /* cast composite expression to wider category */",
+          "score": 0.8574560409870318
+        },
+        {
+          "rule_id": "Rule 10.4",
+          "description": "Both operands of an operator in which the usual arithmetic conversions are performed shall have the same essential type category",
+          "guidelines": "uint16_t u = 1U;\nint16_t  s = -1;\nif (u < s) { }   /* mixed essential type categories */",
+          "score": 0.8421430539127827
+        }
+      ]
+    },
+    {
+      "warning_id": "",
+      "warning_no": "",
+      "tool_name": "",
+      "category": "MISRA",
+      "checker_name": "",
+      "rule_id": "Rule 21.6",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Standard I/O function used",
+      "file_path": "",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "main",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "unknown",
+        "found": false,
+        "context_text": "[Source file not found: ]",
+        "context_start_line": null,
+        "context_end_line": null,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 21.6",
+          "description": "The standard input/output library <stdio.h> shall not be used",
+          "guidelines": "Rule 21.6 (Required): The standard input/output library <stdio.h> shall not be used. This code violates Rule 21.6 because the standard input/output library <stdio.h> shall not be used. Restricted standard-library features are disallowed because they reduce determinism, analyzability, or portability.",
+          "score": 1.1731633537376176
+        },
+        {
+          "rule_id": "Rule 21.7",
+          "description": "The atof, atoi, atol and atoll functions of <stdlib.h> shall not be used",
+          "guidelines": "Rule 21.7 (Required): The atof, atoi, atol and atoll functions of <stdlib.h> shall not be used. This code violates Rule 21.7 because the atof, atoi, atol and atoll functions of <stdlib.h> shall not be used. Restricted standard-library features are disallowed because they reduce determinism, analyzability, or portability.",
+          "score": 0.9547564056550726
+        }
+      ]
+    },
+    {
+      "warning_id": "",
+      "warning_no": "",
+      "tool_name": "",
+      "category": "MISRA",
+      "checker_name": "",
+      "rule_id": "Rule 2.2",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Statement has no effect",
+      "file_path": "",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "helper_add",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "unknown",
+        "found": false,
+        "context_text": "[Source file not found: ]",
+        "context_start_line": null,
+        "context_end_line": null,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 2.2",
+          "description": "There shall be no dead code",
+          "guidelines": "void f(void)\n{\n    int x = 0;\n    x = x + 1;\n    x;      /* statement has no effect */\n}",
+          "score": 1.077302790921284
+        },
+        {
+          "rule_id": "Rule 21.2",
+          "description": "A reserved identifier or macro name shall not be declared",
+          "guidelines": "int errno;   /* reserved identifier declared */",
+          "score": 0.713331310286254
+        },
+        {
+          "rule_id": "Rule 20.9",
+          "description": "All identifiers used in the controlling expression of #if or #elif shall be #define'd before evaluation",
+          "guidelines": "#if FEATURE_FLAG\n#endif   /* identifier not defined before use */",
+          "score": 0.7079732503997082
+        },
+        {
+          "rule_id": "Rule 14.4",
+          "description": "Non-Boolean if-controlling expression",
+          "guidelines": "int count = 10;\n/* non-Boolean controlling expression */\nif (count) {\n    do_something();\n}",
+          "score": 0.7050238783334417
+        }
+      ]
+    },
+    {
+      "warning_id": "",
+      "warning_no": "",
+      "tool_name": "",
+      "category": "MISRA",
+      "checker_name": "",
+      "rule_id": "Rule 13.2",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Evaluation order side effects",
+      "file_path": "",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "update_index",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "unknown",
+        "found": false,
+        "context_text": "[Source file not found: ]",
+        "context_start_line": null,
+        "context_end_line": null,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 13.2",
+          "description": "The value of an expression and its persistent side effects shall be the same under all permitted evaluation orders",
+          "guidelines": "Rule 13.2 (Required): The value of an expression and its persistent side effects shall be the same under all permitted evaluation orders. This code violates Rule 13.2 because the value of an expression and its persistent side effects shall be the same under all permitted evaluation orders. Side effects in complex expressions make behaviour harder to predict and verify.",
+          "score": 1.2089508831598557
+        },
+        {
+          "rule_id": "Rule 13.3",
+          "description": "A full expression containing an increment or decrement operator should have no other potential side effects other than that caused by the increment or decrement operator",
+          "guidelines": "Rule 13.3 (Advisory): A full expression containing an increment or decrement operator should have no other potential side effects other than that caused by the increment or decrement operator. This code violates Rule 13.3 because a full expression containing an increment or decrement operator should have no other potential side effects other than that caused by the increment or decrement operator. Side effects in complex expressions make behaviour harder to predict and verify.",
+          "score": 0.9650170484182881
+        }
+      ]
+    },
+    {
+      "warning_id": "",
+      "warning_no": "",
+      "tool_name": "",
+      "category": "MISRA",
+      "checker_name": "",
+      "rule_id": "Rule 2.1",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Unreachable code detected",
+      "file_path": "",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "early_return",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "unknown",
+        "found": false,
+        "context_text": "[Source file not found: ]",
+        "context_start_line": null,
+        "context_end_line": null,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 2.1",
+          "description": "A project shall not contain unreachable code",
+          "guidelines": "Rule 2.1 (Required): A project shall not contain unreachable code. This code violates Rule 2.1 because a project shall not contain unreachable code. Unused, dead, or unreachable constructs increase maintenance cost and can hide real defects.",
+          "score": 1.200286453722892
+        },
+        {
+          "rule_id": "Rule 2.2",
+          "description": "There shall be no dead code",
+          "guidelines": "Rule 2.2 (Required): There shall be no dead code. This code violates Rule 2.2 because there shall be no dead code. Unused, dead, or unreachable constructs increase maintenance cost and can hide real defects.",
+          "score": 0.9557642449338313
+        }
+      ]
+    },
+    {
+      "warning_id": "",
+      "warning_no": "",
+      "tool_name": "",
+      "category": "MISRA",
+      "checker_name": "",
+      "rule_id": "Rule 17.2",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Recursive function detected",
+      "file_path": "",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "factorial",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "unknown",
+        "found": false,
+        "context_text": "[Source file not found: ]",
+        "context_start_line": null,
+        "context_end_line": null,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 17.2",
+          "description": "Functions shall not call themselves, either directly or indirectly",
+          "guidelines": "Rule 17.2 (Required): Functions shall not call themselves, either directly or indirectly. This code violates Rule 17.2 because functions shall not call themselves, either directly or indirectly. Function interfaces and calls must be explicit, safe, and consistently used.",
+          "score": 1.115598166744864
+        },
+        {
+          "rule_id": "Rule 17.3",
+          "description": "A function shall not be declared implicitly",
+          "guidelines": "Rule 17.3 (Mandatory): A function shall not be declared implicitly. This code violates Rule 17.3 because a function shall not be declared implicitly. Function interfaces and calls must be explicit, safe, and consistently used.",
+          "score": 0.9170755591945329
+        },
+        {
+          "rule_id": "Rule 17.8",
+          "description": "A function parameter should not be modified",
+          "guidelines": "Rule 17.8 (Advisory): A function parameter should not be modified. This code violates Rule 17.8 because a function parameter should not be modified. Function interfaces and calls must be explicit, safe, and consistently used.",
+          "score": 0.9162744214110266
+        }
+      ]
+    },
+    {
+      "warning_id": "",
+      "warning_no": "",
+      "tool_name": "",
+      "category": "MISRA",
+      "checker_name": "",
+      "rule_id": "Rule 9.1",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Variable used before initialization",
+      "file_path": "",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "read_sensor",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "unknown",
+        "found": false,
+        "context_text": "[Source file not found: ]",
+        "context_start_line": null,
+        "context_end_line": null,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 9.1",
+          "description": "Non-initialized local variable",
+          "guidelines": "Rule 9.1 (Mandatory): Non-initialized local variable. Variable 'x' is read before being assigned a value. Reading an automatic variable before it is set leads to undefined behaviour and unpredictable results.",
+          "score": 1.235335269761249
+        },
+        {
+          "rule_id": "Rule 9.4",
+          "description": "An element of an object shall not be initialized more than once",
+          "guidelines": "Rule 9.4 (Required): An element of an object shall not be initialized more than once. This code violates Rule 9.4 because an element of an object shall not be initialized more than once. Incorrect initialization can leave objects in unexpected states and introduce subtle runtime defects.",
+          "score": 0.9825358790250922
+        },
+        {
+          "rule_id": "Rule 9.2",
+          "description": "Braces shall be used to indicate and match the structure in the non-zero initialization of arrays and structures",
+          "guidelines": "Rule 9.2 (Required): Braces shall be used to indicate and match the structure in the non-zero initialization of arrays and structures. This code violates Rule 9.2 because braces shall be used to indicate and match the structure in the non-zero initialization of arrays and structures. Incorrect initialization can leave objects in unexpected states and introduce subtle runtime defects.",
+          "score": 0.954699325850275
+        },
+        {
+          "rule_id": "Rule 9.5",
+          "description": "Where designated initializers are used to initialize an array object, the size of the array shall be specified explicitly",
+          "guidelines": "Rule 9.5 (Required): Where designated initializers are used to initialize an array object, the size of the array shall be specified explicitly. This code violates Rule 9.5 because where designated initializers are used to initialize an array object, the size of the array shall be specified explicitly. Incorrect initialization can leave objects in unexpected states and introduce subtle runtime defects.",
+          "score": 0.9534321086537573
+        }
+      ]
+    },
+    {
+      "warning_id": "",
+      "warning_no": "",
+      "tool_name": "",
+      "category": "MISRA",
+      "checker_name": "",
+      "rule_id": "Rule 10.3",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Narrowing conversion",
+      "file_path": "",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "scale_value",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "unknown",
+        "found": false,
+        "context_text": "[Source file not found: ]",
+        "context_start_line": null,
+        "context_end_line": null,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 10.3",
+          "description": "Implicit narrowing conversion",
+          "guidelines": "Rule 10.3 (Required): Implicit narrowing conversion. The value of 'u16val' (uint16_t) is assigned to 'u8val' (uint8_t). This implicit narrowing conversion may silently truncate the value (300 → 44), causing data loss and incorrect program behaviour.",
+          "score": 1.2123138035416243
+        },
+        {
+          "rule_id": "Rule 10.5",
+          "description": "The value of an expression should not be cast to an inappropriate essential type",
+          "guidelines": "uint32_t wide = 300U;\nuint8_t  small = (uint8_t)wide;   /* cast to inappropriate essential type */",
+          "score": 0.8652249576509231
+        },
+        {
+          "rule_id": "Rule 10.8",
+          "description": "The value of a composite expression shall not be cast to a different essential type category or a wider essential type",
+          "guidelines": "uint16_t a, b;\nuint32_t x = (uint32_t)(a + b);   /* cast composite expression to wider category */",
+          "score": 0.8574560409870318
+        },
+        {
+          "rule_id": "Rule 10.4",
+          "description": "Both operands of an operator in which the usual arithmetic conversions are performed shall have the same essential type category",
+          "guidelines": "uint16_t u = 1U;\nint16_t  s = -1;\nif (u < s) { }   /* mixed essential type categories */",
+          "score": 0.8421430539127827
+        }
+      ]
+    },
+    {
+      "warning_id": "",
+      "warning_no": "",
+      "tool_name": "",
+      "category": "MISRA",
+      "checker_name": "",
+      "rule_id": "Rule 8.13",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Pointer parameter should be const",
+      "file_path": "",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "log_message",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "unknown",
+        "found": false,
+        "context_text": "[Source file not found: ]",
+        "context_start_line": null,
+        "context_end_line": null,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 8.13",
+          "description": "A pointer should point to a const-qualified type whenever possible",
+          "guidelines": "Rule 8.13 (Advisory): A pointer should point to a const-qualified type whenever possible. This code violates Rule 8.13 because a pointer should point to a const-qualified type whenever possible. Inconsistent declarations and linkage decisions reduce maintainability and can break interface correctness.",
+          "score": 1.216612272782788
+        },
+        {
+          "rule_id": "Rule 8.3",
+          "description": "All declarations of an object or function shall use the same names and type qualifiers",
+          "guidelines": "extern const int limit;\nextern int limit;   /* qualifiers differ */",
+          "score": 0.9106969702274185
+        },
+        {
+          "rule_id": "Rule 8.9",
+          "description": "An object should be defined at block scope if its identifier only appears in a single function",
+          "guidelines": "int temp_result;   /* only used inside one function */",
+          "score": 0.8937435351154986
+        },
+        {
+          "rule_id": "Rule 8.2",
+          "description": "Function types shall be in prototype form with named parameters",
+          "guidelines": "int process(a, b)\nint a;\nint b;\n{\n    return a + b;\n}",
+          "score": 0.8876576463074876
+        }
+      ]
+    },
+    {
+      "warning_id": "",
+      "warning_no": "",
+      "tool_name": "",
+      "category": "MISRA",
+      "checker_name": "",
+      "rule_id": "Rule 17.7",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Return value ignored",
+      "file_path": "",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "log_message",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "unknown",
+        "found": false,
+        "context_text": "[Source file not found: ]",
+        "context_start_line": null,
+        "context_end_line": null,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 17.7",
+          "description": "The value returned by a function having non-void return type shall be used",
+          "guidelines": "Rule 17.7 (Required): The value returned by a function having non-void return type shall be used. This code violates Rule 17.7 because the value returned by a function having non-void return type shall be used. Function interfaces and calls must be explicit, safe, and consistently used.",
+          "score": 1.1398804527522515
+        },
+        {
+          "rule_id": "Rule 17.8",
+          "description": "A function parameter should not be modified",
+          "guidelines": "Rule 17.8 (Advisory): A function parameter should not be modified. This code violates Rule 17.8 because a function parameter should not be modified. Function interfaces and calls must be explicit, safe, and consistently used.",
+          "score": 0.9182658722063646
+        },
+        {
+          "rule_id": "Rule 17.3",
+          "description": "A function shall not be declared implicitly",
+          "guidelines": "Rule 17.3 (Mandatory): A function shall not be declared implicitly. This code violates Rule 17.3 because a function shall not be declared implicitly. Function interfaces and calls must be explicit, safe, and consistently used.",
+          "score": 0.9097980437912707
+        },
+        {
+          "rule_id": "Rule 17.4",
+          "description": "All exit paths from a function with non-void return type shall have an explicit return statement with an expression",
+          "guidelines": "Rule 17.4 (Mandatory): All exit paths from a function with non-void return type shall have an explicit return statement with an expression. This code violates Rule 17.4 because all exit paths from a function with non-void return type shall have an explicit return statement with an expression. Function interfaces and calls must be explicit, safe, and consistently used.",
+          "score": 0.9066774683530848
+        }
+      ]
+    },
+    {
+      "warning_id": "",
+      "warning_no": "",
+      "tool_name": "",
+      "category": "MISRA",
+      "checker_name": "",
+      "rule_id": "Rule 14.4",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Controlling expression not Boolean",
+      "file_path": "",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "stop_motor",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "unknown",
+        "found": false,
+        "context_text": "[Source file not found: ]",
+        "context_start_line": null,
+        "context_end_line": null,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 14.4",
+          "description": "Non-Boolean if-controlling expression",
+          "guidelines": "Rule 14.4 (Required): Non-Boolean if-controlling expression. The controlling expression of the 'if' statement is 'count', an integer, not an essentially Boolean type. Using non-Boolean values as conditions reduces readability and may mask logic errors where the value is non-zero but not the intended condition.",
+          "score": 1.225249286077883
+        },
+        {
+          "rule_id": "Rule 14.3",
+          "description": "Controlling expressions shall not be invariant",
+          "guidelines": "Rule 14.3 (Required): Controlling expressions shall not be invariant. This code violates Rule 14.3 because controlling expressions shall not be invariant. Loop and condition forms should make control flow explicit, safe, and reviewable.",
+          "score": 0.994353228868702
+        }
+      ]
+    },
+    {
+      "warning_id": "",
+      "warning_no": "",
+      "tool_name": "",
+      "category": "MISRA",
+      "checker_name": "",
+      "rule_id": "Rule 14.1",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Loop never executes",
+      "file_path": "",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "spin_wait",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "unknown",
+        "found": false,
+        "context_text": "[Source file not found: ]",
+        "context_start_line": null,
+        "context_end_line": null,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 14.1",
+          "description": "A loop counter shall not have essentially floating type",
+          "guidelines": "Rule 14.1 (Required): A loop counter shall not have essentially floating type. This code violates Rule 14.1 because a loop counter shall not have essentially floating type. Loop and condition forms should make control flow explicit, safe, and reviewable.",
+          "score": 1.1267396519514024
+        },
+        {
+          "rule_id": "Rule 14.3",
+          "description": "Controlling expressions shall not be invariant",
+          "guidelines": "Rule 14.3 (Required): Controlling expressions shall not be invariant. This code violates Rule 14.3 because controlling expressions shall not be invariant. Loop and condition forms should make control flow explicit, safe, and reviewable.",
+          "score": 0.9386675498182923
+        },
+        {
+          "rule_id": "Rule 14.2",
+          "description": "A for loop shall be well-formed",
+          "guidelines": "Rule 14.2 (Required): A for loop shall be well-formed. This code violates Rule 14.2 because a for loop shall be well-formed. Loop and condition forms should make control flow explicit, safe, and reviewable.",
+          "score": 0.9369856767325453
+        }
+      ]
+    },
+    {
+      "warning_id": "",
+      "warning_no": "",
+      "tool_name": "",
+      "category": "MISRA",
+      "checker_name": "",
+      "rule_id": "Rule 17.8",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Function parameter modified",
+      "file_path": "",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "parse_frame",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "unknown",
+        "found": false,
+        "context_text": "[Source file not found: ]",
+        "context_start_line": null,
+        "context_end_line": null,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 17.8",
+          "description": "A function parameter should not be modified",
+          "guidelines": "Rule 17.8 (Advisory): A function parameter should not be modified. This code violates Rule 17.8 because a function parameter should not be modified. Function interfaces and calls must be explicit, safe, and consistently used.",
+          "score": 1.23681617649927
+        },
+        {
+          "rule_id": "Rule 17.3",
+          "description": "A function shall not be declared implicitly",
+          "guidelines": "Rule 17.3 (Mandatory): A function shall not be declared implicitly. This code violates Rule 17.3 because a function shall not be declared implicitly. Function interfaces and calls must be explicit, safe, and consistently used.",
+          "score": 0.9389920920108905
+        },
+        {
+          "rule_id": "Rule 17.5",
+          "description": "The function argument corresponding to a parameter declared to have an array type shall have an appropriate number of elements",
+          "guidelines": "Rule 17.5 (Advisory): The function argument corresponding to a parameter declared to have an array type shall have an appropriate number of elements. This code violates Rule 17.5 because the function argument corresponding to a parameter declared to have an array type shall have an appropriate number of elements. Function interfaces and calls must be explicit, safe, and consistently used.",
+          "score": 0.9355780191151725
+        }
+      ]
+    },
+    {
+      "warning_id": "",
+      "warning_no": "",
+      "tool_name": "",
+      "category": "MISRA",
+      "checker_name": "",
+      "rule_id": "Rule 12.2",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Shift range issue",
+      "file_path": "",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "make_mask",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "unknown",
+        "found": false,
+        "context_text": "[Source file not found: ]",
+        "context_start_line": null,
+        "context_end_line": null,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 12.2",
+          "description": "The right hand operand of a shift operator shall lie between zero and one less than the width in bits of the essential type of the left hand operand",
+          "guidelines": "Rule 12.2 (Required): The right hand operand of a shift operator shall lie between zero and one less than the width in bits of the essential type of the left hand operand. This code violates Rule 12.2 because the right hand operand of a shift operator shall lie between zero and one less than the width in bits of the essential type of the left hand operand. Expression complexity and unsafe shifts can hide errors and make evaluation harder to reason about.",
+          "score": 1.1487618618250905
+        },
+        {
+          "rule_id": "Rule 10.3",
+          "description": "Implicit narrowing conversion",
+          "guidelines": "Rule 10.3 (Required): Implicit narrowing conversion. The value of 'u16val' (uint16_t) is assigned to 'u8val' (uint8_t). This implicit narrowing conversion may silently truncate the value (300 → 44), causing data loss and incorrect program behaviour.",
+          "score": 0.7486929122319627
+        }
+      ]
+    },
+    {
+      "warning_id": "",
+      "warning_no": "",
+      "tool_name": "",
+      "category": "MISRA",
+      "checker_name": "",
+      "rule_id": "Rule 9.1",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Variable used before initialization",
+      "file_path": "",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "func",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "unknown",
+        "found": false,
+        "context_text": "[Source file not found: ]",
+        "context_start_line": null,
+        "context_end_line": null,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 9.1",
+          "description": "Non-initialized local variable",
+          "guidelines": "Rule 9.1 (Mandatory): Non-initialized local variable. Variable 'x' is read before being assigned a value. Reading an automatic variable before it is set leads to undefined behaviour and unpredictable results.",
+          "score": 1.235335269761249
+        },
+        {
+          "rule_id": "Rule 9.4",
+          "description": "An element of an object shall not be initialized more than once",
+          "guidelines": "Rule 9.4 (Required): An element of an object shall not be initialized more than once. This code violates Rule 9.4 because an element of an object shall not be initialized more than once. Incorrect initialization can leave objects in unexpected states and introduce subtle runtime defects.",
+          "score": 0.9825358790250922
+        },
+        {
+          "rule_id": "Rule 9.2",
+          "description": "Braces shall be used to indicate and match the structure in the non-zero initialization of arrays and structures",
+          "guidelines": "Rule 9.2 (Required): Braces shall be used to indicate and match the structure in the non-zero initialization of arrays and structures. This code violates Rule 9.2 because braces shall be used to indicate and match the structure in the non-zero initialization of arrays and structures. Incorrect initialization can leave objects in unexpected states and introduce subtle runtime defects.",
+          "score": 0.954699325850275
+        },
+        {
+          "rule_id": "Rule 9.5",
+          "description": "Where designated initializers are used to initialize an array object, the size of the array shall be specified explicitly",
+          "guidelines": "Rule 9.5 (Required): Where designated initializers are used to initialize an array object, the size of the array shall be specified explicitly. This code violates Rule 9.5 because where designated initializers are used to initialize an array object, the size of the array shall be specified explicitly. Incorrect initialization can leave objects in unexpected states and introduce subtle runtime defects.",
+          "score": 0.9534321086537573
+        }
+      ]
+    }
+  ]
+}

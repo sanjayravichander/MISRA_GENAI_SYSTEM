@@ -1,0 +1,32 @@
+{
+  "warning_count": 3,
+  "results": [
+    {
+      "warning_id": "2980",
+      "rule_id": "Rule 2.2",
+      "fix_suggestions": [],
+      "parse_error": true,
+      "explanation": {
+        "summary": "Expecting ',' delimiter: line 8 column 4 (char 367)"
+      }
+    },
+    {
+      "warning_id": "400",
+      "rule_id": "Rule 13.2",
+      "fix_suggestions": [],
+      "parse_error": true,
+      "explanation": {
+        "summary": "Requested tokens (2857) exceed context window of 2048"
+      }
+    },
+    {
+      "warning_id": "1460",
+      "rule_id": "Rule 2.1",
+      "fix_suggestions": [],
+      "parse_error": true,
+      "explanation": {
+        "summary": "Requested tokens (2618) exceed context window of 2048"
+      }
+    }
+  ]
+}

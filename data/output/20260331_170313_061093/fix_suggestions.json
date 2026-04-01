@@ -1,0 +1,124 @@
+{
+  "warning_count": 2,
+  "results": [
+    {
+      "guideline_id": "Rule 10.3",
+      "guideline_title": "Implicit narrowing conversion",
+      "explanation": {
+        "summary": "The value of 'total' (int) is assigned to 'small' (uint8_t). This implicit narrowing conversion may silently truncate the value (332 → 44), causing data loss and incorrect program behaviour.",
+        "rule_basis": "Rule 10.3 (Required): Implicit narrowing conversion.",
+        "code_evidence": "The code snippet provided shows an implicit narrowing conversion from int to uint8_t."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Explicit cast",
+          "why": "Prevent data loss by using an explicit cast.",
+          "patched_code": "28      small = (uint8_t)total + 300;\n      29",
+          "compliance_notes": "This fix ensures that the value of 'total' is correctly converted to 'uint8_t' without data loss.",
+          "risk_reduction": "High"
+        },
+        {
+          "rank": 2,
+          "title": "Use a larger data type",
+          "why": "Avoid implicit narrowing conversions by using a larger data type that can hold the original value.",
+          "patched_code": "24      int8_t small;\n      25",
+          "compliance_notes": "Changing the data type of 'small' to 'int8_t' allows it to hold the original value of 'total' without data loss.",
+          "risk_reduction": "Medium"
+        }
+      ],
+      "risk_analysis": {
+        "severity": "High",
+        "why": "The implicit narrowing conversion may cause data loss and incorrect program behaviour.",
+        "potential_failures": [
+          "Data loss due to truncation",
+          "Incorrect program behaviour due to data loss"
+        ],
+        "runtime_risk": "High",
+        "maintainability_risk": "High"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Implement one of the provided fix suggestions.",
+        "required_justification": "Implicit narrowing conversions are not allowed according to MISRA2012-RULE-10_3.",
+        "review_notes": "Ensure that the fix does not introduce new issues or complications."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "ac195ae8-bb0d-484f-9b1e-b777db09c5cc",
+          "5f982fcc-83fe-4c58-a8d3-c057556e444c",
+          "aaa6f4e4-6864-48f8-a3fe-9638bf2ac909"
+        ],
+        "retrieval_score_raw": 0.806273,
+        "retrieval_score_reranked": 1.236273,
+        "confidence": 0.99,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear consistent.",
+          "Rejected 'Use a temporary variable': Patch declares new variable(s) not present in original snippet. Cannot verify these are safe to introduce."
+        ]
+      },
+      "warning_id": "PS002",
+      "source": "final_cache"
+    },
+    {
+      "guideline_id": "Rule 21.6",
+      "guideline_title": "The standard input/output library <stdio.h> shall not be used",
+      "explanation": {
+        "summary": "The standard input/output library <stdio.h> is being used, which is a violation of MISRA2012-RULE-21_6.",
+        "rule_basis": "This code violates MISRA2012-RULE-21_6 because the standard input/output library <stdio.h> shall not be used. Restricted standard-library features are disallowed because they reduce determinism, analyzability, or portability.",
+        "code_evidence": "The use of printf function in line 30."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Replace printf with a safer alternative",
+          "why": "The printf function is not compliant with MISRA2012-RULE-21_6. Replacing it with a safer alternative will ensure compliance.",
+          "patched_code": "std::cout << total << std::endl;",
+          "compliance_notes": "Using the standard library's iostream instead of printf ensures compliance with MISRA2012-RULE-21_6.",
+          "risk_reduction": "Using a safer alternative reduces the risk of non-compliance and potential runtime errors."
+        },
+        {
+          "rank": 2,
+          "title": "Use a logging library",
+          "why": "Using a logging library will ensure that the standard input/output library is not used directly and provide additional logging capabilities.",
+          "patched_code": "// Add a logging library and use it instead of printf",
+          "compliance_notes": "Using a logging library ensures compliance with MISRA2012-RULE-21_6.",
+          "risk_reduction": "Using a logging library reduces the risk of non-compliance and potential runtime errors."
+        }
+      ],
+      "risk_analysis": {
+        "severity": "Medium",
+        "why": "The use of the standard input/output library <stdio.h> can lead to non-compliance and potential runtime errors.",
+        "potential_failures": [
+          "Non-compliance with MISRA2012-RULE-21_6",
+          "Runtime errors due to the use of the standard input/output library"
+        ],
+        "runtime_risk": "Medium",
+        "maintainability_risk": "Medium"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Implement one of the provided fix suggestions to ensure compliance with MISRA2012-RULE-21_6.",
+        "required_justification": "Non-compliance with MISRA2012-RULE-21_6 can lead to potential runtime errors and reduced portability.",
+        "review_notes": "Ensure that all instances of the standard input/output library <stdio.h> are replaced with compliant alternatives."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "73009af8-3657-49d1-9e1e-3bbb9703614d",
+          "ae5fc129-e704-4b08-9b30-c09715775425",
+          "cbe32b38-a8cf-4356-8262-b59826738cb7",
+          "86425e25-e71e-4250-8a49-4bb78c2f1a17"
+        ],
+        "retrieval_score_raw": 0.749718,
+        "retrieval_score_reranked": 1.179718,
+        "confidence": 0.9497180000000001,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear inconsistent. The warning text suggests a violation of Rule 21.6, but the retrieved context also mentions Rule 21.7. It is unclear if the code violates both rules or just Rule 21.6.",
+          "Rejected 'Use a custom function to print the value': Patch declares new variable(s) not present in original snippet. Cannot verify these are safe to introduce."
+        ]
+      },
+      "warning_id": "PS003",
+      "source": "final_cache"
+    }
+  ]
+}

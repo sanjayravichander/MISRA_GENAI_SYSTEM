@@ -6,11 +6,12 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <title>SRM Technologies — MISRA Compliance Reviewer</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <!-- SheetJS for client-side Excel parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 
 <body>
 
-  <!-- ── HEADER ─────────────────────────────────────────── -->
   <header class="site-header">
     <div class="header-inner">
       <a class="logo-lockup" href="/">
@@ -27,53 +28,55 @@
           <div class="logo-sub">MISRA Compliance Reviewer</div>
         </div>
       </a>
+      <div class="header-divider"></div>
       <div class="header-tags">
         <span class="header-tag">MISRA-C 2012</span>
-        <span class="header-tag">Source Code Analyser</span>
+        <span class="header-tag">QAC Compatible</span>
       </div>
       <div class="header-status">
-        <div class="status-dot"></div>
-        Ready
+        <div class="status-dot"></div>Ready
       </div>
     </div>
   </header>
 
-  <!-- ── HERO ──────────────────────────────────────────── -->
   <section class="page-hero">
     <div class="hero-grid"></div>
+    <div class="hero-torii"></div>
     <div class="container">
-      <div class="hero-eyebrow">
-        <span class="hero-eyebrow-dot"></span>
-        SRM Technologies · Internal Tool
+      <div class="hero-eyebrow"><span class="hero-eyebrow-dot"></span>SRM Technologies · Automotive Software Quality
       </div>
       <h1>MISRA-C <span class="highlight">Compliance</span><br />Fix Reviewer</h1>
-      <p>Upload your warning report and source code file. The system reads each
-        violation, looks up the relevant rule, and suggests clear fixes —
-        so your team can review and apply them with confidence.</p>
+      <p>Upload your QAC warning report and source code files. The system maps each violation to its MISRA rule,
+        surfaces verified fix templates, and generates intelligent suggestions.</p>
       <div class="cap-chips">
-        <span class="cap-chip"><span class="cap-chip-dot"></span>Advisory / Required / Mandatory</span>
-        <span class="cap-chip"><span class="cap-chip-dot"></span>Polyspace Compatible</span>
-        <span class="cap-chip"><span class="cap-chip-dot"></span>Ranked Fix Suggestions</span>
-        <span class="cap-chip"><span class="cap-chip-dot"></span>Quality Checked Results</span>
+        <span class="cap-chip"><span class="cap-chip-dot"></span>Advisory · Required · Mandatory</span>
+        <span class="cap-chip"><span class="cap-chip-dot"></span>QAC Compatible</span>
+        <span class="cap-chip"><span class="cap-chip-dot"></span>DB-Verified Fix Templates</span>
       </div>
     </div>
   </section>
   <div class="section-line"></div>
 
-  <!-- ── MAIN ──────────────────────────────────────────── -->
   <main class="main-content">
     <div class="container">
 
-      <!-- Upload Panel -->
       <div class="panel" id="upload-card">
         <div class="panel-heading">
           <div class="panel-title">Upload Files</div>
-          <span class="panel-tag">Step 1 of 1</span>
+          <span class="panel-tag">Step 1</span>
+          <button class="settings-icon-btn" id="open-settings-btn" title="Configure MISRA rules"
+            onclick="openSettingsModal()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+              stroke-linecap="round">
+              <circle cx="12" cy="12" r="3" />
+              <path
+                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
+            Rule Config
+          </button>
         </div>
 
-        <!-- File zones -->
         <div class="upload-grid">
-          <!-- Warning report -->
           <div>
             <div class="drop-zone" id="excel-zone">
               <input type="file" id="excel-input" accept=".xlsx,.xls" />
@@ -85,14 +88,12 @@
                   <path d="M7 13l2 2 4-4" />
                 </svg>
               </div>
-              <div class="drop-label">Warning Report</div>
-              <div class="drop-sub">Your Polyspace export — drop here or click to browse</div>
+              <div class="drop-label">QAC Warning Report</div>
+              <div class="drop-sub">Drop here or click to browse</div>
               <div class="drop-accept">.xlsx &nbsp;·&nbsp; .xls</div>
               <div class="file-list" id="excel-list"></div>
             </div>
           </div>
-
-          <!-- Source file -->
           <div>
             <div class="drop-zone" id="c-zone">
               <input type="file" id="c-input" accept=".c,.h" multiple />
@@ -105,127 +106,103 @@
                   <line x1="16" y1="17" x2="8" y2="17" />
                 </svg>
               </div>
-              <div class="drop-label">C Source File(s)</div>
-              <div class="drop-sub">The .c or .h files mentioned in the warning report</div>
-              <div class="drop-accept">.c &nbsp;·&nbsp; .h &nbsp;·&nbsp; one or more files</div>
+              <div class="drop-label">C Source Files</div>
+              <div class="drop-sub">Drop here or click to browse</div>
+              <div class="drop-accept">.c &nbsp;·&nbsp; .h &nbsp;·&nbsp; one or more</div>
               <div class="file-list" id="c-list"></div>
             </div>
           </div>
         </div>
 
-        <!-- MISRA Rule Category Selector -->
+        <!-- MISRA category radio (none selected by default) -->
         <div class="misra-category-section">
-          <div class="misra-category-label">Which type of MISRA rules should be reviewed?</div>
-          <div class="misra-category-sub">
-            Select one or more. Your results will be filtered to show only the rule types you choose.
-            If none are selected, all violations will be shown.
-          </div>
+          <div class="misra-category-label">Filter by MISRA Rule Category</div>
+          <div class="misra-category-sub">Select one to scope analysis to that category. Leave all unselected to analyse
+            all rules.</div>
           <div class="misra-options">
-
             <label class="misra-option">
               <input type="checkbox" name="misra_category" value="advisory" id="cat-advisory" />
               <div class="misra-option-card">
                 <div class="misra-option-title">
-                  <div class="misra-check">
-                    <svg viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <div class="misra-check"><svg viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round">
                       <polyline points="1 4 4 7 9 1" />
-                    </svg>
-                  </div>
-                  Advisory
+                    </svg></div>Advisory
                 </div>
                 <span class="misra-option-badge badge-advisory">Advisory</span>
-                <div class="misra-option-desc">Recommended good practices. Not strictly required but strongly encouraged
-                  for safe code.</div>
+                <div class="misra-option-desc">Recommended practices — not strictly required.</div>
               </div>
             </label>
-
             <label class="misra-option">
               <input type="checkbox" name="misra_category" value="required" id="cat-required" />
               <div class="misra-option-card">
                 <div class="misra-option-title">
-                  <div class="misra-check">
-                    <svg viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <div class="misra-check"><svg viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round">
                       <polyline points="1 4 4 7 9 1" />
-                    </svg>
-                  </div>
-                  Required
+                    </svg></div>Required
                 </div>
                 <span class="misra-option-badge badge-required">Required</span>
-                <div class="misra-option-desc">Rules that must be followed unless a formal exception is documented and
-                  approved.</div>
+                <div class="misra-option-desc">Must follow unless formal deviation is documented.</div>
               </div>
             </label>
-
             <label class="misra-option">
               <input type="checkbox" name="misra_category" value="mandatory" id="cat-mandatory" />
               <div class="misra-option-card">
                 <div class="misra-option-title">
-                  <div class="misra-check">
-                    <svg viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <div class="misra-check"><svg viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round">
                       <polyline points="1 4 4 7 9 1" />
-                    </svg>
-                  </div>
-                  Mandatory
+                    </svg></div>Mandatory
                 </div>
                 <span class="misra-option-badge badge-mandatory">Mandatory</span>
-                <div class="misra-option-desc">Strictest rules. No exceptions allowed. These must always be fixed before
-                  release.</div>
+                <div class="misra-option-desc">No exceptions permitted. Always fix before release.</div>
               </div>
             </label>
-
           </div>
+          <button class="clear-cat-btn hidden" id="clear-cat-btn" onclick="clearCategorySelection()">&#x2715; Clear —
+            analyse all rules</button>
         </div>
 
-        <!-- Batch size (shown when multiple files) -->
-        <div class="config-row" id="batch-row" style="display:none;">
-          <div>
-            <div class="config-label">How many warnings to process in one go?</div>
-            <div class="config-sub">Each warning takes time to analyse. Start small if you just want a quick review.
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:12px;">
-            <div class="batch-stepper">
-              <button type="button" id="batch-minus" aria-label="Decrease">−</button>
-              <input type="number" id="batch-size" name="batch_size" min="1" max="15" value="{{ default_batch }}" />
-              <button type="button" id="batch-plus" aria-label="Increase">+</button>
-            </div>
-            <span class="batch-hint-text">warnings (1–15)</span>
-          </div>
-        </div>
-
-        <!-- Error -->
         <div id="upload-error" class="error-panel mt-16 hidden"></div>
 
-        <!-- Action row -->
-        <div class="action-row">
-          <button class="btn btn-primary" id="run-btn" disabled>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-              <polygon points="5 3 19 12 5 21 5 3" />
-            </svg>
-            Start Review
-          </button>
-          <span class="file-meta-text" id="file-summary"></span>
+        <!-- File-warning mapping (shown after upload) -->
+        <div id="file-mapping-section" class="hidden">
+          <div class="fmap-header">
+            <div class="fmap-title">Source Files &amp; Mapped Warnings</div>
+            <div class="fmap-sub">Expand each file to see its warnings. Run analysis per file or all at once.</div>
+          </div>
+          <div id="file-map-list"></div>
+          <div class="action-row" style="margin-top:16px">
+            <button class="btn btn-primary" id="run-all-btn">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 3 19 12 5 21 5 3" />
+              </svg>
+              Run Analysis — All Files
+            </button>
+            <span class="file-meta-text" id="file-summary"></span>
+          </div>
         </div>
-      </div><!-- /upload-card -->
+      </div>
 
-      <!-- Progress Panel -->
+      <!-- Progress panel -->
       <div class="panel" id="progress-panel">
         <div class="panel-heading">
           <div class="panel-title">Review in Progress</div>
-          <span class="panel-tag">Live</span>
+          <span class="panel-tag"
+            style="background:rgba(192,57,43,.07);color:var(--red);border-color:rgba(192,57,43,.2);">
+            <span
+              style="display:inline-block;width:6px;height:6px;background:var(--red);border-radius:50%;margin-right:5px;vertical-align:middle;animation:pulse-dot 1.2s infinite;"></span>Live
+          </span>
         </div>
-
-        <!-- Amazon-style stepper -->
         <div class="pipeline-track" id="phase-list">
-
           <div class="phase-item" id="ph-6a">
             <div class="phase-badge">1</div>
             <div class="phase-content">
-              <div class="phase-name">Reading your file</div>
+              <div class="phase-name">Reading file</div>
               <div class="phase-detail">Waiting…</div>
             </div>
           </div>
-
           <div class="phase-item" id="ph-6b">
             <div class="phase-badge">2</div>
             <div class="phase-content">
@@ -233,23 +210,20 @@
               <div class="phase-detail">Waiting…</div>
             </div>
           </div>
-
           <div class="phase-item" id="ph-7">
             <div class="phase-badge">3</div>
             <div class="phase-content">
-              <div class="phase-name">Creating fix suggestions</div>
+              <div class="phase-name">Fix suggestions</div>
               <div class="phase-detail">Waiting…</div>
             </div>
           </div>
-
           <div class="phase-item" id="ph-8">
             <div class="phase-badge">4</div>
             <div class="phase-content">
-              <div class="phase-name">Checking fix quality</div>
+              <div class="phase-name">Quality check</div>
               <div class="phase-detail">Waiting…</div>
             </div>
           </div>
-
           <div class="phase-item" id="ph-done">
             <div class="phase-badge">5</div>
             <div class="phase-content">
@@ -257,15 +231,9 @@
               <div class="phase-detail">Waiting…</div>
             </div>
           </div>
-
         </div>
-
-        <!-- Live feed -->
         <div id="stream-table-wrap" class="stream-section hidden">
-          <div class="stream-header">
-            <span class="live-dot"></span>
-            <span class="stream-title">Live Feed</span>
-          </div>
+          <div class="stream-header"><span class="live-dot"></span><span class="stream-title">Live Feed</span></div>
           <table class="stream-table" id="stream-table">
             <thead>
               <tr>
@@ -279,26 +247,66 @@
             <tbody id="stream-tbody"></tbody>
           </table>
         </div>
-
-        <!-- Overall progress bar -->
-        <div class="progress-section">
-          <div class="progress-header">
-            <span class="progress-label-text">Overall Progress</span>
-            <span class="progress-pct" id="progress-pct">0%</span>
-          </div>
-          <div class="progress-track">
-            <div class="progress-fill" id="progress-fill"></div>
-          </div>
+        <div class="progress-section" style="margin-top:12px;">
           <div class="status-text" id="status-line">Starting up…</div>
+          <div style="display:none">
+            <div id="progress-fill"></div><span id="progress-pct"></span>
+          </div>
         </div>
-      </div><!-- /progress-panel -->
+      </div>
 
     </div>
   </main>
 
-  <footer class="site-footer">
-    SRM Technologies &nbsp;·&nbsp; MISRA Compliance Reviewer
-  </footer>
+  <footer class="site-footer">SRM Technologies &nbsp;·&nbsp; MISRA Compliance Reviewer</footer>
+
+  <!-- SETTINGS MODAL -->
+  <div class="modal-overlay hidden" id="settings-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" style="margin-right:7px;vertical-align:middle">
+            <circle cx="12" cy="12" r="3" />
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
+          MISRA Rule Configuration
+        </div>
+        <button class="modal-close" onclick="closeSettingsModal()">&#x2715;</button>
+      </div>
+      <div class="modal-toolbar">
+        <div class="modal-search-wrap">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-muted);pointer-events:none">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input type="text" id="modal-rule-search" class="modal-search-inp"
+            placeholder="Search rule ID or warning number…" oninput="filterModalRules()">
+        </div>
+        <div class="modal-presets">
+          <button class="preset-pill" data-preset="ALL" onclick="modalPreset(this)">All</button>
+          <button class="preset-pill pp-m" data-preset="M" onclick="modalPreset(this)">Mandatory</button>
+          <button class="preset-pill pp-r" data-preset="R" onclick="modalPreset(this)">Required</button>
+          <button class="preset-pill pp-a" data-preset="A" onclick="modalPreset(this)">Advisory</button>
+          <button class="preset-pill" data-preset="NONE" onclick="modalPreset(this)"
+            style="color:var(--text-muted)">Clear All</button>
+        </div>
+      </div>
+      <div class="modal-summary">
+        <strong id="modal-sel-count">0</strong> rules selected &nbsp;·&nbsp;
+        <span class="csb-chip csb-m" id="modal-m-val">0 Mandatory</span>
+        <span class="csb-chip csb-r" id="modal-r-val">0 Required</span>
+        <span class="csb-chip csb-a" id="modal-a-val">0 Advisory</span>
+      </div>
+      <div class="modal-body" id="modal-rule-list"></div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost btn-sm" onclick="closeSettingsModal()">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="applyAndCloseModal()">Apply Configuration</button>
+      </div>
+    </div>
+  </div>
 
   <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>

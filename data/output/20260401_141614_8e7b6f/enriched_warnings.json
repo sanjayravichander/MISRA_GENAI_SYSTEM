@@ -1,0 +1,93 @@
+{
+  "warning_count": 2,
+  "warnings": [
+    {
+      "warning_id": "3344",
+      "warning_no": "3344",
+      "tool_name": "",
+      "category": "MISRA",
+      "checker_name": "",
+      "rule_id": "Rule 14.4",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Controlling expression not Boolean",
+      "file_path": "control.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "stop_motor",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "control.c",
+        "found": true,
+        "context_text": "       1  #include <stdint.h>\n       2  \n       3  void start_motor(void)\n       4  {\n       5  }\n       6  \n       7  void stop_motor(int state)\n       8  {\n       9      if (state)\n      10      {\n      11      }\n      12  }\n      13  \n      14  void spin_wait(void)\n      15  {\n      16      int i;\n      17  \n      18      for (i = 10; i < 0; i++)\n      19      {\n      20      }\n      21  }",
+        "context_start_line": 1,
+        "context_end_line": 21,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 14.4",
+          "description": "Non-Boolean if-controlling expression",
+          "guidelines": "Rule 14.4 (Required): Non-Boolean if-controlling expression. The controlling expression of the 'if' statement is 'count', an integer, not an essentially Boolean type. Using non-Boolean values as conditions reduces readability and may mask logic errors where the value is non-zero but not the intended condition.",
+          "score": 1.225249286077883
+        },
+        {
+          "rule_id": "Rule 14.3",
+          "description": "Controlling expressions shall not be invariant",
+          "guidelines": "Rule 14.3 (Required): Controlling expressions shall not be invariant. This code violates Rule 14.3 because controlling expressions shall not be invariant. Loop and condition forms should make control flow explicit, safe, and reviewable.",
+          "score": 0.994353228868702
+        }
+      ]
+    },
+    {
+      "warning_id": "3340",
+      "warning_no": "3340",
+      "tool_name": "",
+      "category": "MISRA",
+      "checker_name": "",
+      "rule_id": "Rule 14.1",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Loop never executes",
+      "file_path": "control.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "spin_wait",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "control.c",
+        "found": true,
+        "context_text": "       1  #include <stdint.h>\n       2  \n       3  void start_motor(void)\n       4  {\n       5  }\n       6  \n       7  void stop_motor(int state)\n       8  {\n       9      if (state)\n      10      {\n      11      }\n      12  }\n      13  \n      14  void spin_wait(void)\n      15  {\n      16      int i;\n      17  \n      18      for (i = 10; i < 0; i++)\n      19      {\n      20      }\n      21  }",
+        "context_start_line": 1,
+        "context_end_line": 21,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 14.1",
+          "description": "A loop counter shall not have essentially floating type",
+          "guidelines": "Rule 14.1 (Required): A loop counter shall not have essentially floating type. This code violates Rule 14.1 because a loop counter shall not have essentially floating type. Loop and condition forms should make control flow explicit, safe, and reviewable.",
+          "score": 1.1267396519514024
+        },
+        {
+          "rule_id": "Rule 14.3",
+          "description": "Controlling expressions shall not be invariant",
+          "guidelines": "Rule 14.3 (Required): Controlling expressions shall not be invariant. This code violates Rule 14.3 because controlling expressions shall not be invariant. Loop and condition forms should make control flow explicit, safe, and reviewable.",
+          "score": 0.9386675498182923
+        },
+        {
+          "rule_id": "Rule 14.2",
+          "description": "A for loop shall be well-formed",
+          "guidelines": "Rule 14.2 (Required): A for loop shall be well-formed. This code violates Rule 14.2 because a for loop shall be well-formed. Loop and condition forms should make control flow explicit, safe, and reviewable.",
+          "score": 0.9369856767325453
+        }
+      ]
+    }
+  ]
+}

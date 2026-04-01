@@ -1,0 +1,52 @@
+{
+  "warning_count": 1,
+  "warnings": [
+    {
+      "warning_id": "1504",
+      "warning_no": "1504",
+      "tool_name": "",
+      "category": "MISRA",
+      "checker_name": "",
+      "rule_id": "Rule 8.7",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Global object only used in one function",
+      "file_path": "calc.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "calculate_total",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "calc.c",
+        "found": true,
+        "context_text": "       1  #include \"calc.h\"\n       2  \n       3  int g_total = 0;\n       4  \n       5  int calculate_total(int a, int b)\n       6  {\n       7      int result = a + b;\n       8      g_total = result;\n       9      return result;\n      10  }",
+        "context_start_line": 1,
+        "context_end_line": 10,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 8.7",
+          "description": "Functions and objects should not be defined with external linkage if they are referenced in only one translation unit",
+          "guidelines": "Rule 8.7 (Advisory): Functions and objects should not be defined with external linkage if they are referenced in only one translation unit. This code violates Rule 8.7 because functions and objects should not be defined with external linkage if they are referenced in only one translation unit. Inconsistent declarations and linkage decisions reduce maintainability and can break interface correctness.",
+          "score": 1.1413461334104356
+        },
+        {
+          "rule_id": "Rule 8.9",
+          "description": "An object should be defined at block scope if its identifier only appears in a single function",
+          "guidelines": "Rule 8.9 (Advisory): An object should be defined at block scope if its identifier only appears in a single function. This code violates Rule 8.9 because an object should be defined at block scope if its identifier only appears in a single function. Inconsistent declarations and linkage decisions reduce maintainability and can break interface correctness.",
+          "score": 0.982814438203399
+        },
+        {
+          "rule_id": "Rule 8.5",
+          "description": "An external object or function shall be declared once in one and only one file",
+          "guidelines": "Rule 8.5 (Required): An external object or function shall be declared once in one and only one file. This code violates Rule 8.5 because an external object or function shall be declared once in one and only one file. Inconsistent declarations and linkage decisions reduce maintainability and can break interface correctness.",
+          "score": 0.9784770476149159
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "warning_count": 1,
+  "results": [
+    {
+      "warning_id": "3344",
+      "rule_id": "Rule 14.4",
+      "fix_suggestions": [],
+      "parse_error": true,
+      "explanation": {
+        "summary": "Requested tokens (2273) exceed context window of 2048"
+      }
+    }
+  ]
+}

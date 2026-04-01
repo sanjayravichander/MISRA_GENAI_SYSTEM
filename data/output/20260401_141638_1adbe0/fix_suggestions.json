@@ -1,0 +1,23 @@
+{
+  "warning_count": 2,
+  "results": [
+    {
+      "warning_id": "3344",
+      "rule_id": "Rule 14.4",
+      "fix_suggestions": [],
+      "parse_error": true,
+      "explanation": {
+        "summary": "Storage folder data\\knowledge\\qdrant_index is already accessed by another instance of Qdrant client. If you require concurrent access, use Qdrant server instead."
+      }
+    },
+    {
+      "warning_id": "3340",
+      "rule_id": "Rule 14.1",
+      "fix_suggestions": [],
+      "parse_error": true,
+      "explanation": {
+        "summary": "Storage folder data\\knowledge\\qdrant_index is already accessed by another instance of Qdrant client. If you require concurrent access, use Qdrant server instead."
+      }
+    }
+  ]
+}

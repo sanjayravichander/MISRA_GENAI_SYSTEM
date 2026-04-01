@@ -1,0 +1,26 @@
+{
+  "run_id": "20260331_171356_f4175d",
+  "excel_report": "C:\\Users\\sanjay.ravichander\\misra_genai_system\\misra_genai_system\\data\\_upload_tmp\\f4175d1e3e0a41a58bc562239d3c7d48\\mock_warning_report.xlsx",
+  "source_dir": "C:\\Users\\sanjay.ravichander\\misra_genai_system\\misra_genai_system\\data\\_upload_tmp\\f4175d1e3e0a41a58bc562239d3c7d48\\source",
+  "started_at": "2026-03-31T17:13:56.981613",
+  "phases": {
+    "6a": {
+      "duration_s": 2.4,
+      "warnings": 2
+    },
+    "6b": {
+      "duration_s": 114.2
+    },
+    "7": {
+      "duration_s": 1.0,
+      "fixes_generated": 2,
+      "parse_errors": 0
+    },
+    "8": {
+      "duration_s": 0.1
+    }
+  },
+  "completed_at": "2026-03-31T17:15:54.635895",
+  "total_duration_s": 117.7,
+  "final_output": "C:\\Users\\sanjay.ravichander\\misra_genai_system\\misra_genai_system\\data\\output\\20260331_171356_f4175d\\evaluated_fixes.json"
+}

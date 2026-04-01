@@ -1,0 +1,63 @@
+{
+  "warning_count": 2,
+  "warnings": [
+    {
+      "warning_id": "PS010",
+      "warning_no": "PS010",
+      "tool_name": "Polyspace",
+      "category": "MISRA",
+      "checker_name": "MISRA2012-RULE-8_13",
+      "rule_id": "Rule 8.13",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Pointer parameter should be const",
+      "file_path": "logger.c",
+      "line_start": 5,
+      "line_end": 5,
+      "function_name": "log_message",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "logger.c",
+        "found": true,
+        "context_text": "       1  #include <stdio.h>\n       2  #include <string.h>\n       3  \n       4  static char log_buffer[64];\n       5  \n>>>    6  void log_message(char * msg)\n       7  {\n       8      int status = 0;\n       9  \n      10      strcpy(log_buffer, msg);\n      11  \n      12      status = puts(log_buffer);\n      13  \n      14      status = status;\n      15  }",
+        "context_start_line": 1,
+        "context_end_line": 15,
+        "flagged_lines": [
+          6
+        ]
+      }
+    },
+    {
+      "warning_id": "PS011",
+      "warning_no": "PS011",
+      "tool_name": "Polyspace",
+      "category": "MISRA",
+      "checker_name": "MISRA2012-RULE-17_7",
+      "rule_id": "Rule 17.7",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Return value ignored",
+      "file_path": "logger.c",
+      "line_start": 9,
+      "line_end": 9,
+      "function_name": "log_message",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "logger.c",
+        "found": true,
+        "context_text": "       1  #include <stdio.h>\n       2  #include <string.h>\n       3  \n       4  static char log_buffer[64];\n       5  \n       6  void log_message(char * msg)\n       7  {\n       8      int status = 0;\n       9  \n>>>   10      strcpy(log_buffer, msg);\n      11  \n      12      status = puts(log_buffer);\n      13  \n      14      status = status;\n      15  }",
+        "context_start_line": 1,
+        "context_end_line": 15,
+        "flagged_lines": [
+          10
+        ]
+      }
+    }
+  ]
+}

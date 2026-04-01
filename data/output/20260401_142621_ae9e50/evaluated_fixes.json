@@ -1,0 +1,20 @@
+{
+  "warning_count": 1,
+  "confidence_high": 0,
+  "confidence_medium": 0,
+  "confidence_low": 0,
+  "needs_manual_review": 1,
+  "results": [
+    {
+      "warning_id": "1504",
+      "rule_id": "Rule 8.7",
+      "fix_suggestions": [],
+      "parse_error": true,
+      "explanation": {
+        "summary": "Expecting ',' delimiter: line 17 column 6 (char 1204)"
+      },
+      "evaluation_skipped": true,
+      "needs_manual_review": true
+    }
+  ]
+}

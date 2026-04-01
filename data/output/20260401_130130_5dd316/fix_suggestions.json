@@ -1,0 +1,55 @@
+{
+  "warning_count": 1,
+  "results": [
+    {
+      "guideline_id": "Rule 8.7",
+      "guideline_title": "Functions and objects should not be defined with external linkage if they are referenced in only one translation unit",
+      "explanation": {
+        "summary": "The global variable 'g_total' is only used in one function, which violates MISRA Rule 8.7.",
+        "rule_basis": "Functions and objects should not be defined with external linkage if they are referenced in only one translation unit. This reduces maintainability and can break interface correctness.",
+        "code_evidence": "The global variable 'g_total' is defined at file scope and is only used in the 'calculate_total' function."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Move the variable 'g_total' to local scope within the 'calculate_total' function",
+          "why": "This reduces the scope of the variable and makes it less likely to be misused.",
+          "patched_code": "int calculate_total(int a, int b)\n    {\n      int g_total = 0;\n      int result = a + b;\n      g_total = result;\n      return result;\n    }",
+          "compliance_notes": "The variable 'g_total' is now only visible within the 'calculate_total' function.",
+          "risk_reduction": "Low"
+        }
+      ],
+      "risk_analysis": {
+        "severity": "Medium",
+        "why": "The global variable 'g_total' can lead to maintainability issues and potential interface correctness problems.",
+        "potential_failures": [
+          "Misuse of the global variable 'g_total' in other functions or translation units."
+        ],
+        "runtime_risk": "Low",
+        "maintainability_risk": "Medium"
+      },
+      "deviation_advice": {
+        "deviation_possible": "Conditional",
+        "recommended_decision": "It is recommended to follow the MISRA guideline, but if there is a strong justification for using a global variable in only one function, a deviation may be considered.",
+        "required_justification": "The justification for using a global variable in only one function should be clearly documented and reviewed by a senior developer.",
+        "review_notes": "The use of a global variable in only one function should be reviewed and approved by a senior developer."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "39347f9c-a366-4c16-9bf2-39b800256297",
+          "8072e593-7e21-46fc-b73c-e74659b38fb6",
+          "6c95379b-960b-446d-89f2-97a354a8af8c"
+        ],
+        "retrieval_score_raw": 0.727397,
+        "retrieval_score_reranked": 1.157397,
+        "confidence": 0.927397,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear consistent.",
+          "Warning text and retrieved rule statement may not fully align."
+        ]
+      },
+      "warning_id": "1504",
+      "source": "generation"
+    }
+  ]
+}

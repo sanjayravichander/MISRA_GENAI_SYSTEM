@@ -32,6 +32,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from app.config.settings import (
     OUTPUT_DIR, AUDIT_DIR,
     LOCAL_MODEL_PATH,
+    LLM_N_CTX,        # auto-detected from available RAM at startup
+    LLM_N_THREADS,    # auto-detected from CPU cores at startup
+    LLM_N_GPU_LAYERS, # auto-detected: 33 if CUDA GPU found, else 0
+    LLM_MAX_TOKENS,
 )
 
 
@@ -135,17 +139,17 @@ def phase_7_generate(
     )
 
     config = GenerationConfig(
-        model_path=LOCAL_MODEL_PATH,
-        n_ctx=4096,
-        n_threads=8,
-        n_gpu_layers=0,
-        temperature=0.0,
-        top_p=1.0,
-        top_k=1,
-        repeat_penalty=1.0,
-        seed=42,
-        max_tokens=1400,
-        prompt_version="misra_generation_v1",
+        model_path    = LOCAL_MODEL_PATH,
+        n_ctx         = LLM_N_CTX,          # auto-detected from RAM at startup
+        n_threads     = LLM_N_THREADS,      # auto-detected from CPU cores at startup
+        n_gpu_layers  = LLM_N_GPU_LAYERS,   # auto-detected: 33 if CUDA GPU, else 0
+        temperature   = 0.0,
+        top_p         = 1.0,
+        top_k         = 1,
+        repeat_penalty= 1.0,
+        seed          = 42,
+        max_tokens    = LLM_MAX_TOKENS,     # 3500 tokens — enough for full MISRA response
+        prompt_version= "misra_generation_v1",
     )
 
     results: List[Dict[str, Any]] = []

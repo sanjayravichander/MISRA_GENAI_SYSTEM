@@ -1,0 +1,49 @@
+{
+  "warning_count": 1,
+  "results": [
+    {
+      "guideline_id": "Rule 8.7",
+      "guideline_title": "Functions and objects should not be defined with external linkage if they are referenced in only one translation unit",
+      "explanation": {
+        "summary": "The global object is only used in one function, which violates MISRA Rule 8.7 and Rule 8.5.",
+        "rule_basis": "Functions and objects should not be defined with external linkage if they are referenced in only one translation unit. This reduces maintainability and can break interface correctness.",
+        "code_evidence": "[Source file not found: ]"
+      },
+      "fix_suggestions": [],
+      "risk_analysis": {
+        "severity": "Medium",
+        "why": "The global object violates MISRA Rules 8.7 and 8.5, which can lead to maintainability issues and potential interface correctness problems.",
+        "potential_failures": [
+          "Maintainability issues due to inconsistent declarations and linkage decisions"
+        ],
+        "runtime_risk": "Low",
+        "maintainability_risk": "Medium"
+      },
+      "deviation_advice": {
+        "deviation_possible": "Conditional",
+        "recommended_decision": "Implement the suggested fixes to ensure compliance with MISRA guidelines.",
+        "required_justification": "Justify any deviation from the suggested fixes with a clear rationale and potential consequences.",
+        "review_notes": "Review the suggested fixes and any deviations carefully to ensure maintainability and interface correctness."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "39347f9c-a366-4c16-9bf2-39b800256297",
+          "f9325188-3323-4150-b9eb-2969b136b005",
+          "6c95379b-960b-446d-89f2-97a354a8af8c"
+        ],
+        "retrieval_score_raw": 0.737894,
+        "retrieval_score_reranked": 1.167894,
+        "confidence": 0.9,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear inconsistent, as the warning message does not explicitly mention external linkage.",
+          "Warning text and retrieved rule statement may not fully align.",
+          "Rejected 'Remove external linkage': Patch declares new variable(s) not present in original snippet. Cannot verify these are safe to introduce.",
+          "Rejected 'Declare the object as static': Patch declares new variable(s) not present in original snippet. Cannot verify these are safe to introduce.",
+          "All generated fix suggestions were rejected by the generic safety validator. The LLM output contained unsafe patterns (magic numbers, pointer casts, new symbols, or VLAs). Review the raw LLM output manually."
+        ]
+      },
+      "warning_id": "",
+      "source": "final_cache"
+    }
+  ]
+}

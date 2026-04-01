@@ -1,0 +1,14 @@
+{
+  "warning_count": 1,
+  "results": [
+    {
+      "warning_id": "1504",
+      "rule_id": "Rule 8.7",
+      "fix_suggestions": [],
+      "parse_error": true,
+      "explanation": {
+        "summary": "Expecting ',' delimiter: line 17 column 6 (char 1204)"
+      }
+    }
+  ]
+}
