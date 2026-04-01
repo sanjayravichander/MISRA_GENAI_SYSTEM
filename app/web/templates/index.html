@@ -114,55 +114,7 @@
           </div>
         </div>
 
-        <!-- MISRA category radio (none selected by default) -->
-        <div class="misra-category-section">
-          <div class="misra-category-label">Filter by MISRA Rule Category</div>
-          <div class="misra-category-sub">Select one to scope analysis to that category. Leave all unselected to analyse
-            all rules.</div>
-          <div class="misra-options">
-            <label class="misra-option">
-              <input type="checkbox" name="misra_category" value="advisory" id="cat-advisory" />
-              <div class="misra-option-card">
-                <div class="misra-option-title">
-                  <div class="misra-check"><svg viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"
-                      stroke-linecap="round">
-                      <polyline points="1 4 4 7 9 1" />
-                    </svg></div>Advisory
-                </div>
-                <span class="misra-option-badge badge-advisory">Advisory</span>
-                <div class="misra-option-desc">Recommended practices — not strictly required.</div>
-              </div>
-            </label>
-            <label class="misra-option">
-              <input type="checkbox" name="misra_category" value="required" id="cat-required" />
-              <div class="misra-option-card">
-                <div class="misra-option-title">
-                  <div class="misra-check"><svg viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"
-                      stroke-linecap="round">
-                      <polyline points="1 4 4 7 9 1" />
-                    </svg></div>Required
-                </div>
-                <span class="misra-option-badge badge-required">Required</span>
-                <div class="misra-option-desc">Must follow unless formal deviation is documented.</div>
-              </div>
-            </label>
-            <label class="misra-option">
-              <input type="checkbox" name="misra_category" value="mandatory" id="cat-mandatory" />
-              <div class="misra-option-card">
-                <div class="misra-option-title">
-                  <div class="misra-check"><svg viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="2"
-                      stroke-linecap="round">
-                      <polyline points="1 4 4 7 9 1" />
-                    </svg></div>Mandatory
-                </div>
-                <span class="misra-option-badge badge-mandatory">Mandatory</span>
-                <div class="misra-option-desc">No exceptions permitted. Always fix before release.</div>
-              </div>
-            </label>
-          </div>
-          <button class="clear-cat-btn hidden" id="clear-cat-btn" onclick="clearCategorySelection()">&#x2715; Clear —
-            analyse all rules</button>
-        </div>
+        <!-- Category filter removed — use Rule Config button instead -->
 
         <div id="upload-error" class="error-panel mt-16 hidden"></div>
 
@@ -282,23 +234,17 @@
             <circle cx="11" cy="11" r="8" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
-          <input type="text" id="modal-rule-search" class="modal-search-inp"
-            placeholder="Search rule ID or warning number…" oninput="filterModalRules()">
+          <input type="text" id="modal-rule-search" class="modal-search-inp" placeholder="Search by rule number…"
+            oninput="filterModalRules()">
         </div>
         <div class="modal-presets">
-          <button class="preset-pill" data-preset="ALL" onclick="modalPreset(this)">All</button>
-          <button class="preset-pill pp-m" data-preset="M" onclick="modalPreset(this)">Mandatory</button>
-          <button class="preset-pill pp-r" data-preset="R" onclick="modalPreset(this)">Required</button>
-          <button class="preset-pill pp-a" data-preset="A" onclick="modalPreset(this)">Advisory</button>
+          <button class="preset-pill" data-preset="ALL" onclick="modalPreset(this)">Select All</button>
           <button class="preset-pill" data-preset="NONE" onclick="modalPreset(this)"
             style="color:var(--text-muted)">Clear All</button>
         </div>
       </div>
       <div class="modal-summary">
-        <strong id="modal-sel-count">0</strong> rules selected &nbsp;·&nbsp;
-        <span class="csb-chip csb-m" id="modal-m-val">0 Mandatory</span>
-        <span class="csb-chip csb-r" id="modal-r-val">0 Required</span>
-        <span class="csb-chip csb-a" id="modal-a-val">0 Advisory</span>
+        <strong id="modal-sel-count">0</strong> rules selected — only these rules will be analysed
       </div>
       <div class="modal-body" id="modal-rule-list"></div>
       <div class="modal-footer">

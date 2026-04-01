@@ -1,0 +1,113 @@
+{
+  "warning_count": 4,
+  "warnings": [
+    {
+      "warning_id": "2980",
+      "warning_no": "2980",
+      "tool_name": "",
+      "category": "MISRA-R (Required)",
+      "checker_name": "",
+      "rule_id": "2.2",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Statement has no effect",
+      "file_path": "utils.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "helper_add",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "utils.c",
+        "found": true,
+        "context_text": "       1  #include <stdint.h>\n       2  \n       3  int helper_add(int a, int b)\n       4  {\n       5      int result = a + b;\n       6      result = result;\n       7      return result;\n       8  }\n       9  \n      10  void update_index(void)\n      11  {\n      12      int i = 0;\n      13      int arr[5] = {0};\n      14  \n      15      arr[i] = i++;\n      16      i = i++ + 1;\n      17  }\n      18  \n      19  int early_return(int value)\n      20  {\n      21      if (value == 0)\n      22      {\n      23          return 0;\n      24          value = 1;\n      25      }\n      26  \n      27      return value;\n      28  }\n      29  \n      30  int factorial(int n)\n      31  {\n      32      if (n <= 1)\n      33      {\n      34          return 1;\n      35      }\n      36  \n      37      return n * factorial(n - 1);\n      38  }",
+        "context_start_line": 1,
+        "context_end_line": 38,
+        "flagged_lines": []
+      }
+    },
+    {
+      "warning_id": "400",
+      "warning_no": "400",
+      "tool_name": "",
+      "category": "MISRA-R (Required)",
+      "checker_name": "",
+      "rule_id": "13.2",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Evaluation order side effects",
+      "file_path": "utils.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "update_index",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "utils.c",
+        "found": true,
+        "context_text": "       1  #include <stdint.h>\n       2  \n       3  int helper_add(int a, int b)\n       4  {\n       5      int result = a + b;\n       6      result = result;\n       7      return result;\n       8  }\n       9  \n      10  void update_index(void)\n      11  {\n      12      int i = 0;\n      13      int arr[5] = {0};\n      14  \n      15      arr[i] = i++;\n      16      i = i++ + 1;\n      17  }\n      18  \n      19  int early_return(int value)\n      20  {\n      21      if (value == 0)\n      22      {\n      23          return 0;\n      24          value = 1;\n      25      }\n      26  \n      27      return value;\n      28  }\n      29  \n      30  int factorial(int n)\n      31  {\n      32      if (n <= 1)\n      33      {\n      34          return 1;\n      35      }\n      36  \n      37      return n * factorial(n - 1);\n      38  }",
+        "context_start_line": 1,
+        "context_end_line": 38,
+        "flagged_lines": []
+      }
+    },
+    {
+      "warning_id": "1460",
+      "warning_no": "1460",
+      "tool_name": "",
+      "category": "MISRA-R (Required)",
+      "checker_name": "",
+      "rule_id": "2.1",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Unreachable code detected",
+      "file_path": "utils.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "early_return",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "utils.c",
+        "found": true,
+        "context_text": "       1  #include <stdint.h>\n       2  \n       3  int helper_add(int a, int b)\n       4  {\n       5      int result = a + b;\n       6      result = result;\n       7      return result;\n       8  }\n       9  \n      10  void update_index(void)\n      11  {\n      12      int i = 0;\n      13      int arr[5] = {0};\n      14  \n      15      arr[i] = i++;\n      16      i = i++ + 1;\n      17  }\n      18  \n      19  int early_return(int value)\n      20  {\n      21      if (value == 0)\n      22      {\n      23          return 0;\n      24          value = 1;\n      25      }\n      26  \n      27      return value;\n      28  }\n      29  \n      30  int factorial(int n)\n      31  {\n      32      if (n <= 1)\n      33      {\n      34          return 1;\n      35      }\n      36  \n      37      return n * factorial(n - 1);\n      38  }",
+        "context_start_line": 1,
+        "context_end_line": 38,
+        "flagged_lines": []
+      }
+    },
+    {
+      "warning_id": "1520",
+      "warning_no": "1520",
+      "tool_name": "",
+      "category": "MISRA-R (Required)",
+      "checker_name": "",
+      "rule_id": "17.2",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Recursive function detected",
+      "file_path": "utils.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "factorial",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "utils.c",
+        "found": true,
+        "context_text": "       1  #include <stdint.h>\n       2  \n       3  int helper_add(int a, int b)\n       4  {\n       5      int result = a + b;\n       6      result = result;\n       7      return result;\n       8  }\n       9  \n      10  void update_index(void)\n      11  {\n      12      int i = 0;\n      13      int arr[5] = {0};\n      14  \n      15      arr[i] = i++;\n      16      i = i++ + 1;\n      17  }\n      18  \n      19  int early_return(int value)\n      20  {\n      21      if (value == 0)\n      22      {\n      23          return 0;\n      24          value = 1;\n      25      }\n      26  \n      27      return value;\n      28  }\n      29  \n      30  int factorial(int n)\n      31  {\n      32      if (n <= 1)\n      33      {\n      34          return 1;\n      35      }\n      36  \n      37      return n * factorial(n - 1);\n      38  }",
+        "context_start_line": 1,
+        "context_end_line": 38,
+        "flagged_lines": []
+      }
+    }
+  ]
+}

@@ -24,6 +24,7 @@ Then open http://127.0.0.1:5000
 import json
 import os
 import queue
+import re as _re
 import subprocess
 import sys
 import threading
@@ -53,6 +54,16 @@ except ImportError:
 UPLOAD_DIR = PROJECT_ROOT / "data" / "input" / "web_uploads"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+# Audit Excel — saved to Output_excel_after_run/ inside the project root.
+# This resolves to the same absolute folder regardless of where server.py is
+# run from, and works on both Windows and Linux without hard-coded user paths.
+#
+# On your machine this resolves to:
+#   C:\Users\sanjay.ravichander\misra_genai_system\misra_genai_system\Output_excel_after_run\audit_report.xlsx
+#
+AUDIT_EXCEL = PROJECT_ROOT / "Output_excel_after_run" / "audit_report.xlsx"
+AUDIT_EXCEL.parent.mkdir(parents=True, exist_ok=True)   # create folder at startup
 
 ALLOWED_EXCEL = {".xlsx", ".xls"}
 ALLOWED_C     = {".c", ".h"}
@@ -187,6 +198,31 @@ def get_result(run_id):
 
     results_list = data.get("results", [])
 
+    # Merge source_context + raw warning fields from enriched_warnings.json
+    # (fix_suggestions.json does not carry source code — it lives in enriched)
+    enriched_path = run_dir / "enriched_warnings.json"
+    if enriched_path.exists():
+        try:
+            enriched_data = json.loads(enriched_path.read_text(encoding="utf-8"))
+            enriched_by_id = {
+                str(w.get("warning_id")): w
+                for w in enriched_data.get("warnings", [])
+            }
+            for r in results_list:
+                wid = str(r.get("warning_id", ""))
+                ew  = enriched_by_id.get(wid)
+                if ew:
+                    # Attach source_context so the UI can show violated code
+                    r["source_context"] = ew.get("source_context", {})
+                    # Attach raw warning fields (file, line, message, severity)
+                    for field in ("file_path", "line_start", "line_end",
+                                  "message", "severity", "rule_id",
+                                  "function_name", "checker_name"):
+                        if field not in r and ew.get(field):
+                            r[field] = ew[field]
+        except Exception:
+            pass  # enriched merge is best-effort
+
     # Build summary
     high = medium = low = manual = cached = 0
     for r in results_list:
@@ -225,6 +261,7 @@ def get_result(run_id):
 def commit_fix():
     body       = request.get_json(force=True) or {}
     warning_id = str(body.get("warning_id", "unknown"))
+    run_id     = str(body.get("run_id", ""))
     patched    = body.get("patched_code", "")
 
     if not patched or patched.strip() == "[fix code not available]":
@@ -233,18 +270,154 @@ def commit_fix():
     commit_dir = PROJECT_ROOT / "data" / "commits"
     commit_dir.mkdir(parents=True, exist_ok=True)
 
-    safe_wid = secure_filename(warning_id)
-    fname    = f"patched_{safe_wid}_{uuid.uuid4().hex[:6]}.c"
-    out_path = commit_dir / fname
+    # ── Try to merge patch into the full original source file ──
+    full_patched = None
+    original_filename = None
+    src_file_path = None
+    patch_line_start = None   # 1-indexed line number where the fix was applied
+    patch_line_count_val = 0  # how many lines were actually changed
 
-    out_path.write_text(patched, encoding="utf-8")
+    if run_id:
+        try:
+            run_dir = OUTPUT_DIR / secure_filename(run_id)
+            enriched_path = run_dir / "enriched_warnings.json"
+            if enriched_path.exists():
+                enriched = json.loads(enriched_path.read_text(encoding="utf-8"))
+                warnings_list = enriched.get("warnings", [])
+                w = next((x for x in warnings_list if str(x.get("warning_id")) == warning_id), None)
+                if w:
+                    rel_file   = w.get("file_path", "")
+                    line_start = int(w.get("line_start") or 0)
+                    line_end   = int(w.get("line_end") or line_start)
+                    sc         = w.get("source_context", {})
+                    ctx_start  = int(sc.get("context_start_line", line_start) if isinstance(sc, dict) else line_start)
+                    ctx_end    = int(sc.get("context_end_line",   line_end)   if isinstance(sc, dict) else line_end)
+                    fname_only = Path(rel_file).name if rel_file else ""
+
+                    # Search candidate directories for the source file (most specific first)
+                    search_roots = []
+                    # 1) Exact job dir for THIS run — run_id format is "20240101_120000_<job_id>"
+                    #    The job_id is the last segment after the final underscore.
+                    exact_job_id = run_id.split("_")[-1] if run_id else ""
+                    if exact_job_id and UPLOAD_DIR.exists():
+                        exact_job_dir = UPLOAD_DIR / exact_job_id
+                        if exact_job_dir.exists():
+                            search_roots.append(exact_job_dir / "source_code")
+                            search_roots.append(exact_job_dir)
+                    # 2) All other web_uploads dirs (newest first — fallback)
+                    if UPLOAD_DIR.exists():
+                        for d in sorted(UPLOAD_DIR.iterdir(), reverse=True):
+                            if d.is_dir() and d.name != exact_job_id:
+                                search_roots.append(d / "source_code")
+                                search_roots.append(d)
+                    # 3) Legacy _upload_tmp dirs
+                    _tmp = PROJECT_ROOT / "data" / "_upload_tmp"
+                    if _tmp.exists():
+                        for d in sorted(_tmp.iterdir(), reverse=True):
+                            if d.is_dir():
+                                search_roots.append(d / "source")
+                                search_roots.append(d)
+
+                    if fname_only:
+                        for root in search_roots:
+                            candidate = root / fname_only
+                            if candidate.exists():
+                                src_file_path = candidate
+                                original_filename = fname_only
+                                break
+
+                    if src_file_path:
+                        orig_lines = src_file_path.read_text(encoding="utf-8", errors="replace").splitlines()
+
+                        # Parse patched_code — LLM often emits lines like:
+                        #   "28      small = (uint8_t)total + 300;"
+                        # Extract the embedded line number and code for each patch line.
+                        import re as _re2
+                        patch_map  = {}   # { 1-indexed line number : new code string }
+                        bare_lines = []   # code strings without any line-number prefix
+                        for ln in patched.splitlines():
+                            m = _re2.match(r"^\s*(\d+)\s+(.*)", ln)
+                            if m:
+                                lnum = int(m.group(1))
+                                code = m.group(2)
+                                patch_map[lnum] = code
+                                bare_lines.append(code)
+                            else:
+                                bare_lines.append(ln)
+
+                        if patch_map:
+                            # ── SURGICAL MODE ──────────────────────────────────────────
+                            # The LLM returned specific numbered lines (e.g. only line 28).
+                            # Replace ONLY those exact lines in the original file.
+                            # Every other line stays byte-for-byte identical.
+                            merged = list(orig_lines)
+                            for lnum, new_code in patch_map.items():
+                                idx = lnum - 1          # 1-indexed → 0-indexed
+                                if 0 <= idx < len(merged):
+                                    merged[idx] = new_code
+                            patch_line_start    = min(patch_map.keys())
+                            patch_line_count_val = len(patch_map)
+                        else:
+                            # ── FALLBACK MODE ──────────────────────────────────────────
+                            # LLM returned no line numbers — it gave the full fixed block.
+                            # Replace the original context window with the bare lines.
+                            before = orig_lines[: max(0, ctx_start - 1)]
+                            after  = orig_lines[ctx_end:]   # ctx_end is inclusive 1-indexed
+                            merged = before + bare_lines + after
+                            patch_line_start    = ctx_start
+                            patch_line_count_val = len(bare_lines)
+
+                        full_patched = "\n".join(merged)
+        except Exception as merge_err:
+            app.logger.warning(f"Patch merge failed (will save snippet only): {merge_err}")
+
+    # Fall back to saving the snippet alone
+    content_to_save = full_patched if full_patched else patched
+    is_full_file = full_patched is not None
+
+    safe_wid = secure_filename(warning_id)
+    base_name = original_filename or f"warning_{safe_wid}"
+    stem = Path(base_name).stem
+    fname = f"patched_{stem}_{uuid.uuid4().hex[:6]}.c"
+    out_path = commit_dir / fname
+    out_path.write_text(content_to_save, encoding="utf-8")
+
+    # Build violated_code from source_context for audit log
+    violated_code = ""
+    if run_id:
+        try:
+            run_dir2 = OUTPUT_DIR / secure_filename(run_id)
+            ep2 = run_dir2 / "enriched_warnings.json"
+            if ep2.exists():
+                import json as _j2
+                ed2 = _j2.loads(ep2.read_text(encoding="utf-8"))
+                for w2 in ed2.get("warnings", []):
+                    if str(w2.get("warning_id")) == str(warning_id):
+                        sc2 = w2.get("source_context", {})
+                        violated_code = sc2.get("context_text", "") if isinstance(sc2, dict) else str(sc2)
+                        break
+        except Exception:
+            pass
+
+    # Update audit Excel in background
+    threading.Thread(
+        target=_update_audit_excel,
+        args=(warning_id, run_id or "", violated_code, patched),
+        daemon=True,
+    ).start()
 
     return jsonify({
-        "status":       "ok",
-        "warning_id":   warning_id,
-        "download_url": f"/api/download/{fname}",
-        "filename":     fname,
-        "patched_code": patched,
+        "status":            "ok",
+        "warning_id":        warning_id,
+        "download_url":      f"/api/download/{fname}",
+        "filename":          fname,
+        "patched_code":      content_to_save,
+        "is_full_file":      is_full_file,
+        "original_file":     original_filename or "",
+        "audit_updated":     True,
+        "audit_path":        str(AUDIT_EXCEL),                  # real resolved path shown in UI
+        "patch_line_start":  patch_line_start,                  # 1-indexed line where fix begins
+        "patch_line_count":  patch_line_count_val if is_full_file else len((patched or "").splitlines()),
     })
 
 
@@ -258,6 +431,175 @@ def download_file(filename):
     if not file_path.exists():
         return jsonify(error="File not found"), 404
     return send_file(str(file_path), as_attachment=True, download_name=filename)
+
+
+# ---------------------------------------------------------------------------
+# Audit Excel log — updated automatically after each commit
+# ---------------------------------------------------------------------------
+def _update_audit_excel(warning_id: str, run_id: str,
+                         violated_code: str, fixed_code: str) -> bool:
+    """Upsert a row for warning_id in the audit Excel report.
+    Returns True on success, False on failure (failure is also logged).
+    The AUDIT_EXCEL folder is guaranteed to exist (created at server startup).
+    """
+    import openpyxl
+    from openpyxl import Workbook
+
+    COLS = ["Warning Number", "Category", "Rule", "Message",
+            "File", "Function", "Violated Code", "Fixed Code",
+            "Run ID", "Status", "Timestamp"]
+
+    try:
+        # Load or create workbook
+        if AUDIT_EXCEL.exists():
+            wb = openpyxl.load_workbook(str(AUDIT_EXCEL))
+            ws = wb.active
+            headers = [c.value for c in ws[1]]
+            # Add any missing columns to the right
+            for col in COLS:
+                if col not in headers:
+                    ws.cell(row=1, column=len(headers) + 1, value=col)
+                    headers.append(col)
+        else:
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "MISRA Audit"
+            for i, h in enumerate(COLS, 1):
+                ws.cell(row=1, column=i, value=h)
+            headers = list(COLS)
+
+        def col_idx(name):
+            try:
+                return headers.index(name) + 1
+            except ValueError:
+                return None
+
+        wid_col = col_idx("Warning Number")
+        target_row = None
+        if wid_col:
+            for row in ws.iter_rows(min_row=2):
+                if str(row[wid_col - 1].value) == str(warning_id):
+                    target_row = row[0].row
+                    break
+
+        # Pull extra fields from enriched_warnings if available
+        run_dir       = OUTPUT_DIR / run_id
+        enriched_path = run_dir / "enriched_warnings.json"
+        ew = {}
+        if enriched_path.exists():
+            import json as _json
+            edata = _json.loads(enriched_path.read_text(encoding="utf-8"))
+            for w in edata.get("warnings", []):
+                if str(w.get("warning_id")) == str(warning_id):
+                    ew = w
+                    break
+
+        import datetime
+        row_data = {
+            "Warning Number": warning_id,
+            "Category":       ew.get("severity", ""),
+            "Rule":           ew.get("rule_id", ""),
+            "Message":        ew.get("message", ""),
+            "File":           ew.get("file_path", ""),
+            "Function":       ew.get("function_name", ""),
+            "Violated Code":  violated_code,
+            "Fixed Code":     fixed_code,
+            "Run ID":         run_id,
+            "Status":         "Fixed",
+            "Timestamp":      datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        }
+
+        if target_row:
+            for col_name, value in row_data.items():
+                ci = col_idx(col_name)
+                if ci:
+                    ws.cell(row=target_row, column=ci, value=value)
+        else:
+            new_row = [row_data.get(h, "") for h in headers]
+            ws.append(new_row)
+
+        wb.save(str(AUDIT_EXCEL))
+        app.logger.info(f"Audit Excel updated → {AUDIT_EXCEL}")
+        return True
+
+    except Exception as exc:
+        app.logger.error(f"Audit Excel update FAILED for warning {warning_id}: {exc}")
+        return False
+
+
+# ---------------------------------------------------------------------------
+# Helper — apply rule config filter to uploaded Excel before analysis
+# ---------------------------------------------------------------------------
+def _filter_excel_by_rules(src_excel: Path, rule_selected: list,
+                             rule_overrides: dict) -> Path:
+    """Keep only rows whose Rule matches a selected rule_id.
+    Returns path to (possibly filtered) Excel file."""
+    if not rule_selected:
+        return src_excel   # nothing selected → run all
+
+    import openpyxl
+    wb = openpyxl.load_workbook(str(src_excel))
+    ws = wb.active
+    headers = [str(c.value).strip().lower() if c.value else "" for c in ws[1]]
+
+    # Find the Rule column
+    rule_col = next((i for i, h in enumerate(headers)
+                     if "rule" in h), None)
+    if rule_col is None:
+        return src_excel  # can't filter — pass through
+
+    # ── FIX: normalise both sides so "Rule 10.3" matches selected id "10.3" ──
+    # Build a set of normalised selected IDs for robust matching
+    def _normalise_rule_id(raw: str) -> str:
+        """Strip leading 'Rule ' / 'rule ' prefix and whitespace."""
+        return _re.sub(r"(?i)^rule\s*", "", str(raw)).strip()
+
+    selected_set = set(_normalise_rule_id(r) for r in rule_selected)
+
+    # Collect rows to keep (skip header)
+    keep_rows = []
+    for row in ws.iter_rows(min_row=2, values_only=True):
+        raw = str(row[rule_col] or "").strip()
+        # Normalise "Rule 10.3" → "10.3"
+        normalised = _normalise_rule_id(raw)
+        if normalised in selected_set:
+            keep_rows.append(row)
+
+    # ── FIX: guard against empty filter result — return original if nothing matched ──
+    # This prevents sending a 0-row Excel to the orchestrator, which would cause
+    # the pipeline to parse 0 warnings and the UI to show "All 0 records complete".
+    if not keep_rows:
+        app.logger.warning(
+            f"[filter] No rows matched selected rules {sorted(selected_set)} — "
+            f"running unfiltered to avoid 0-record pipeline."
+        )
+        return src_excel
+
+    # Build filtered workbook
+    from openpyxl import Workbook
+    wb2 = Workbook()
+    ws2 = wb2.active
+    ws2.title = ws.title or "Filtered"
+    ws2.append([c.value for c in ws[1]])   # header
+    for row in keep_rows:
+        # Apply override: patch Category column if override exists
+        row = list(row)
+        cat_col = next((i for i, h in enumerate(headers)
+                        if "category" in h), None)
+        if cat_col is not None:
+            raw_rule = str(row[rule_col] or "")
+            norm = _normalise_rule_id(raw_rule)
+            ov = rule_overrides.get(norm)
+            if ov:
+                label = {"M": "MISRA-M (Mandatory)",
+                         "R": "MISRA-R (Required)",
+                         "A": "MISRA-A (Advisory)"}.get(ov, row[cat_col])
+                row[cat_col] = label
+        ws2.append(row)
+
+    filtered_path = src_excel.parent / ("filtered_" + src_excel.name)
+    wb2.save(str(filtered_path))
+    return filtered_path
 
 
 # ---------------------------------------------------------------------------
@@ -299,6 +641,39 @@ def start_analysis():
     if not saved_c:
         return jsonify(error="No valid .c / .h files received"), 400
 
+    # Apply rule config filter — keep only selected rules, apply overrides
+    import json as _json
+    try:
+        rule_selected  = _json.loads(request.form.get("rule_selected", "[]"))
+        rule_overrides = _json.loads(request.form.get("rule_overrides", "{}"))
+    except Exception:
+        rule_selected  = []
+        rule_overrides = {}
+
+    # Optional: resume from a previous run so Phase 7 cache hits skip re-generation
+    resume_run_id = request.form.get("resume_run_id", "").strip()
+
+    filtered_excel = _filter_excel_by_rules(excel_path, rule_selected, rule_overrides)
+    warnings_filtered = len(rule_selected) > 0
+    filtered_count = 0
+    if warnings_filtered and filtered_excel != excel_path:
+        import openpyxl as _opx
+        _wb = _opx.load_workbook(str(filtered_excel), read_only=True)
+        filtered_count = max(0, _wb.active.max_row - 1)  # exclude header
+        _wb.close()
+
+        # ── FIX: abort early if the filter produced 0 rows ──
+        # This gives the user a clear error instead of a silent "0 records" run.
+        if filtered_count == 0:
+            return jsonify(
+                error=(
+                    "No warnings matched the selected rules. "
+                    "Try selecting different rules or clear the rule filter to run all warnings."
+                ),
+                filtered_count=0,
+                warnings_filtered=True,
+            ), 400
+
     q = queue.Queue()
     JOBS[job_id] = {
         "status":     "running",
@@ -309,12 +684,15 @@ def start_analysis():
 
     t = threading.Thread(
         target=_run_pipeline_subprocess,
-        args=(job_id, run_id, str(excel_path), str(src_dir), batch_size),
+        args=(job_id, run_id, str(filtered_excel), str(src_dir), batch_size),
+        kwargs={"resume_run_id": resume_run_id},
         daemon=True,
     )
     t.start()
 
-    return jsonify(job_id=job_id, run_id=run_id, c_files=saved_c, batch_size=batch_size)
+    return jsonify(job_id=job_id, run_id=run_id, c_files=saved_c,
+                   batch_size=batch_size, warnings_filtered=warnings_filtered,
+                   filtered_count=filtered_count, resumed=bool(resume_run_id))
 
 
 # ---------------------------------------------------------------------------
@@ -353,6 +731,7 @@ def _run_pipeline_subprocess(
     excel_path: str,
     src_dir: str,
     batch_size: int,
+    resume_run_id: str = "",
 ) -> None:
     job = JOBS[job_id]
     q   = job["queue"]
@@ -369,16 +748,23 @@ def _run_pipeline_subprocess(
             excel_path, src_dir,
             "--run-id", run_id,
         ]
+        # If resuming a previous run, tell the orchestrator to skip already-done phases
+        if resume_run_id:
+            cmd += ["--resume", resume_run_id]
 
-        # Force UTF-8 output from the subprocess — prevents UnicodeEncodeError
-        # on Windows when settings.py or orchestrator prints special characters
+        # Force UTF-8 + unbuffered output from the subprocess.
+        # On Windows, Python stdout is block-buffered when writing to a pipe,
+        # which means print() output is held in an 8KB buffer and only reaches
+        # the server when the buffer fills or the process ends — causing the UI
+        # to show nothing for minutes. PYTHONUNBUFFERED=1 forces line-by-line.
         _env = os.environ.copy()
         _env["PYTHONIOENCODING"] = "utf-8"
         _env["PYTHONUTF8"]       = "1"
+        _env["PYTHONUNBUFFERED"] = "1"   # ← critical: forces line-buffered stdout on Windows
 
-        emit({"type": "phase_start", "phase": "6a",
-              "label": "Starting pipeline", "detail": "Launching analysis engine",
-              "progress": 2})
+        # Emit a neutral status — do NOT activate any phase circle yet.
+        # The orchestrator's own print() lines will drive the stepper.
+        emit({"type": "status", "label": "Pipeline starting…", "detail": ""})
 
         proc = subprocess.Popen(
             cmd,
@@ -387,6 +773,7 @@ def _run_pipeline_subprocess(
             text=True,
             encoding="utf-8",
             errors="replace",
+            bufsize=1,           # line-buffered pipe read on the server side
             cwd=str(PROJECT_ROOT),
             env=_env,
         )
@@ -399,6 +786,25 @@ def _run_pipeline_subprocess(
             if not line:
                 continue
 
+            # Skip evaluation-progress lines — these look like generation lines
+            # ("EVAL_PROGRESS [1/1] Evaluating 2883 ...") and must not create cards.
+            if line.startswith("EVAL_PROGRESS") or "EVAL_PROGRESS" in line:
+                continue
+
+            # Per-record Phase 8 completion — "EVAL_DONE <wid>"
+            # Emitted by evaluate_fixes.py after each record is evaluated.
+            if line.startswith("EVAL_DONE"):
+                parts = line.split()
+                eval_wid = parts[1] if len(parts) > 1 else ""
+                if eval_wid:
+                    emit({"type": "warning_start", "phase": "8",
+                          "warning_id": eval_wid,
+                          "label": f"Quality check: {eval_wid}"})
+                    emit({"type": "warning_done", "phase": "8",
+                          "warning_id": eval_wid,
+                          "label": f"Check complete: {eval_wid}"})
+                continue
+
             # Always emit as log line
             emit({"type": "log", "detail": line})
 
@@ -406,33 +812,50 @@ def _run_pipeline_subprocess(
             # e.g. "Phase 6a — Parsing Polyspace report"
             if "Phase 6a" in line:
                 emit({"type": "phase_start", "phase": "6a",
-                      "label": "Parsing warning report",
-                      "detail": "Reading Excel + source files", "progress": 5})
+                      "label": "Reading file",
+                      "detail": "Loading your files", "progress": 5})
 
             elif "Phase 6b" in line:
+                emit({"type": "phase_done", "phase": "6a",
+                      "label": "File read complete", "progress": 15})
                 emit({"type": "phase_start", "phase": "6b",
-                      "label": "Retrieving MISRA context",
-                      "detail": "Querying Qdrant + BGE embeddings", "progress": 16})
+                      "label": "Looking up rules",
+                      "detail": "Matching rules to warnings", "progress": 16})
 
             elif "Phase 7" in line:
+                emit({"type": "phase_done", "phase": "6b",
+                      "label": "Rule lookup complete", "progress": 35})
                 emit({"type": "phase_start", "phase": "7",
-                      "label": "Generating fix suggestions",
-                      "detail": "Mistral-7B processing warnings", "progress": 31})
+                      "label": "Fix suggestions",
+                      "detail": "Generating fixes with AI", "progress": 31})
 
             elif "Phase 8" in line:
+                emit({"type": "phase_done", "phase": "7",
+                      "label": "Fix suggestions complete", "progress": 65})
                 emit({"type": "phase_start", "phase": "8",
-                      "label": "Evaluating fix quality",
-                      "detail": "Self-critique pass", "progress": 66})
+                      "label": "Quality check",
+                      "detail": "Verifying fix quality", "progress": 66})
 
-            # Parsed warning count: "  Parsed 16 warnings — {sev}"
-            if "Parsed" in line and "warnings" in line:
-                parts = line.split()
-                for i, p in enumerate(parts):
-                    if p == "warnings" and i > 0:
-                        try:
-                            total_warnings = int(parts[i - 1])
-                        except ValueError:
-                            pass
+            # ── FIX: Robust parsed-warning-count extraction ──
+            # Original code only matched "Parsed X warnings" with exact word boundary.
+            # Orchestrators may print variants like:
+            #   "Parsed 16 warnings — High: 4 ..."
+            #   "Parsed 16 MISRA warnings"
+            #   "16 warnings parsed"
+            #   "Found 16 warnings"
+            # The regex below handles all these cases.
+            _line_lower = line.lower()
+            if "warning" in _line_lower and (
+                "parsed" in _line_lower
+                or "found" in _line_lower
+                or "loaded" in _line_lower
+                or "read" in _line_lower
+            ):
+                _m = _re.search(r'(\d+)\s+(?:misra\s+)?warning', line, _re.IGNORECASE)
+                if _m:
+                    _candidate = int(_m.group(1))
+                    if _candidate > 0:
+                        total_warnings = _candidate
                 emit({"type": "phase_done", "phase": "6a",
                       "label": "Parsing complete",
                       "detail": line.strip(), "progress": 15,
@@ -469,6 +892,15 @@ def _run_pipeline_subprocess(
                     tot_i    = int(tot.strip())
                     pct      = 31 + int((cur_i / max(1, tot_i)) * 34)
                     _last_wid = wid  # track for fix(es) line matching
+
+                    # ── FIX: also update total_warnings from generation progress ──
+                    # If Phase 6a parsing line was missed/different format,
+                    # we can still learn the total from "[1/16]" style lines.
+                    if total_warnings == 0 and tot_i > 0:
+                        total_warnings = tot_i
+                        # Re-emit total so the frontend counter updates
+                        emit({"type": "total_update", "total": total_warnings})
+
                     # Emit warning_start so the UI card appears immediately
                     emit({"type": "warning_start", "phase": "7",
                           "label": f"Processing: {wid} ({rule})",
@@ -480,9 +912,7 @@ def _run_pipeline_subprocess(
 
             # Fix result line — "  3 fix(es)  254.2s  ✓" — marks warning complete
             if "fix(es)" in line and ("✓" in line or "✗" in line):
-                # Extract warning_id from the last warning_start we saw
                 try:
-                    # Find the wid from context (we track last_wid below)
                     emit({"type": "warning_done", "phase": "7",
                           "label": "Fix generated",
                           "detail": line.strip(), "warning_id": _last_wid or ""})
@@ -496,8 +926,8 @@ def _run_pipeline_subprocess(
             # Pipeline complete: "Pipeline complete — 955.7s"
             if "Pipeline complete" in line:
                 emit({"type": "phase_done", "phase": "8",
-                      "label": "Pipeline complete",
-                      "detail": line.strip(), "progress": 95})
+                      "label": "Preparing your report",
+                      "detail": "Report ready", "progress": 95})
 
         proc.wait()
 
@@ -505,7 +935,8 @@ def _run_pipeline_subprocess(
             job["status"] = "done"
             emit({"type": "done", "label": "Analysis complete",
                   "detail": f"Results saved — run ID: {run_id}",
-                  "progress": 100, "run_id": run_id})
+                  "progress": 100, "run_id": run_id,
+                  "total": total_warnings})   # ← FIX: include final total in done event
         else:
             job["status"] = "error"
             emit({"type": "error", "label": "Pipeline failed",

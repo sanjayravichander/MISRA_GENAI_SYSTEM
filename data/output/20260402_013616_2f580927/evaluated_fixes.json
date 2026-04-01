@@ -1,0 +1,132 @@
+{
+  "warning_count": 2,
+  "confidence_high": 0,
+  "confidence_medium": 1,
+  "confidence_low": 0,
+  "needs_manual_review": 1,
+  "results": [
+    {
+      "guideline_id": "Rule 9.1",
+      "guideline_title": "Non-initialized local variable",
+      "explanation": {
+        "summary": "The variable 'raw_value' is read before being assigned a value, leading to undefined behavior.",
+        "rule_basis": "Rule 9.1 (Mandatory): Non-initialized local variable.",
+        "code_evidence": "The code snippet provided initializes the variable 'output' but not 'raw_value', which is read before it is set."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Initialize 'raw_value' before reading it",
+          "why": "To prevent undefined behavior caused by reading an uninitialized variable.",
+          "patched_code": "5      int raw_value = 0;",
+          "compliance_notes": "Initializing the variable 'raw_value' to a known value ensures it is not read before being assigned.",
+          "risk_reduction": "High",
+          "original_patched_code": "5      int raw_value = 0;",
+          "original_title": "Initialize 'raw_value' before reading it",
+          "confidence": "Medium",
+          "is_correct": true,
+          "issues_found": []
+        }
+      ],
+      "risk_analysis": {
+        "severity": "High",
+        "why": "Reading an uninitialized variable can lead to unpredictable results and potential runtime errors.",
+        "potential_failures": [
+          "Runtime errors due to unpredictable values"
+        ],
+        "runtime_risk": "High",
+        "maintainability_risk": "High"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Fix the issue according to the provided fix_suggestions.",
+        "required_justification": "None",
+        "review_notes": "Ensure that all variables are properly initialized before being used."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "bcb19b99-61ee-499b-aa06-29fc74218955",
+          "b4b6beae-7941-442c-9a40-e0a8eacf60f7"
+        ],
+        "retrieval_score_raw": 0.781088,
+        "retrieval_score_reranked": 0.861088,
+        "confidence": 0.981088,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear consistent.",
+          "Warning text and retrieved rule statement may not fully align."
+        ]
+      },
+      "warning_id": "2883",
+      "source": "generation",
+      "evaluation": {
+        "rule_id": "MISRA 2012 Rule 9.1",
+        "rule_name": "Non-initialized local variable",
+        "rule_category": "Mandatory",
+        "issue_description": "The variable 'raw_value' is read before being assigned a value, leading to undefined behavior.",
+        "code_evidence": "The code snippet provided initializes the variable 'output' but not 'raw_value', which is read before",
+        "fixes": [
+          {
+            "fix_id": "Fix [1]",
+            "fix_description": "Initialize 'raw_value' before reading it",
+            "fix_implementation": "5      int raw_value = 0;",
+            "risk_reduction": "High",
+            "compliance": "Initializing the variable 'raw_value' to a known value ensures it is not read before being assigned."
+          }
+        ],
+        "warning_id": "2883",
+        "overall_confidence": "Medium",
+        "needs_manual_review": false,
+        "evaluated_fixes": [],
+        "evaluator_notes": ""
+      },
+      "overall_confidence": "Medium",
+      "needs_manual_review": false,
+      "evaluator_notes": ""
+    },
+    {
+      "guideline_id": "Rule 10.3",
+      "guideline_title": "Implicit narrowing conversion",
+      "explanation": {
+        "summary": "The value of 'output' (int) is assigned to 'scaled' (uint8_t). This implicit narrowing conversion may silently truncate the value, causing data loss and incorrect program behavior.",
+        "rule_basis": "Rule 10.3 (Required): Implicit narrowing conversion.",
+        "code_evidence": "The code snippet contains an implicit narrowing conversion from int to uint8_t."
+      },
+      "fix_suggestions": [],
+      "risk_analysis": {
+        "severity": "High",
+        "why": "The implicit narrowing conversion may lead to data loss and incorrect program behavior.",
+        "potential_failures": [
+          "Data loss",
+          "Incorrect program behavior"
+        ],
+        "runtime_risk": "High",
+        "maintainability_risk": "High"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Implement the fix to avoid data loss and incorrect program behavior.",
+        "required_justification": "MISRA C:2012 Rule 10.3 requires explicit casts for narrowing conversions.",
+        "review_notes": "Ensure that the fix does not introduce new issues."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "ac195ae8-bb0d-484f-9b1e-b777db09c5cc",
+          "2e618e23-85df-409e-82e6-f6094004e480",
+          "5f982fcc-83fe-4c58-a8d3-c057556e444c"
+        ],
+        "retrieval_score_raw": 0.844588,
+        "retrieval_score_reranked": 0.924588,
+        "confidence": 0.9,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear inconsistent. The warning text suggests a narrowing conversion from int to uint8_t, while the retrieved context mentions a narrowing conversion from uint16_t to uint8_t.",
+          "Rejected 'Explicit cast': Patch introduces numeric constant not present in original code. Cannot verify this value is correct without additional context.",
+          "All generated fix suggestions were rejected by the generic safety validator. The LLM output contained unsafe patterns (magic numbers, pointer casts, new symbols, or VLAs). Review the raw LLM output manually."
+        ]
+      },
+      "warning_id": "1266",
+      "source": "generation",
+      "evaluation_skipped": true,
+      "needs_manual_review": true
+    }
+  ]
+}

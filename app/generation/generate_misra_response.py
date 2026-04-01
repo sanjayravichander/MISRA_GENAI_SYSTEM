@@ -86,6 +86,9 @@ def _compact_text(value: Any) -> str:
 
 
 def _hash_generation_signature(config: GenerationConfig) -> str:
+    # NOTE: max_tokens and n_ctx intentionally excluded — changing the token
+    # budget does not change the generation outcome for already-cached results.
+    # Including them would bust the cache every time settings are tuned.
     raw = json.dumps(
         {
             "model_path": config.model_path,
@@ -95,7 +98,6 @@ def _hash_generation_signature(config: GenerationConfig) -> str:
             "top_k": config.top_k,
             "repeat_penalty": config.repeat_penalty,
             "seed": config.seed,
-            "max_tokens": config.max_tokens,
         },
         sort_keys=True,
     )
@@ -103,11 +105,77 @@ def _hash_generation_signature(config: GenerationConfig) -> str:
 
 
 def _extract_json_block(text: str) -> str:
+    """Extract and clean a JSON object from raw LLM output.
+
+    Handles common LLM quirks:
+    - Markdown code fences (```json ... ```)
+    - Trailing commas before } or ]  (common LLM mistake)
+    - Truncated output (finds deepest balanced brace)
+    - Stray text before/after the JSON object
+    """
+    # Strip markdown fences
+    text = re.sub(r"```(?:json)?\s*", "", text).strip()
+    text = re.sub(r"```\s*$", "", text).strip()
+
     start = text.find("{")
-    end = text.rfind("}")
-    if start == -1 or end == -1 or end <= start:
-        raise ValueError(f"Model output does not contain a valid JSON object. Raw output: {text}")
-    return text[start:end + 1]
+    if start == -1:
+        raise ValueError(f"Model output contains no JSON object. Raw: {text[:300]}")
+
+    # Walk forward tracking brace depth to find the balanced closing }
+    depth = 0
+    end = -1
+    in_string = False
+    escape_next = False
+    for i, ch in enumerate(text[start:], start):
+        if escape_next:
+            escape_next = False
+            continue
+        if ch == "\\" and in_string:
+            escape_next = True
+            continue
+        if ch == '"':
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                end = i
+                break
+
+    if end == -1:
+        # Truncated output — attempt to close all open braces/brackets
+        partial = text[start:]
+        partial = re.sub(r",\s*$", "", partial.rstrip())  # strip trailing comma
+        # Count unclosed braces and brackets
+        depth_brace = 0
+        depth_bracket = 0
+        in_str = False
+        esc = False
+        for ch in partial:
+            if esc: esc = False; continue
+            if ch == "\\" and in_str: esc = True; continue
+            if ch == '"': in_str = not in_str; continue
+            if in_str: continue
+            if ch == "{": depth_brace += 1
+            elif ch == "}": depth_brace -= 1
+            elif ch == "[": depth_bracket += 1
+            elif ch == "]": depth_bracket -= 1
+        # Close any open strings, brackets, then braces
+        closing = ""
+        if in_str: closing += '"'
+        closing += "]" * max(0, depth_bracket)
+        closing += "}" * max(0, depth_brace)
+        json_text = partial + closing
+    else:
+        json_text = text[start:end + 1]
+
+    # Remove trailing commas before } or ] (very common LLM mistake)
+    json_text = re.sub(r",\s*([}\]])", r"\1", json_text)
+    return json_text
 
 
 def _chunk_score(chunk: Dict[str, Any]) -> float:
@@ -204,16 +272,36 @@ def _prepare_authoritative_context(retrieval_result: Dict[str, Any]) -> Dict[str
 
 def _build_system_prompt() -> str:
     return """
-You are an offline MISRA C:2012 analysis engine.
+You are an offline MISRA C:2012 analysis engine. Your primary job is to produce
+at least one valid, compilable fix suggestion for every warning you analyse.
 
-Rules:
-1. Use ONLY the provided warning details, source code snippet, and retrieved MISRA knowledge context.
+Core rules:
+1. Use ONLY the provided warning details, source code snippet, and retrieved MISRA context.
 2. Do NOT invent MISRA rule text, rationale, exceptions, or examples.
 3. If evidence is missing, say "insufficient evidence from retrieved context".
-4. Output STRICT JSON only.
-5. Do not output markdown.
-6. Fix suggestions must be conservative and standards-aligned.
-7. Never claim certainty if the retrieved evidence is weak or inconsistent.
+4. Output STRICT JSON only. No markdown, no prose outside the JSON.
+5. Fix suggestions must be conservative, minimal, and MISRA-compliant.
+6. You MUST always produce at least one fix_suggestion unless the code snippet
+   is completely absent or the warning is not actionable.
+
+Patch quality rules (your patches are validated — follow these exactly):
+- Do NOT introduce variable-length arrays. Example of what NOT to do: uint8_t buf[n];
+  Array accesses like data[i] are fine — only declarations with non-constant bounds are forbidden.
+- Do NOT introduce numeric literals that do not already appear in the original code
+  UNLESS the literal is a well-known type-width constant (e.g. 8 for uint8_t, 16 for uint16_t,
+  32 for uint32_t) and is directly required by the MISRA rule being fixed.
+  For Rule 12.2 (shift range), you MAY use the type-width literal as a bound check.
+- Do NOT introduce pointer casts: (int*), (void*), (char*).
+- Do NOT remove 'extern' and add an initialiser unless the context explicitly requires it.
+- Local helper variables (e.g. a local copy of a parameter) are ALLOWED and encouraged
+  for rules like 17.8 where the fix is to avoid modifying the parameter directly.
+
+Fix strategy by rule family:
+- Rule 17.x (function params): Use a local copy of the parameter instead of modifying it.
+- Rule 10.x / 12.x (shift / type): Add a range guard using the type width as the bound.
+- Rule 14.x (control flow): Restructure the branch; do not add new variables.
+- Rule 15.x (switch): Add explicit default or break; minimal change only.
+- Rule 11.x (pointer): Remove the cast; use the correct type directly.
 """.strip()
 
 
@@ -258,6 +346,10 @@ def _build_user_prompt(warning_input: Dict[str, Any], prompt_context: Dict[str, 
         }
     }
 
+    import re as _re
+    original_nums = set(_re.findall(r"\b\d+\b", warning_input.get("code_snippet", "")))
+    original_idents = set(_re.findall(r"\b[A-Za-z_][A-Za-z0-9_]*\b", warning_input.get("code_snippet", "")))
+
     return f"""
 Produce one STRICT JSON object matching this schema exactly:
 
@@ -269,17 +361,35 @@ Input warning:
 Retrieved MISRA context:
 {json.dumps(prompt_context, indent=2)[:6000]}
 
-Instructions:
+=== ORIGINAL CODE TOKEN INVENTORY ===
+Numeric literals already in original: {sorted(original_nums)}
+Identifiers already in original: {sorted(original_idents)}
+(You may use any of these freely in patched_code without triggering validator warnings.)
+
+=== PATCH CONSTRAINTS — READ CAREFULLY ===
+Your patched_code will be validated. It will be REJECTED if it:
+  1. Contains a VLA declaration: e.g. uint8_t buf[n]; — array accesses like data[i] are FINE.
+  2. Introduces a numeric literal NOT in the original list above, UNLESS it is the type-width
+     constant strictly required by this rule (e.g. 8 for uint8_t shift bounds in Rule 12.2).
+  3. Contains a pointer cast: (int*), (void*), (char*), (uint8_t*).
+  4. Converts an extern declaration into a definition.
+
+=== MANDATORY FIX REQUIREMENT ===
+You MUST produce at least one fix_suggestion with valid patched_code.
+If the only safe fix is adding a comment or const qualifier, do that.
+An empty fix_suggestions array is NOT acceptable.
+
+=== INSTRUCTIONS ===
 - guideline_id must align to the strongest retrieved guideline when supported by evidence.
 - guideline_title must come only from retrieved context if available.
-- Generate as many ranked fix_suggestions as the retrieved MISRA context justifies. If the rule has multiple recommended remediation approaches in the context, provide one fix per approach. If only one clear fix exists, provide one. Do not invent fixes beyond what the retrieved context supports.
-- If exact patch code is uncertain, provide the safest local patch.
-- Prefer the smallest compliant patch.
-- Do not convert a declaration into a definition unless the retrieved context explicitly requires it.
-- Do not introduce new symbols unless strictly necessary.
-- Do not propose variable-length arrays.
-- If the warning text and retrieved rule meaning appear inconsistent, mention that in traceability.limitations.
-- Return JSON only.
+- Generate 1-4 ranked fix_suggestions covering different remediation approaches from the context.
+- Prefer the smallest, most local patch that achieves compliance.
+- For Rule 17.x: use a local copy variable (it is in the original identifiers list if it exists,
+  or use a short name like 'val' which is <= 3 chars and always allowed).
+- For Rule 12.x / 10.x shift issues: add a range guard using the type-width constant.
+- Do not convert a declaration into a definition unless required.
+- If warning and retrieved rule are inconsistent, note it in traceability.limitations.
+- Return JSON only. No markdown.
 """.strip()
 
 
@@ -432,7 +542,19 @@ def _run_generation(
 
     text = response["choices"][0]["message"]["content"]
     json_text = _extract_json_block(text)
-    parsed = json.loads(json_text)
+    try:
+        parsed = json.loads(json_text)
+    except json.JSONDecodeError as exc:
+        # Last-resort: aggressively strip any remaining non-JSON chars and retry
+        cleaned = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", "", json_text)  # strip control chars
+        cleaned = re.sub(r",\s*([}\]])", r"\1", cleaned)  # trailing commas again
+        try:
+            parsed = json.loads(cleaned)
+        except json.JSONDecodeError:
+            raise json.JSONDecodeError(
+                f"Could not parse LLM JSON after cleanup. Original error: {exc.msg}",
+                exc.doc, exc.pos
+            ) from exc
     validated = _validate_and_normalize_output(parsed, prompt_context, warning_input)
     return validated
 
@@ -496,6 +618,37 @@ def generate_misra_response(
         rule_id=rule_id,
         code_snippet=code_snippet,
     )
+
+    # Retry once if no valid fixes were produced
+    if not final_result.get("fix_suggestions"):
+        LOGGER.warning(
+            "No valid fixes after first generation for %s (%s) — retrying with stricter prompt",
+            rule_id, warning_message[:60],
+        )
+        retry_input = dict(warning_input)
+        retry_input["_retry_hint"] = (
+            "Previous attempt produced zero valid fixes. "
+            "This retry: output patched_code that changes only the flagged line(s). "
+            "Do NOT introduce any new variable declarations. "
+            "Do NOT use numeric literals not already in the original code. "
+            "A minimal comment-only fix or const qualifier is acceptable."
+        )
+        retry_result = _run_generation(
+            config=config,
+            warning_input=retry_input,
+            prompt_context=prompt_context,
+        )
+        retry_validated = filter_and_validate_response(
+            retry_result,
+            rule_id=rule_id,
+            code_snippet=code_snippet,
+        )
+        if retry_validated.get("fix_suggestions"):
+            # Merge retry fixes into the main result
+            final_result["fix_suggestions"] = retry_validated["fix_suggestions"]
+            lims = final_result.get("traceability", {}).get("limitations", [])
+            lims.append("Fix suggestions produced on retry attempt.")
+            final_result.setdefault("traceability", {})["limitations"] = lims
 
     store_final_result(
         cache_key=cache_key,

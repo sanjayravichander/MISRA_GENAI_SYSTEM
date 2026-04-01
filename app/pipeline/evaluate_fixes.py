@@ -500,6 +500,7 @@ def evaluate_all(
                 review = "⚠ REVIEW" if merged.get("needs_manual_review") else "✓"
                 print(f"  [{i:2d}/{len(fix_results)}] {wid}  {rule:12s}"
                       f"  [EVAL CACHE] confidence={conf}  {review}")
+                print(f"EVAL_DONE {wid}", flush=True)   # signals UI: phase 8 complete for this record
             evaluated.append(merged)
             if out_path is not None:
                 _save_incremental(evaluated, out_path)
@@ -507,7 +508,7 @@ def evaluate_all(
 
         # ── LLM evaluation call ────────────────────────────────────────
         if verbose:
-            print(f"  [{i:2d}/{len(fix_results)}] Evaluating {wid}  {rule:12s} ...")
+            print(f"EVAL_PROGRESS [{i:2d}/{len(fix_results)}] Evaluating {wid}  {rule:12s} ...")
 
         t0 = time.time()
         try:
@@ -529,6 +530,7 @@ def evaluate_all(
             if verbose:
                 print(f"       confidence={conf}  corrected={corrected} fix(es)"
                       f"  {elapsed:.1f}s  {review}")
+                print(f"EVAL_DONE {wid}", flush=True)   # signals UI: phase 8 complete for this record
 
             evaluated.append(merged)
 
@@ -538,6 +540,7 @@ def evaluate_all(
         except Exception as e:
             if verbose:
                 print(f"       ERROR: {e}")
+                print(f"EVAL_DONE {wid}", flush=True)   # signal even on error so UI advances
             evaluated.append({**fix_result, "needs_manual_review": True,
                                "evaluator_notes": f"Evaluator error: {e}"})
             if out_path is not None:

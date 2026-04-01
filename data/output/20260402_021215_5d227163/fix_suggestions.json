@@ -1,0 +1,94 @@
+{
+  "warning_count": 2,
+  "results": [
+    {
+      "guideline_id": "Rule 17.8",
+      "guideline_title": "A function parameter should not be modified",
+      "explanation": {
+        "summary": "The function parameter 'data' is being modified, which violates Rule 17.8.",
+        "rule_basis": "Function interfaces and calls must be explicit, safe, and consistently used.",
+        "code_evidence": "The code snippet shows that the function parameter 'data' is being modified."
+      },
+      "fix_suggestions": [],
+      "risk_analysis": {
+        "severity": "Medium",
+        "why": "Modifying function parameters can lead to unexpected behavior and inconsistent results.",
+        "potential_failures": [
+          "Data corruption",
+          "Inconsistent results"
+        ],
+        "runtime_risk": "Medium",
+        "maintainability_risk": "Medium"
+      },
+      "deviation_advice": {
+        "deviation_possible": "Conditional",
+        "recommended_decision": "Avoid modifying function parameters unless absolutely necessary.",
+        "required_justification": "If a justification is needed, it should clearly explain why modifying the function parameter is necessary and how it will not lead to unexpected behavior or inconsistent results.",
+        "review_notes": "Consider refactoring the code to avoid modifying the function parameter."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "d1a3e72b-bb5d-492d-a097-0f1939467895",
+          "ac195ae8-bb0d-484f-9b1e-b777db09c5cc",
+          "d4c21f0f-1faa-49e9-be35-70aba8355be9",
+          "1f6d05d6-9e5c-49af-b020-a704501beb12"
+        ],
+        "retrieval_score_raw": 0.775789,
+        "retrieval_score_reranked": 0.855789,
+        "confidence": 0.9,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear inconsistent as the warning message does not explicitly mention function parameters.",
+          "Rejected 'Avoid modifying function parameters': Patch introduces variable-length array (MISRA Rule 18.8 violation).",
+          "All generated fix suggestions were rejected by the generic safety validator. The LLM output contained unsafe patterns (magic numbers, pointer casts, new symbols, or VLAs). Review the raw LLM output manually."
+        ]
+      },
+      "warning_id": "1338",
+      "source": "generation"
+    },
+    {
+      "guideline_id": "Rule 10.3",
+      "guideline_title": "The right hand operand of a shift operator shall lie between zero and one less than the width in bits of the essential type of the left hand operand",
+      "explanation": {
+        "summary": "The right hand operand of a shift operator should be within the range of the width in bits of the essential type of the left hand operand.",
+        "rule_basis": "To prevent undefined behavior and ensure safe shifts.",
+        "code_evidence": "The right hand operand of the shift operator (8) is greater than the width in bits of the essential type of the left hand operand (1U)."
+      },
+      "fix_suggestions": [],
+      "risk_analysis": {
+        "severity": "Medium",
+        "why": "The shift operator is used with a count greater than the width in bits of the essential type of the left hand operand, which may lead to undefined behavior.",
+        "potential_failures": [
+          "Data loss or incorrect program behavior due to undefined behavior."
+        ],
+        "runtime_risk": "Medium",
+        "maintainability_risk": "Medium"
+      },
+      "deviation_advice": {
+        "deviation_possible": "Conditional",
+        "recommended_decision": "Do not deviate from the rule unless necessary.",
+        "required_justification": "If a deviation is necessary, provide a justification and ensure that the potential risks are understood and mitigated.",
+        "review_notes": "Review the justification for any deviation from this rule."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "ac195ae8-bb0d-484f-9b1e-b777db09c5cc",
+          "b86cb560-3733-4718-a908-da8e47b79bfd",
+          "58d22287-4c6d-46ee-8ccd-8047a055cf55",
+          "fc77b2e5-eb95-4e0b-9ec5-9e861d837e06",
+          "5f982fcc-83fe-4c58-a8d3-c057556e444c"
+        ],
+        "retrieval_score_raw": 0.758317,
+        "retrieval_score_reranked": 0.838317,
+        "confidence": 0.9,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear inconsistent. The warning text suggests a shift range issue, while the retrieved context indicates a violation of Rule 12.2 related to the right hand operand of a shift operator.",
+          "Warning text and retrieved rule statement may not fully align.",
+          "Rejected 'Limit shift count': Patch introduces numeric constant not present in original code. Cannot verify this value is correct without additional context.; Patch introduces variable-length array (MISRA Rule 18.8 violation).",
+          "All generated fix suggestions were rejected by the generic safety validator. The LLM output contained unsafe patterns (magic numbers, pointer casts, new symbols, or VLAs). Review the raw LLM output manually."
+        ]
+      },
+      "warning_id": "2790",
+      "source": "generation"
+    }
+  ]
+}

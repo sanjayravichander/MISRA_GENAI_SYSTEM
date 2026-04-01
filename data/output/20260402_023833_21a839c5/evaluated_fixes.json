@@ -1,0 +1,150 @@
+{
+  "warning_count": 2,
+  "confidence_high": 0,
+  "confidence_medium": 1,
+  "confidence_low": 1,
+  "needs_manual_review": 1,
+  "results": [
+    {
+      "guideline_id": "Rule 8.13",
+      "guideline_title": "A pointer should point to a const-qualified type whenever possible",
+      "explanation": {
+        "summary": "The pointer parameter 'log_message' should be const-qualified.",
+        "rule_basis": "This code violates Rule 8.13 because a pointer should point to a const-qualified type whenever possible. Inconsistent declarations and linkage decisions reduce maintainability and can break interface correctness.",
+        "code_evidence": "The code snippet provided uses a non-const pointer for the 'log_message' function parameter."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Change the 'log_message' function parameter to const",
+          "why": "Making the parameter const ensures that it points to a const-qualified type.",
+          "patched_code": "6  void log_message(const char * msg)",
+          "compliance_notes": "This change brings the code into compliance with MISRA C:2012 Rule 8.13.",
+          "risk_reduction": "By making the parameter const, the risk of unintended modification of the log buffer is reduced.",
+          "original_patched_code": "6  void log_message(const char * msg)",
+          "original_title": "Change the 'log_message' function parameter to const",
+          "confidence": "Medium",
+          "is_correct": true,
+          "issues_found": []
+        }
+      ],
+      "risk_analysis": {
+        "severity": "Medium",
+        "why": "The use of a non-const pointer can lead to unintended modifications of the log buffer, which can result in incorrect logging or unexpected behavior.",
+        "potential_failures": [
+          "Incorrect logging due to unintended modifications of the log buffer"
+        ],
+        "runtime_risk": "Medium",
+        "maintainability_risk": "Medium"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Implement the suggested fix to bring the code into compliance with MISRA C:2012 Rule 8.13.",
+        "required_justification": "The use of a non-const pointer in this context can lead to maintainability and correctness issues.",
+        "review_notes": "Ensure that all function parameters are appropriately const-qualified."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "bff8d6a1-c782-4fd3-aac4-e9cde544b5f2",
+          "b4b6beae-7941-442c-9a40-e0a8eacf60f7",
+          "e11f3b72-bad1-4f01-a8b6-b5317555a97a",
+          "c320a515-829f-4754-9647-ecdb1844444b"
+        ],
+        "retrieval_score_raw": 0.76169,
+        "retrieval_score_reranked": 0.84169,
+        "confidence": 0.9,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear consistent."
+        ]
+      },
+      "warning_id": "3673",
+      "source": "generation",
+      "evaluation": {
+        "warning_id": "3673",
+        "rule_id": "",
+        "overall_confidence": "Low",
+        "needs_manual_review": true,
+        "evaluated_fixes": [],
+        "evaluator_notes": "Evaluator error: Expecting value: line 6 column 13 (char 148)",
+        "eval_parse_error": true
+      },
+      "overall_confidence": "Low",
+      "needs_manual_review": true,
+      "evaluator_notes": "Evaluator error: Expecting value: line 6 column 13 (char 148)"
+    },
+    {
+      "guideline_id": "Rule 17.7",
+      "guideline_title": "The value returned by a function having non-void return type shall be used",
+      "explanation": {
+        "summary": "The value returned by the function 'puts' is being ignored.",
+        "rule_basis": "The standard input/output library <stdio.h> shall not be used.",
+        "code_evidence": "The code snippet includes the <stdio.h> library and ignores the return value of the 'puts' function."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Use the return value of puts",
+          "why": "The return value of puts indicates the number of characters written. Ignoring it can lead to undefined behavior.",
+          "patched_code": "1  #include <stdio.h>\n       2  #include <string.h>\n       3  \n       4  static char log_buffer[64];\n       5  \n       6  void log_message(char * msg)\n       7  {\n       8      int status = 0;\n       9  \n      10      strcpy(log_buffer, msg);\n      11  \n      12      status = puts(log_buffer);\n      13  \n      14      printf(\"puts returned: %d\\n\", status);\n      15  }",
+          "compliance_notes": "The return value of puts is now being used.",
+          "risk_reduction": "Using the return value of puts reduces the risk of undefined behavior.",
+          "original_patched_code": "1  #include <stdio.h>\n       2  #include <string.h>\n       3  \n       4  static char log_buffer[64];\n       5  \n       6  void log_message(char * msg)\n       7  {\n       8      int status = 0;\n       9  \n      10      strcpy(log_buffer, msg);\n      11  \n      12      status = puts(log_buffer);\n      13  \n      14      printf(\"puts returned: %d\\n\", status);\n      15  }",
+          "original_title": "Use the return value of puts",
+          "confidence": "Medium",
+          "is_correct": true,
+          "issues_found": []
+        }
+      ],
+      "risk_analysis": {
+        "severity": "Medium",
+        "why": "The ignored return value can lead to undefined behavior.",
+        "potential_failures": [
+          "Memory leaks",
+          "Incorrect logging",
+          "Program crashes"
+        ],
+        "runtime_risk": "Medium",
+        "maintainability_risk": "Medium"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Implement one of the provided fixes.",
+        "required_justification": "Ignoring the return value of a function with a non-void return type is not allowed.",
+        "review_notes": "Ensure that the return value of puts is used or replaced with a more robust logging function."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "7f705978-bf3b-4a1c-b2e2-e26890f24da4",
+          "73009af8-3657-49d1-9e1e-3bbb9703614d",
+          "7c4ef163-6909-4460-bf30-6f32170a5681",
+          "dada1bc3-6e2e-4d90-b11f-63a2dfb08ec7"
+        ],
+        "retrieval_score_raw": 0.724341,
+        "retrieval_score_reranked": 0.804341,
+        "confidence": 0.9,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear inconsistent as the warning is about ignoring the return value, while the retrieved rule is about not using the standard input/output library <stdio.h>.",
+          "Rejected 'Replace puts with a more robust logging function': Patch contains unsafe pointer cast (int*, void*, char*).; Patch introduces numeric constant not present in original code. Cannot verify this value is correct without additional context."
+        ]
+      },
+      "warning_id": "3200",
+      "source": "generation",
+      "evaluation": {
+        "summary": "The value returned by the function 'puts' is being ignored.",
+        "rule_basis": "The standard input/output library <stdio.h> shall not be used.",
+        "code_evidence": "The code snippet includes the <stdio.h> library and ignores the return value of the 'puts' function.",
+        "warning_id": "3200",
+        "rule_id": "",
+        "overall_confidence": "Medium",
+        "needs_manual_review": false,
+        "evaluated_fixes": [],
+        "evaluator_notes": "",
+        "_eval_from_cache": true
+      },
+      "overall_confidence": "Medium",
+      "needs_manual_review": false,
+      "evaluator_notes": "",
+      "_eval_from_cache": true
+    }
+  ]
+}

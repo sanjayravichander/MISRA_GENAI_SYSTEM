@@ -54,7 +54,7 @@ LOCAL_MODEL_PATH = r"C:\models\Mistral-7B-Instruct-v0.3-Q4_K_M.gguf"
 # LLM generation settings
 # ---------------------------------------------------------------------------
 LLM_TEMPERATURE     = 0.0
-LLM_MAX_TOKENS      = 3500
+LLM_MAX_TOKENS      = 6000   # increased: full MISRA JSON with 3+ fixes needs ~4500 tokens
 LLM_MAX_TOKENS_EVAL = 1536
 
 # ---------------------------------------------------------------------------
@@ -122,14 +122,15 @@ def _cuda_device_count():
 
 def _auto_llm_config(
     model_size_gb: float = 4.4,    # Mistral-7B Q4_K_M weights on disk
-    kv_per_1k_ctx: float = 0.5,    # GB of KV cache per 1024 context tokens
+    kv_per_1k_ctx: float = 0.06,   # GB of KV cache per 1024 ctx tokens (Q4_K_M quantised KV, empirical)
     model_max_ctx: int   = 32768,  # model's trained context limit
-    os_headroom_gb: float= 1.5,    # keep free for OS + other processes
+    os_headroom_gb: float= 1.0,    # keep free for OS + other processes
 ) -> dict:
     """
     Compute optimal (n_ctx, n_threads, n_gpu_layers) from live hardware.
 
-    n_ctx   — as large as RAM allows, capped at model_max_ctx
+    n_ctx   — as large as RAM allows, capped at model_max_ctx.
+              MINIMUM is 8192 — the MISRA prompt + JSON response needs ~6k tokens.
     n_threads — all physical cores minus 2 for OS  (min 1)
     n_gpu_layers — full offload if CUDA GPU detected, else 0
     """
@@ -140,15 +141,16 @@ def _auto_llm_config(
     # How much RAM is free for the KV cache after model weights + OS headroom
     free_for_kv = avail_gb - model_size_gb - os_headroom_gb
 
+    # Minimum context = 8192 regardless of RAM (prompt alone is ~2k tokens,
+    # full JSON response needs ~4k more — 8192 is the safe floor)
+    MIN_CTX = 8192
+
     if free_for_kv < 0.5:
-        # Very tight — use minimum safe context
-        n_ctx = 2048
+        n_ctx = MIN_CTX
     else:
-        # Raw token budget from available RAM
         raw_ctx = int((free_for_kv / kv_per_1k_ctx) * 1024)
-        # Snap down to nearest power-of-2 for best llama.cpp alignment
-        n_ctx   = min(model_max_ctx, 2 ** int(_math.log2(max(raw_ctx, 2048))))
-        n_ctx   = max(2048, n_ctx)
+        n_ctx   = min(model_max_ctx, 2 ** int(_math.log2(max(raw_ctx, MIN_CTX))))
+        n_ctx   = max(MIN_CTX, n_ctx)
 
     # CPU threads — leave 2 cores for OS scheduler
     cpu_cores = _os.cpu_count() or 4

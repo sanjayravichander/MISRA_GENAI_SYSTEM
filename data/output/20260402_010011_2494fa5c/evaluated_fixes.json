@@ -1,0 +1,79 @@
+{
+  "warning_count": 1,
+  "confidence_high": 0,
+  "confidence_medium": 1,
+  "confidence_low": 0,
+  "needs_manual_review": 0,
+  "results": [
+    {
+      "guideline_id": "Rule 9.1",
+      "guideline_title": "Non-initialized local variable",
+      "explanation": {
+        "summary": "The variable 'x' is used before being initialized, leading to undefined behavior.",
+        "rule_basis": "MISRA C:2012 Rule 9.1",
+        "code_evidence": "The code snippet provided shows the variable 'x' being used before it is assigned a value."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Initialize the variable 'x' before using it",
+          "why": "This will prevent the variable from being used before it is assigned a value.",
+          "patched_code": "5      int x = 0;       /* initialize x */",
+          "compliance_notes": "This fix ensures compliance with MISRA C:2012 Rule 9.1.",
+          "risk_reduction": "This fix reduces the risk of undefined behavior.",
+          "original_patched_code": "5      int x = 0;       /* initialize x */",
+          "original_title": "Initialize the variable 'x' before using it",
+          "confidence": "Medium",
+          "is_correct": true,
+          "issues_found": []
+        }
+      ],
+      "risk_analysis": {
+        "severity": "High",
+        "why": "Using a variable before it is initialized can lead to undefined behavior and unpredictable results.",
+        "potential_failures": [
+          "Unpredictable program behavior",
+          "Runtime errors"
+        ],
+        "runtime_risk": "High",
+        "maintainability_risk": "High"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Implement the fix to ensure compliance with MISRA C:2012 Rule 9.1.",
+        "required_justification": "The use of a variable before it is initialized can lead to undefined behavior and unpredictable results.",
+        "review_notes": "Ensure that all local variables are initialized before they are used."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "bcb19b99-61ee-499b-aa06-29fc74218955",
+          "24c45106-be22-42d1-8fb0-dca20cc89ae4",
+          "4677ce74-ebe0-4eb6-8b0e-aaef70fa1c4e"
+        ],
+        "retrieval_score_raw": 0.827,
+        "retrieval_score_reranked": 0.907,
+        "confidence": 0.99,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear consistent.",
+          "Warning text and retrieved rule statement may not fully align."
+        ]
+      },
+      "warning_id": "2883",
+      "source": "generation",
+      "evaluation": {
+        "summary": "The variable 'x' is used before being initialized, leading to undefined behavior.",
+        "rule_basis": "MISRA C:2012 Rule 9.1",
+        "code_evidence": "The code snippet provided shows the variable 'x' being used before it is assigned a value.",
+        "warning_id": "2883",
+        "rule_id": "",
+        "overall_confidence": "Medium",
+        "needs_manual_review": false,
+        "evaluated_fixes": [],
+        "evaluator_notes": ""
+      },
+      "overall_confidence": "Medium",
+      "needs_manual_review": false,
+      "evaluator_notes": ""
+    }
+  ]
+}

@@ -58,25 +58,52 @@ def _contains_magic_number(original_code: str, patched_code: str) -> bool:
 
 def _contains_vla_pattern(code: str) -> bool:
     """
-    Detects variable-length array declarations like: int arr[n];
-    where the bound is an identifier, not a literal or macro.
+    Detects variable-length array DECLARATIONS like: int arr[n];
+    where the bound is a runtime identifier, not a literal or macro.
+
+    Must match a C type keyword + name + [identifier] to avoid false-positives
+    on array accesses like data[i] or buf[idx].
     """
-    return bool(re.search(r"\[\s*[A-Za-z_][A-Za-z0-9_]*\s*\]", code))
+    type_keywords = (
+        r"(?:int|char|short|long|float|double"
+        r"|uint8_t|uint16_t|uint32_t|uint64_t"
+        r"|int8_t|int16_t|int32_t|int64_t|size_t|bool)"
+    )
+    # Match: <type> <name>[<identifier>]  — actual VLA declaration
+    return bool(re.search(
+        rf"\b{type_keywords}\s+[A-Za-z_][A-Za-z0-9_]*\s*\[\s*[A-Za-z_][A-Za-z0-9_]*\s*\]",
+        code,
+    ))
 
 
 def _introduces_new_symbol(original_code: str, patched_code: str) -> bool:
     """
-    Detects new typed variable declarations in the patch that
-    do not appear in the original snippet.
-    Only flags actual declarations (int x, uint8_t y etc.), not uses.
+    Detects new typed variable declarations in the patch that are NOT
+    semantically related to the fix context.
+
+    Only flags symbols that:
+    - Are newly declared (typed declaration present in patch but not original)
+    - AND whose name has NO overlap with any token already in the original code
+
+    This allows helper locals like `local_val`, `copy`, `tmp_shift` which
+    are common and correct in MISRA fixes (e.g. Rule 17.8: use a local copy
+    instead of modifying the parameter directly).
+
+    We do NOT flag:
+    - Declarations of variables whose names already appear as identifiers
+      in the original (covers function-parameter-related locals)
+    - Short locals of 3 chars or fewer (common temporaries: i, j, ok, tmp)
     """
     original_tokens = set(re.findall(r"\b[A-Za-z_][A-Za-z0-9_]*\b", original_code))
     patched_decl_tokens = set(re.findall(
-        r"\b(?:int|char|short|long|float|double|uint\d+_t|int\d+_t)\s+([A-Za-z_][A-Za-z0-9_]*)",
+        r"\b(?:int|char|short|long|float|double|uint\d+_t|int\d+_t|size_t|bool)\s+([A-Za-z_][A-Za-z0-9_]*)",
         patched_code,
     ))
-    unseen = [tok for tok in patched_decl_tokens if tok not in original_tokens]
-    return len(unseen) > 0
+    truly_new = [
+        tok for tok in patched_decl_tokens
+        if tok not in original_tokens and len(tok) > 3
+    ]
+    return len(truly_new) > 0
 
 
 def _converts_decl_to_definition(original_code: str, patched_code: str) -> bool:

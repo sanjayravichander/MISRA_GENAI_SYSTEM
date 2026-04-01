@@ -1,0 +1,23 @@
+{
+  "warning_count": 2,
+  "results": [
+    {
+      "warning_id": "3344",
+      "rule_id": "14.4",
+      "fix_suggestions": [],
+      "parse_error": true,
+      "explanation": {
+        "summary": "Expecting ',' delimiter: line 17 column 6 (char 1214)"
+      }
+    },
+    {
+      "warning_id": "3340",
+      "rule_id": "14.1",
+      "fix_suggestions": [],
+      "parse_error": true,
+      "explanation": {
+        "summary": "Expecting ',' delimiter: line 17 column 6 (char 1081)"
+      }
+    }
+  ]
+}

@@ -1,0 +1,104 @@
+{
+  "warning_count": 2,
+  "results": [
+    {
+      "guideline_id": "Rule 14.4",
+      "guideline_title": "Non-Boolean if-controlling expression",
+      "explanation": {
+        "summary": "The controlling expression of the 'if' statement is 'state', an integer, not an essentially Boolean type. Using non-Boolean values as conditions reduces readability and may mask logic errors where the value is non-zero but not the intended condition.",
+        "rule_basis": "Rule 14.4 (Required): Non-Boolean if-controlling expression.",
+        "code_evidence": "The provided code snippet contains an if statement with a non-Boolean controlling expression."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Convert if statement to a conditional expression",
+          "why": "This approach converts the if statement to a conditional expression, making it clearer that a Boolean value is expected.",
+          "patched_code": "7  void stop_motor(int state)\n       8  {\n       9    (state != 0) ? {\n      10      } : {};\n      11  }",
+          "compliance_notes": "This fix ensures that the if statement is only executed when the controlling expression is a Boolean value.",
+          "risk_reduction": "This fix reduces the risk of logic errors and improves readability."
+        }
+      ],
+      "risk_analysis": {
+        "severity": "Medium",
+        "why": "The use of a non-Boolean value as a controlling expression can lead to logic errors and reduced readability.",
+        "potential_failures": [
+          "Logic errors due to incorrect interpretation of non-Boolean values"
+        ],
+        "runtime_risk": "Medium",
+        "maintainability_risk": "Medium"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Implement the fix",
+        "required_justification": "The use of non-Boolean values as controlling expressions is not allowed according to MISRA guidelines.",
+        "review_notes": "Ensure that all if statements use essentially Boolean types as controlling expressions."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "ca495443-61eb-4f47-a1c5-63f95be23040",
+          "d60078ca-7fbd-4c75-871c-6fdd1a403f3f",
+          "8ec8440d-148a-474f-a13e-c324b18340c4"
+        ],
+        "retrieval_score_raw": 0.791543,
+        "retrieval_score_reranked": 0.871543,
+        "confidence": 0.9,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear consistent."
+        ]
+      },
+      "warning_id": "3344",
+      "source": "generation"
+    },
+    {
+      "guideline_id": "Rule 21.7",
+      "guideline_title": "The atof, atoi, atol and atoll functions of <stdlib.h> shall not be used",
+      "explanation": {
+        "summary": "The code uses atoi function which is not allowed according to MISRA.",
+        "rule_basis": "This code violates Rule 21.7 because the atoi function of <stdlib.h> shall not be used. Restricted standard-library features are disallowed because they reduce determinism, analyzability, or portability.",
+        "code_evidence": "The atoi function is used in the code snippet."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Replace atoi with a safer alternative",
+          "why": "The atoi function is not recommended due to its potential for undefined behavior.",
+          "patched_code": "/* Replace atoi with sscanf */\nint i = 0;\nsscanf(some_string, \"%d\", &i);",
+          "compliance_notes": "This fix replaces the atoi function with sscanf, which is a safer alternative for converting strings to integers.",
+          "risk_reduction": "Using sscanf instead of atoi reduces the risk of undefined behavior."
+        }
+      ],
+      "risk_analysis": {
+        "severity": "High",
+        "why": "The use of atoi function can lead to undefined behavior.",
+        "potential_failures": [
+          "Undefined behavior due to incorrect input"
+        ],
+        "runtime_risk": "High",
+        "maintainability_risk": "High"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Implement the fix",
+        "required_justification": "The use of atoi function is not allowed according to MISRA.",
+        "review_notes": "Ensure that all instances of atoi are replaced with safer alternatives."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "ae5fc129-e704-4b08-9b30-c09715775425",
+          "755186d5-3629-410c-8f29-aff0630d2719",
+          "8ec8440d-148a-474f-a13e-c324b18340c4"
+        ],
+        "retrieval_score_raw": 0.711057,
+        "retrieval_score_reranked": 0.791057,
+        "confidence": 0.9,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear inconsistent. The warning text suggests a loop never executes, while the retrieved context indicates a violation of Rule 21.7.",
+          "Warning text and retrieved rule statement may not fully align."
+        ]
+      },
+      "warning_id": "3340",
+      "source": "generation"
+    }
+  ]
+}

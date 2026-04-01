@@ -29,6 +29,11 @@ from typing import Any, Dict, List
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
+# ── Force line-buffered stdout so server.py receives print() output immediately
+# rather than waiting for the 8KB pipe buffer to fill (critical on Windows).
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(line_buffering=True)
+
 from app.config.settings import (
     OUTPUT_DIR, AUDIT_DIR,
     LOCAL_MODEL_PATH,
@@ -50,10 +55,10 @@ def phase_6a_parse(
     verbose: bool = True,
 ) -> List[Dict[str, Any]]:
     if verbose:
-        print(f"\n{'─'*60}")
-        print(f"Phase 6a — Parsing Polyspace report")
-        print(f"  Excel  : {xlsx_path}")
-        print(f"  Sources: {source_dir}")
+        print(f"\n{'─'*60}", flush=True)
+        print(f"Phase 6a — Parsing Polyspace report", flush=True)
+        print(f"  Excel  : {xlsx_path}", flush=True)
+        print(f"  Sources: {source_dir}", flush=True)
 
     from app.ingestion.parse_polyspace import parse_report
     warnings = parse_report(xlsx_path, source_dir)
@@ -69,7 +74,7 @@ def phase_6a_parse(
         for w in warnings:
             s = w.get("severity", "Unknown")
             sev[s] = sev.get(s, 0) + 1
-        print(f"  Parsed {len(warnings)} warnings — {sev}")
+        print(f"  Parsed {len(warnings)} warnings — {sev}", flush=True)
     return warnings
 
 
@@ -83,8 +88,8 @@ def phase_6b_retrieve(
     verbose: bool = True,
 ) -> List[Dict[str, Any]]:
     if verbose:
-        print(f"\n{'─'*60}")
-        print(f"Phase 6b — Retrieving MISRA context (Qdrant + BGE)")
+        print(f"\n{'─'*60}", flush=True)
+        print(f"Phase 6b — Retrieving MISRA context (Qdrant + BGE)", flush=True)
 
     from app.retrieval.retrieve_rules import retrieve_rules
     from app.retrieval.retrieval_postprocessor import postprocess_retrieved_rules
@@ -98,7 +103,7 @@ def phase_6b_retrieve(
         except Exception as exc:
             clean_rules = []
             if verbose:
-                print(f"  ERROR retrieving {w.get('warning_id')}: {exc}")
+                print(f"  ERROR retrieving {w.get('warning_id')}: {exc}", flush=True)
 
         enriched.append({**w, "misra_context": clean_rules})
 
@@ -107,7 +112,7 @@ def phase_6b_retrieve(
                 f"  {w.get('warning_id','?'):8s}  "
                 f"{w.get('rule_id',''):12s}  "
                 f"{len(clean_rules)} rule(s) retrieved"
-            )
+            , flush=True)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(
@@ -128,10 +133,10 @@ def phase_7_generate(
     verbose: bool = True,
 ) -> List[Dict[str, Any]]:
     if verbose:
-        print(f"\n{'─'*60}")
-        print(f"Phase 7 — Generating fix suggestions (llama-cpp)")
-        print(f"  Model : {LOCAL_MODEL_PATH}")
-        print(f"  Warnings: {len(enriched)}")
+        print(f"\n{'─'*60}", flush=True)
+        print(f"Phase 7 — Generating fix suggestions (llama-cpp)", flush=True)
+        print(f"  Model : {LOCAL_MODEL_PATH}", flush=True)
+        print(f"  Warnings: {len(enriched)}", flush=True)
 
     from app.generation.generate_misra_response import (
         GenerationConfig,
@@ -164,7 +169,7 @@ def phase_7_generate(
                     results.append(r)
                     existing_ids.add(r.get("warning_id"))
             if verbose and existing_ids:
-                print(f"  Resuming: {len(existing_ids)} already done")
+                print(f"  Resuming: {len(existing_ids)} already done", flush=True)
         except Exception:
             pass
 
@@ -173,7 +178,7 @@ def phase_7_generate(
 
         if wid in existing_ids:
             if verbose:
-                print(f"  [{i:2d}/{len(enriched)}] {wid} — skipped (done)")
+                print(f"  [{i:2d}/{len(enriched)}] {wid} — skipped (done)", flush=True)
             continue
 
         if verbose:
@@ -182,7 +187,7 @@ def phase_7_generate(
                 f"{w.get('rule_id',''):12s}  "
                 f"{w.get('severity',''):6s}  "
                 f"{w.get('file_path','')}:{w.get('line_start','')}"
-            )
+            , flush=True)
 
         t0 = time.time()
         try:
@@ -194,9 +199,12 @@ def phase_7_generate(
                 config=config,
                 top_k=5,
             )
-            result = bundle.get("result", {})
+            result            = bundle.get("result", {})
             result["warning_id"] = wid
             result["source"]     = bundle.get("source", "generation")
+            # Mark cache hits so the UI/summary can show them
+            if bundle.get("source") == "final_cache":
+                result["_from_cache"] = True
 
         except Exception as exc:
             result = {
@@ -211,8 +219,9 @@ def phase_7_generate(
         n_fixes = len(result.get("fix_suggestions", []))
         status  = "✓" if not result.get("parse_error") else "✗"
 
+        cached_tag = " [cache]" if result.get("_from_cache") else ""
         if verbose:
-            print(f"       {n_fixes} fix(es)  {elapsed:.1f}s  {status}")
+            print(f"       {n_fixes} fix(es)  {elapsed:.1f}s  {status}{cached_tag}", flush=True)
 
         results.append(result)
 
@@ -238,8 +247,8 @@ def phase_8_evaluate(
     verbose: bool = True,
 ) -> List[Dict[str, Any]]:
     if verbose:
-        print(f"\n{'─'*60}")
-        print(f"Phase 8 — Evaluating fix suggestions (self-critique)")
+        print(f"\n{'─'*60}", flush=True)
+        print(f"Phase 8 — Evaluating fix suggestions (self-critique)", flush=True)
 
     from app.pipeline.evaluate_fixes import evaluate_all
 
@@ -266,8 +275,8 @@ def phase_8_evaluate(
     )
 
     if verbose:
-        print(f"\n  Confidence: High={high} Medium={medium} Low={low}")
-        print(f"  Manual review flagged: {review}")
+        print(f"\n  Confidence: High={high} Medium={medium} Low={low}", flush=True)
+        print(f"  Manual review flagged: {review}", flush=True)
 
     return evaluated
 
@@ -307,24 +316,24 @@ def main() -> int:
     run_dir = OUTPUT_DIR / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"{'='*60}")
-    print(f"SRM Technologies — MISRA Compliance Analysis")
-    print(f"Run ID : {run_id}")
-    print(f"Output : {run_dir}")
-    print(f"{'='*60}")
+    print(f"{'='*60}", flush=True)
+    print(f"SRM Technologies — MISRA Compliance Analysis", flush=True)
+    print(f"Run ID : {run_id}", flush=True)
+    print(f"Output : {run_dir}", flush=True)
+    print(f"{'='*60}", flush=True)
 
     if not args.excel_report.exists():
-        print(f"ERROR: Warning report not found: {args.excel_report}")
+        print(f"ERROR: Warning report not found: {args.excel_report}", flush=True)
         return 1
     if not args.source_dir.exists():
-        print(f"ERROR: Source directory not found: {args.source_dir}")
+        print(f"ERROR: Source directory not found: {args.source_dir}", flush=True)
         return 1
 
     # Validate Qdrant index exists
     from app.config.settings import QDRANT_INDEX_DIR
     if not QDRANT_INDEX_DIR.exists():
-        print(f"ERROR: Knowledge index not found at {QDRANT_INDEX_DIR}")
-        print(f"  Please run scripts/build_qdrant_index.py first.")
+        print(f"ERROR: Knowledge index not found at {QDRANT_INDEX_DIR}", flush=True)
+        print(f"  Please run scripts/build_qdrant_index.py first.", flush=True)
         return 1
 
     t_start = time.time()
@@ -344,7 +353,7 @@ def main() -> int:
     # Phase 6a
     t0 = time.time()
     if args.resume and parsed_path.exists():
-        print(f"\nPhase 6a — Skipped (resuming)")
+        print(f"\nPhase 6a — Skipped (resuming)", flush=True)
         warnings = json.loads(parsed_path.read_text(encoding="utf-8"))["warnings"]
     else:
         warnings = phase_6a_parse(args.excel_report, args.source_dir, parsed_path)
@@ -353,7 +362,7 @@ def main() -> int:
     # Phase 6b
     t0 = time.time()
     if args.resume and enriched_path.exists():
-        print(f"\nPhase 6b — Skipped (resuming)")
+        print(f"\nPhase 6b — Skipped (resuming)", flush=True)
         enriched = json.loads(enriched_path.read_text(encoding="utf-8"))["warnings"]
     else:
         enriched = phase_6b_retrieve(warnings, enriched_path)
@@ -385,12 +394,12 @@ def main() -> int:
     audit["final_output"]    = str(final_path)
     write_audit(run_id, audit)
 
-    print(f"\n{'='*60}")
-    print(f"Pipeline complete — {total_time}s")
-    print(f"  Warnings analysed : {len(warnings)}")
-    print(f"  Output directory  : {run_dir}")
-    print(f"  Final results     : {final_path.name}")
-    print(f"{'='*60}")
+    print(f"\n{'='*60}", flush=True)
+    print(f"Pipeline complete — {total_time}s", flush=True)
+    print(f"  Warnings analysed : {len(warnings)}", flush=True)
+    print(f"  Output directory  : {run_dir}", flush=True)
+    print(f"  Final results     : {final_path.name}", flush=True)
+    print(f"{'='*60}", flush=True)
 
     return 0
 

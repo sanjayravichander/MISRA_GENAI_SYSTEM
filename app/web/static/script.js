@@ -247,24 +247,39 @@ function initIndexPage() {
     progressPanel.classList.add("visible");
     uploadCard.style.opacity = "0.4";
     uploadCard.style.pointerEvents = "none";
+    // Remove any old back button from a previous run
+    const oldBack = document.getElementById("back-to-upload-btn");
+    if (oldBack) oldBack.remove();
 
     const fd = new FormData();
     fd.append("warning_report", excelFile);
     srcFiles.forEach(f => fd.append("source_files", f));
 
-    const checkedCats = [...document.querySelectorAll('input[name="misra_category"]:checked')].map(c => c.value);
-    if (checkedCats.length) {
-      sessionStorage.setItem("misra_filter", checkedCats.join(","));
-      fd.append("misra_categories", checkedCats.join(","));
-    } else {
-      sessionStorage.removeItem("misra_filter");
-    }
+    // Send rule config — selected rules + overrides as filter
+    const ruleSelected = [..._ruleState.selected];
+    const ruleOverrides = _ruleState.overrides;
+    fd.append("rule_selected", JSON.stringify(ruleSelected));
+    fd.append("rule_overrides", JSON.stringify(ruleOverrides));
+
+    // Pass the most recent completed run_id so Phase 7 can resume from cache
+    if (currentRunId) fd.append("resume_run_id", currentRunId);
 
     try {
       const resp = await fetch("/api/analyse", { method: "POST", body: fd });
       const data = await resp.json();
-      if (!resp.ok) { showError(data.error || "Server error"); resetUI(); return; }
+      if (!resp.ok) {
+        // ── FIX: show a clear error if the rule filter returned 0 rows ──
+        showError(data.error || "Server error");
+        resetUI();
+        return;
+      }
       currentRunId = data.run_id;
+      // Show filter notification if rules were filtered
+      if (data.warnings_filtered && data.filtered_count !== undefined) {
+        const statusLn = document.getElementById("status-line");
+        if (statusLn) statusLn.textContent =
+          `Rule filter applied — ${data.filtered_count} warning${data.filtered_count === 1 ? "" : "s"} queued for analysis`;
+      }
       listenProgress(data.job_id, data.run_id);
     } catch (err) {
       showError("Connection error: " + err.message);
@@ -343,6 +358,9 @@ function initIndexPage() {
     }
 
     window.closeSidePanel = function () { sidePanel.classList.remove("pr-side-open"); document.body.classList.remove("pr-panel-open"); };
+
+    function _startElapsedTicker() { }
+    function _stopElapsedTicker() { }
     window.openSidePanel = async function (wid, rid) {
       sidePanel.classList.add("pr-side-open"); document.body.classList.add("pr-panel-open");
       document.getElementById("pr-side-title").textContent = "Warning " + wid;
@@ -355,108 +373,261 @@ function initIndexPage() {
         const w = warnings.find(x => String(x.warning_id) === String(wid)) || warnings[0];
         if (!w) { body.innerHTML = `<div class="error-panel">Record not found.</div>`; return; }
         body.innerHTML = buildSidePanelContent(w, rid);
-        window._fixData = window._fixData || {};
-        const fixes = w.ranked_fixes || w.fix_suggestions || w.fixes || [];
-        window._fixData[wid] = { fixes, beforeCode: w._source_context || w.source_context || "", selectedIdx: 0 };
       } catch (e) {
         body.innerHTML = `<div class="error-panel">Failed to load: ${escHtml(e.message)}</div>`;
       }
     };
 
     function buildSidePanelContent(w, rid) {
-      const ev = w.evaluation || w.evaluator_result || {};
       const wid = String(w.warning_id || "");
-      const ruleId = formatRuleId(w.rule_id || w.misra_rule || "");
+      const ruleId = formatRuleId(w.rule_id || w.guideline_id || w.misra_rule || "");
       const msg = w.message || w.warning_message || "";
-      const sev = (w.severity || "").toLowerCase();
       const fp = w.file_path ? w.file_path.replace(/\\\\/g, "/").split("/").pop() : "";
-      const fixes = w.ranked_fixes || w.fix_suggestions || w.fixes || [];
-      let html = `<div class="sp-meta">
+      const fixes = w.fix_suggestions || w.ranked_fixes || w.fixes || [];
+      const expl = w.explanation || {};
+      const risk = w.risk_analysis || {};
+      const dev = w.deviation_advice || {};
+
+      const sc = w.source_context || w._source_context || "";
+      const srcTxt = typeof sc === "string" ? sc
+        : (sc && sc.context_text) ? sc.context_text
+          : Array.isArray(sc) ? sc.join("\n") : "";
+
+      window._fixData = window._fixData || {};
+      window._fixData[wid] = { fixes, beforeCode: srcTxt, selectedIdx: 0, rid };
+
+      let html = "";
+
+      html += `<div class="sp-meta-row">
         ${ruleId ? `<span class="w-rule-pill">Rule ${escHtml(ruleId)}</span>` : ""}
-          ${fp ? `<span class="sp-file">${escHtml(fp)}</span>` : ""}
-      </div>
-      ${msg ? `<div class="sp-msg">${escHtml(msg)}</div>` : ""}`;
-      const src = w._source_context || w.source_context || "";
-      const srcTxt = typeof src === "string" ? src : Array.isArray(src) ? src.join("\n") : (src && src.context_text) ? src.context_text : "";
+        ${fp ? `<span class="sp-file-tag">&#128196; ${escHtml(fp)}</span>` : ""}
+        ${w.guideline_title ? `<span class="sp-guideline">${escHtml(w.guideline_title)}</span>` : ""}
+      </div>`;
+      if (msg) html += `<div class="sp-msg">${escHtml(msg)}</div>`;
+
       if (srcTxt) {
-        const rows = srcTxt.split("\n").map(ln => { const clean = ln.replace(/^\s*>>>/, "   "); const m = clean.match(/^\s*(\d+)\s+(.*)/); if (!m || !m[2].trim()) return null; return `<div class="code-row"><span class="ln-num">${escHtml(m[1])}</span><span class="ln-code">${escHtml(m[2].trimEnd())}</span></div>`; }).filter(Boolean);
-        if (rows.length) html += `<div class="detail-section"><div class="detail-section-title">Source Code</div><div class="source-block">${rows.join("")}</div></div>`;
+        const rows = srcTxt.split("\n").map(ln => {
+          const clean = ln.replace(/^\s*>>>/, "   ");
+          const m = clean.match(/^\s*(\d+)\s+(.*)/);
+          if (!m) return clean.trim() ? `<div class="code-row flagged"><span class="ln-num"></span><span class="ln-code">${escHtml(clean.trimEnd())}</span></div>` : null;
+          const isFlagged = ln.includes(">>>");
+          return `<div class="code-row${isFlagged ? " flagged" : ""}"><span class="ln-num">${escHtml(m[1])}</span><span class="ln-code">${escHtml(m[2].trimEnd())}</span></div>`;
+        }).filter(Boolean).join("");
+        if (rows) html += `
+          <div class="sp-section">
+            <div class="sp-section-title">&#128196; Violated Source Code</div>
+            <div class="source-block before-block" style="border-radius:var(--r);border:1px solid rgba(192,57,43,.2);">${rows}</div>
+          </div>`;
       }
+
+      if (expl.summary || expl.rule_basis || expl.code_evidence) {
+        html += `<div class="sp-section">
+          <div class="sp-section-title">&#128221; Explanation</div>
+          ${expl.summary ? `<div class="sp-field"><span class="sp-label">Summary</span><span class="sp-value">${escHtml(expl.summary)}</span></div>` : ""}
+          ${expl.rule_basis ? `<div class="sp-field"><span class="sp-label">Rule Basis</span><span class="sp-value">${escHtml(expl.rule_basis)}</span></div>` : ""}
+          ${expl.code_evidence ? `<div class="sp-field"><span class="sp-label">Code Evidence</span><span class="sp-value">${escHtml(expl.code_evidence)}</span></div>` : ""}
+        </div>`;
+      }
+
+      const failures = Array.isArray(risk.potential_failures) && risk.potential_failures.length
+        ? risk.potential_failures : [];
+      if (risk.why || failures.length || risk.runtime_risk) {
+        const failList = failures.length
+          ? `<ul class="sp-list">${failures.map(f => `<li>${escHtml(f)}</li>`).join("")}</ul>` : "";
+        html += `<div class="sp-section">
+          <div class="sp-section-title">&#9888;&#65039; Risk if Not Fixed</div>
+          ${risk.why ? `<div class="sp-field"><span class="sp-label">Impact</span><span class="sp-value">${escHtml(risk.why)}</span></div>` : ""}
+          ${failList ? `<div class="sp-field"><span class="sp-label">Potential Failures</span><span class="sp-value">${failList}</span></div>` : ""}
+          ${risk.runtime_risk ? `<div class="sp-field"><span class="sp-label">Runtime Risk</span><span class="sp-value">${escHtml(risk.runtime_risk)}</span></div>` : ""}
+        </div>`;
+      }
+
+      if (dev.deviation_possible || dev.recommended_decision) {
+        const devClass = { Yes: "dev-yes", No: "dev-no", Conditional: "dev-cond" }[dev.deviation_possible] || "dev-unknown";
+        html += `<div class="sp-section">
+          <div class="sp-section-title">&#128260; Deviation Advice</div>
+          <div class="sp-field"><span class="sp-label">Deviation Possible</span><span class="sp-value"><span class="dev-badge ${devClass}">${escHtml(dev.deviation_possible || "Unknown")}</span></span></div>
+          ${dev.recommended_decision ? `<div class="sp-field"><span class="sp-label">Decision</span><span class="sp-value">${escHtml(dev.recommended_decision)}</span></div>` : ""}
+          ${dev.required_justification ? `<div class="sp-field"><span class="sp-label">Justification</span><span class="sp-value">${escHtml(dev.required_justification)}</span></div>` : ""}
+          ${dev.review_notes ? `<div class="sp-field"><span class="sp-label">Review Notes</span><span class="sp-value">${escHtml(dev.review_notes)}</span></div>` : ""}
+        </div>`;
+      }
+
       if (fixes.length) {
-        window._fixData = window._fixData || {}; window._fixData[wid] = { fixes, beforeCode: srcTxt, selectedIdx: 0 };
-        const chips = fixes.map((f, i) => `<button class="fix-chip ${i === 0 ? "fix-chip-active" : ""}" id="fixchip-${escHtml(wid)}-${i}" onclick="selectFixChip('${escHtml(wid)}',${i})" title="${escHtml(f.title || f.fix_title || "Fix " + (i + 1))}">Fix ${i + 1}${(f.source === "db_template" || f.db_verified === true) ? '<span class="fix-chip-db">DB</span>' : ""}  </button>`).join("");
-        html += `<div class="detail-section"><div class="detail-section-title">Fix Suggestion</div>
-          <div class="fix-chips-row">${chips}<span class="fix-chip-label" id="fix-chip-desc-${escHtml(wid)}">${escHtml(fixes[0].title || fixes[0].why || "")}</span></div>
-          <div class="fix-after-wrap"><div class="fix-after-header"><span class="fix-after-label">After (fix applied)</span><span class="fix-active-tag" id="fix-active-tag-${escHtml(wid)}">Fix 1 selected</span></div>
-          <div class="code-diff-panel after" id="after-block-${escHtml(wid)}"><div class="code-diff-label">After<button class="commit-inline-btn" id="commit-btn-${escHtml(wid)}" onclick="commitFix('${escHtml(wid)}')" title="Commit this fix">&#x2B06; Commit Fix</button></div>
-          <div id="after-code-${escHtml(wid)}">${renderAfterCode(extractAfterCode(fixes[0]))}</div>
-          <div class="commit-inline-status hidden" id="commit-status-${escHtml(wid)}">&#x2713; Patch applied &nbsp;<a class="download-link" id="download-link-${escHtml(wid)}" href="#" download>&#x2B07; Download</a></div>
-          </div></div></div>`;
+        const chips = fixes.map((f, i) =>
+          `<button class="fix-chip ${i === 0 ? "fix-chip-active" : ""}" id="fixchip-${escHtml(wid)}-${i}"
+            onclick="selectFixChip('${escHtml(wid)}',${i})"
+          >Fix ${i + 1}</button>`
+        ).join("");
+
+        const firstFix = fixes[0];
+        const afterCode = extractAfterCode(firstFix);
+
+        const beforeRows = srcTxt
+          ? srcTxt.split("\n").map(ln => {
+            const clean = ln.replace(/^\s*>>>/, "   ");
+            const m = clean.match(/^\s*(\d+)\s+(.*)/);
+            const isFlagged = ln.includes(">>>");
+            return m
+              ? `<div class="code-row${isFlagged ? " flagged" : ""}"><span class="ln-num">${escHtml(m[1])}</span><span class="ln-code">${escHtml(m[2].trimEnd())}</span></div>`
+              : (clean.trim() ? `<div class="code-row"><span class="ln-num"></span><span class="ln-code">${escHtml(clean.trimEnd())}</span></div>` : "");
+          }).join("")
+          : '<div class="sp-no-src">Source not available</div>';
+
+        html += `<div class="sp-section sp-fixes-section">
+          <div class="sp-section-title">&#128295; Fix Suggestions <span class="fix-count-tag">${fixes.length} option${fixes.length > 1 ? "s" : ""}</span></div>
+          <div class="fix-chips-row">${chips}</div>
+          <div class="fix-title-row" id="fix-title-${escHtml(wid)}">${escHtml(firstFix.title || "")}</div>
+          <div id="fix-review-warn-${escHtml(wid)}">${firstFix.needs_review ? `<div class="fix-review-warning"><span class="fix-review-warning-icon">&#9888;</span><div><strong>Needs manual review</strong><ul>${(firstFix.validator_warnings || []).map(w => `<li>${escHtml(w)}</li>`).join("")}</ul></div></div>` : ""}</div>
+          <div class="fix-why-row"   id="fix-why-${escHtml(wid)}">${escHtml(firstFix.why || "")}</div>
+
+          <div class="fix-diff-wrap">
+            <div class="fix-diff-col">
+              <div class="fix-diff-header before-header">&#128308; Before (violated code)</div>
+              <div class="source-block before-block" id="before-block-${escHtml(wid)}">${beforeRows}</div>
+            </div>
+            <div class="fix-diff-col">
+              <div class="fix-diff-header after-header">&#128994; After (fix applied)</div>
+              <div class="source-block after-block" id="after-block-${escHtml(wid)}">
+                <div id="after-code-${escHtml(wid)}">${renderAfterCode(afterCode)}</div>
+              </div>
+              <button class="commit-btn-inline" id="commit-btn-${escHtml(wid)}" onclick="commitFix('${escHtml(wid)}')">
+                &#x2B06; Commit Fix to File
+              </button>
+            </div>
+          </div>
+
+          ${firstFix.compliance_notes ? `<div class="fix-notes-row" id="fix-notes-${escHtml(wid)}"><strong>Compliance:</strong> ${escHtml(firstFix.compliance_notes)}</div>` : `<div class="fix-notes-row" id="fix-notes-${escHtml(wid)}"></div>`}
+
+          <div class="patched-file-wrap hidden" id="patched-wrap-${escHtml(wid)}">
+            <div class="patched-file-header">
+              <span class="patched-file-title" id="patched-file-title-${escHtml(wid)}">&#x2713; Patched File</span>
+              <a class="btn-download" id="download-link-${escHtml(wid)}" href="#" download>&#x2B07; Download</a>
+            </div>
+            <div class="source-block patched-full-block" id="patched-code-${escHtml(wid)}"></div>
+          </div>
+        </div>`;
+      } else {
+        html += `<div class="sp-section">
+          <div class="sp-section-title">&#128295; Fix Suggestions</div>
+          <div class="sp-no-fixes">No fix suggestions could be generated for this warning.${w.parse_error ? " <em>(Parse error — try re-running.)</em>" : ""}</div>
+        </div>`;
       }
-      html += `<div class="sp-full-link"><a href="/results/${escHtml(rid)}" class="btn btn-primary btn-sm">View Full Report &#8594;</a></div>`;
+
+      html += `<div class="sp-full-link"><a href="/results/${escHtml(rid)}" class="btn btn-primary btn-sm" target="_blank">View Full Report &#8594;</a></div>`;
       return html;
     }
 
+
     /* Per-record tracking */
     const recordMeta = {}; let totalWarnings = 0, doneCount = 0;
-    const PHASE_COL = { "6a": 0, "6b": 1, "7": 2, "8": 3, "done": 4 };
-    const PHASE_LABEL = { "6a": "Read", "6b": "Rules", "7": "Fix", "8": "Check", "done": "Done" };
-    const PHASE_PCT = { "6a": 15, "6b": 35, "7": 65, "8": 88, "done": 100 };
+    const RING_PHASES = [
+      { ph: "6a", label: "Read", pct: 20 },
+      { ph: "6b", label: "Rules", pct: 40 },
+      { ph: "7", label: "Fix", pct: 60 },
+      { ph: "8", label: "Check", pct: 80 },
+      { ph: "done", label: "Done", pct: 100 },
+    ];
+    const RING_ORDER = RING_PHASES.map(r => r.ph);
+
+    function _stepsHtml(wid) {
+      let out = '<div class="pr-steps-bar">';
+      RING_PHASES.forEach(({ ph, label }, i) => {
+        out += `<div class="pr-step-item pr-step-pending" id="prstep-${escHtml(wid)}-${ph}">
+          <div class="pr-step-node"><span class="pr-step-check">&#10003;</span><span class="pr-step-dot"></span></div>
+          <span class="pr-step-lbl">${label}</span>
+        </div>`;
+        if (i < RING_PHASES.length - 1)
+          out += `<div class="pr-step-line" id="prline-${escHtml(wid)}-${i}"></div>`;
+      });
+      out += '</div>';
+      return out;
+    }
 
     function ensureRecord(wid) {
       if (recordMeta[wid]) return recordMeta[wid];
-      const card = document.createElement("div"); card.className = "pr-card stream-new"; card.id = "prcard-" + wid;
+      const card = document.createElement("div");
+      card.className = "pr-card stream-new";
+      card.id = "prcard-" + wid;
       setTimeout(() => card.classList.remove("stream-new"), 600);
-      const steps = ["6a", "6b", "7", "8", "done"];
-      card.innerHTML = `<div class="pr-header"><span class="pr-wid">${escHtml(wid)}</span><span class="pr-status-badge pr-running" id="prstatus-${escHtml(wid)}">Processing\u2026</span><button class="pr-view-btn hidden" id="prview-${escHtml(wid)}" onclick="openSidePanel('${escHtml(wid)}','__RID__')">View Result &#8594;</button></div>
-        <div class="pr-stepper">${steps.map((ph, i) => `<div class="pr-step" id="prstep-${escHtml(wid)}-${ph}"><div class="pr-step-circle">${i + 1}</div><div class="pr-step-label">${PHASE_LABEL[ph]}</div></div>${i < steps.length - 1 ? `<div class="pr-step-line" id="prline-${escHtml(wid)}-${ph}"></div>` : ""}`).join("")}</div>
-        <div class="pr-bar-wrap"><div class="pr-bar-track"><div class="pr-bar-fill" id="prbar-${escHtml(wid)}" style="width:0%"></div></div><span class="pr-bar-pct" id="prpct-${escHtml(wid)}">0%</span></div>`;
+      card.innerHTML = `
+        <div class="pr-header">
+          <span class="pr-wid">${escHtml(wid)}</span>
+          <span class="pr-status-badge pr-running" id="prstatus-${escHtml(wid)}">Processing\u2026</span>
+          <button class="pr-view-btn hidden" id="prview-${escHtml(wid)}"
+            onclick="openSidePanel('${escHtml(wid)}','__RID__')">View Result &#8594;</button>
+        </div>
+        ${_stepsHtml(wid)}`;
       recordsWrap.appendChild(card);
-      const meta = { card, statusBadge: card.querySelector(`#prstatus-${wid}`), viewBtn: card.querySelector(`#prview-${wid}`), barFill: card.querySelector(`#prbar-${wid}`), barPct: card.querySelector(`#prpct-${wid}`) };
-      recordMeta[wid] = meta; return meta;
+      const meta = {
+        card,
+        statusBadge: card.querySelector(`#prstatus-${wid}`),
+        viewBtn: card.querySelector(`#prview-${wid}`),
+        barFill: null,
+        barPct: null,
+      };
+      recordMeta[wid] = meta;
+      return meta;
+    }
+
+    function _setRing(wid, ph, state) {
+      const item = document.getElementById(`prstep-${wid}-${ph}`);
+      if (!item) return;
+      item.classList.remove("pr-step-done", "pr-step-active", "pr-step-pending");
+      const phIdx = RING_ORDER.indexOf(ph);
+      if (state === "done") {
+        item.classList.add("pr-step-done");
+        if (phIdx > 0) {
+          const line = document.getElementById(`prline-${wid}-${phIdx - 1}`);
+          if (line) line.classList.add("pr-step-line-done");
+        }
+      } else if (state === "active") {
+        item.classList.add("pr-step-active");
+      } else {
+        item.classList.add("pr-step-pending");
+      }
     }
 
     function setPhase(wid, phase, isDone) {
-      const meta = recordMeta[wid]; if (!meta) return; const colIdx = PHASE_COL[phase]; if (colIdx === undefined) return;
-      ["6a", "6b", "7", "8", "done"].forEach((ph, i) => {
-        const circle = meta.card.querySelector(`#prstep-${wid}-${ph} .pr-step-circle`);
-        const line = meta.card.querySelector(`#prline-${wid}-${ph}`);
-        const step = meta.card.querySelector(`#prstep-${wid}-${ph}`);
-        if (!circle || !step) return;
-        if (i < colIdx) { step.classList.add("pr-step-done"); step.classList.remove("pr-step-active"); circle.textContent = "\u2713"; if (line) line.classList.add("pr-line-done"); }
-        else if (i === colIdx) { if (isDone) { step.classList.add("pr-step-done"); step.classList.remove("pr-step-active"); circle.textContent = "\u2713"; if (line) line.classList.add("pr-line-done"); } else { step.classList.add("pr-step-active"); step.classList.remove("pr-step-done"); } }
+      const meta = recordMeta[wid]; if (!meta) return;
+      if (meta.card.classList.contains("pr-card-done")) return;
+      const colIdx = RING_ORDER.indexOf(phase);
+      if (colIdx === -1) return;
+      RING_ORDER.forEach((ph, i) => {
+        if (i < colIdx) _setRing(wid, ph, "done");
+        else if (i === colIdx) _setRing(wid, ph, isDone ? "done" : "active");
+        else _setRing(wid, ph, "pending");
       });
-      const pct = PHASE_PCT[phase] || 0;
-      if (meta.barFill) meta.barFill.style.width = pct + "%"; if (meta.barPct) meta.barPct.textContent = pct + "%";
+    }
+
+    /* ── FIX: updateCounter — centralised counter update used by all paths ── */
+    function updateCounter() {
+      // Use actual recordMeta count as authoritative fallback when totalWarnings is 0
+      const knownTotal = totalWarnings > 0 ? totalWarnings : Object.keys(recordMeta).length;
+      if (knownTotal > 0) {
+        counterEl.textContent = `${doneCount} of ${knownTotal} records complete`;
+        counterEl.className = "pr-counter" + (doneCount === knownTotal ? " pr-counter-done" : "");
+      }
     }
 
     function markDone(wid, rid) {
-      const meta = recordMeta[wid]; if (!meta || meta.card.classList.contains("pr-card-done")) return; doneCount++;
-      /* Mark all circles done at once */
-      ["6a", "6b", "7", "8", "done"].forEach(ph => {
-        const circle = meta.card.querySelector("#prstep-" + wid + "-" + ph + " .pr-step-circle");
-        const line = meta.card.querySelector("#prline-" + wid + "-" + ph);
-        const step = meta.card.querySelector("#prstep-" + wid + "-" + ph);
-        if (step) { step.classList.add("pr-step-done"); step.classList.remove("pr-step-active"); }
-        if (circle) circle.textContent = "\u2713";
-        if (line) line.classList.add("pr-line-done");
-      });
-      /* Jump bar to 100% instantly — no transition lag */
-      if (meta.barFill) { meta.barFill.style.transition = "none"; meta.barFill.style.width = "100%"; }
-      if (meta.barPct) { meta.barPct.textContent = "100%"; }
-      if (meta.statusBadge) { meta.statusBadge.className = "pr-status-badge pr-done"; meta.statusBadge.textContent = "Complete"; }
+      const meta = recordMeta[wid];
+      if (!meta || meta.card.classList.contains("pr-card-done")) return;
+      doneCount++;
+      RING_ORDER.forEach(ph => _setRing(wid, ph, "done"));
+      RING_PHASES.forEach((_, i) => { if (i < RING_PHASES.length - 1) { const ln = document.getElementById(`prline-${wid}-${i}`); if (ln) ln.classList.add("pr-step-line-done"); } });
+      if (meta.statusBadge) {
+        meta.statusBadge.className = "pr-status-badge pr-done";
+        meta.statusBadge.textContent = "Complete";
+      }
       meta.card.classList.add("pr-card-done");
-      if (meta.viewBtn && rid) { meta.viewBtn.setAttribute("onclick", meta.viewBtn.getAttribute("onclick").replace("__RID__", rid)); meta.viewBtn.classList.remove("hidden"); }
-      /* Update badge on fmap card */
-      cFilesList.forEach((f, i) => {
-        if (f && wid.startsWith(f.name.replace(/\.c$/i, "")) || true) {
-          /* update fmap badge if we can match */
-          const badge = document.getElementById("fmap-badge-" + i);
-          if (badge && badge.textContent === "Running") badge.textContent = "Done";
-        }
-      });
-      counterEl.textContent = `${doneCount} of ${totalWarnings || "?"} records complete`;
-      counterEl.className = "pr-counter" + (doneCount === totalWarnings ? " pr-counter-done" : "");
+      if (meta.viewBtn && rid) {
+        meta.viewBtn.setAttribute("onclick",
+          meta.viewBtn.getAttribute("onclick").replace("__RID__", rid));
+        meta.viewBtn.classList.remove("hidden");
+      }
+      // ── FIX: use centralised updateCounter instead of inline string ──
+      updateCounter();
     }
 
     const PHASE_MAP = { "6a": "ph-6a", "6b": "ph-6b", "7": "ph-7", "8": "ph-8" };
@@ -464,17 +635,61 @@ function initIndexPage() {
     es.onmessage = evt => {
       let msg; try { msg = JSON.parse(evt.data); } catch { return; }
       if (msg.type === "heartbeat") return;
+      if (msg.type === "status") { if (statusLn && msg.label) statusLn.textContent = msg.label; return; }
+
+      // ── FIX: handle total_update event (emitted by server when [N/M] line seen) ──
+      if (msg.type === "total_update" && msg.total > 0) {
+        totalWarnings = msg.total;
+        updateCounter();
+        return;
+      }
+
       if (msg.phase && PHASE_MAP[msg.phase]) {
         const phEl = document.getElementById(PHASE_MAP[msg.phase]);
         if (phEl) {
-          if (msg.type === "phase_start") { document.querySelectorAll(".phase-item").forEach(el => el.classList.remove("active")); phEl.classList.add("active"); const det = phEl.querySelector(".phase-detail"); if (det) det.textContent = plainDetail(msg.detail); }
-          else if (msg.type === "phase_done") { phEl.classList.remove("active"); phEl.classList.add("done"); const b = phEl.querySelector(".phase-badge"); if (b) b.textContent = "\u2713"; }
+          if (msg.type === "phase_start") {
+            document.querySelectorAll(".phase-item").forEach(el => el.classList.remove("active"));
+            phEl.classList.add("active");
+            const det = phEl.querySelector(".phase-detail");
+            if (det) det.textContent = plainDetail(msg.detail);
+            _stopElapsedTicker();
+            if (msg.phase === "7") {
+              const _t7start = Date.now();
+              if (window._phase7Timer) clearInterval(window._phase7Timer);
+              window._phase7Timer = setInterval(() => {
+                const s = Math.floor((Date.now() - _t7start) / 1000);
+                const m = Math.floor(s / 60);
+                const ss = String(s % 60).padStart(2, "0");
+                if (statusLn) statusLn.textContent =
+                  `Generating fix suggestions… ${m > 0 ? m + "m " + ss + "s" : s + "s"} elapsed`;
+              }, 1000);
+            }
+          }
+          else if (msg.type === "phase_done") {
+            phEl.classList.remove("active"); phEl.classList.add("done");
+            const b = phEl.querySelector(".phase-badge"); if (b) b.textContent = "\u2713";
+            if (msg.phase === "6a") _stopElapsedTicker();
+            if (msg.phase === "7" && window._phase7Timer) { clearInterval(window._phase7Timer); window._phase7Timer = null; }
+          }
         }
       }
+
       if (msg.label && statusLn) statusLn.textContent = plainEnglish(msg.label, msg.detail);
       else if (msg.type === "detail" && msg.detail && statusLn) statusLn.textContent = plainDetail(msg.detail);
-      if (msg.type === "warning_start" && typeof msg.pct === "number" && totalWarnings === 0 && msg.pct > 0) totalWarnings = Math.round(100 / msg.pct);
-      if (msg.total) totalWarnings = msg.total;
+
+      // ── FIX: update totalWarnings from ANY message that carries msg.total ──
+      // This covers phase_done(6a) with total, warning_start with total, and done event.
+      if (msg.total && msg.total > 0) {
+        totalWarnings = msg.total;
+        updateCounter();
+      }
+
+      // Legacy pct-based estimate — only used as last resort when no total arrived yet
+      if (msg.type === "warning_start" && typeof msg.pct === "number" && totalWarnings === 0 && msg.pct > 0) {
+        const estimated = Math.round(100 / msg.pct);
+        if (estimated > 0) { totalWarnings = estimated; updateCounter(); }
+      }
+
       if (msg.warning_id) {
         const wid = msg.warning_id; ensureRecord(wid);
         if (msg.type === "warning_start") {
@@ -484,35 +699,100 @@ function initIndexPage() {
           else if (ph === "6b") { setPhase(wid, "6a", true); setPhase(wid, "6b", false); }
           else setPhase(wid, ph, false);
           recordMeta[wid].card.scrollIntoView({ behavior: "smooth", block: "nearest" });
-        } else if (msg.type === "warning_done") markDone(wid, runId);
+        } else if (msg.type === "warning_done") {
+          const donePh = msg.phase || "7";
+          setPhase(wid, donePh, true);
+        }
       }
+
       if (msg.type === "done") {
-        es.close(); const targetId = msg.run_id || runId || jobId;
-        document.querySelectorAll(".phase-item").forEach(el => { el.classList.remove("active"); el.classList.add("done"); const b = el.querySelector(".phase-badge"); if (b) b.textContent = "\u2713"; });
-        Object.keys(recordMeta).forEach(wid => markDone(wid, targetId));
+        es.close(); _stopElapsedTicker();
+        if (window._phase7Timer) { clearInterval(window._phase7Timer); window._phase7Timer = null; }
+        const targetId = msg.run_id || runId || jobId;
+
+        // ── FIX: use total from done event if we still don't have one ──
+        if (msg.total && msg.total > 0) totalWarnings = msg.total;
+
+        const phDone = document.getElementById("ph-done");
+        if (phDone) { phDone.classList.add("active"); setTimeout(() => { phDone.classList.remove("active"); phDone.classList.add("done"); const b = phDone.querySelector(".phase-badge"); if (b) b.textContent = "\u2713"; }, 400); }
+        document.querySelectorAll(".phase-item:not(#ph-done)").forEach(el => { el.classList.remove("active"); el.classList.add("done"); const b = el.querySelector(".phase-badge"); if (b) b.textContent = "\u2713"; });
+
+        Object.keys(recordMeta).forEach(wid => {
+          const meta = recordMeta[wid];
+          if (meta && !meta.card.classList.contains("pr-card-done")) {
+            setPhase(wid, "8", true);
+          }
+          markDone(wid, targetId);
+        });
+
         if (statusLn) statusLn.textContent = "All done! Click any record to view its result.";
-        counterEl.textContent = `All ${totalWarnings} records complete`; counterEl.className = "pr-counter pr-counter-done";
+
+        // ── FIX: final counter uses actual record count as the ground truth ──
+        const finalCount = totalWarnings > 0 ? totalWarnings : Object.keys(recordMeta).length;
+        counterEl.textContent = `All ${finalCount} records complete`;
+        counterEl.className = "pr-counter pr-counter-done";
+
+        if (!document.getElementById("back-to-upload-btn")) {
+          const backBtn = document.createElement("button");
+          backBtn.id = "back-to-upload-btn";
+          backBtn.className = "back-to-upload-btn";
+          backBtn.innerHTML = "&#8592; New Analysis";
+          backBtn.onclick = function () {
+            progressPanel.classList.remove("visible");
+            const uploadCard = document.getElementById("upload-card");
+            if (uploadCard) { uploadCard.style.opacity = "1"; uploadCard.style.pointerEvents = "auto"; }
+            document.querySelectorAll(".phase-item").forEach(el => { el.classList.remove("active", "done", "error"); const b = el.querySelector(".phase-badge"); if (b) b.textContent = ""; });
+          };
+          progressPanel.insertBefore(backBtn, progressPanel.firstChild);
+        }
       }
+
       if (msg.type === "error") {
-        es.close();
+        es.close(); _stopElapsedTicker();
         document.querySelectorAll(".phase-item.active").forEach(el => { el.classList.remove("active"); el.classList.add("error"); });
         if (statusLn) statusLn.textContent = "Something went wrong. Please try again.";
         const ep = document.createElement("div"); ep.className = "error-panel mt-16"; ep.textContent = msg.message || msg.detail || "Unknown error"; progressPanel.appendChild(ep);
         resetUI();
       }
     };
-    es.onerror = () => { es.close(); if (statusLn) statusLn.textContent = "Connection lost."; };
+    es.onerror = () => { es.close(); _stopElapsedTicker(); if (statusLn) statusLn.textContent = "Connection lost. Please refresh and try again."; };
   }
 
   function plainEnglish(label, detail) {
-    // Special case: suppress technical model-loading detail
-    if (label && label.toLowerCase().includes("launch")) return "Starting up — loading AI model into memory\u2026";
-    if (detail && detail.toLowerCase().includes("launch")) return "Loading AI model\u2026 this takes ~30s on first run";
-    let s = label + (detail ? " \u2014 " + detail : "");
-    [[/phase\s*6a/gi, "Step 1"], [/phase\s*6b/gi, "Step 2"], [/phase\s*7/gi, "Step 3"], [/phase\s*8/gi, "Step 4"], [/parsing/gi, "Reading"], [/qdrant|faiss|bge|embedding/gi, "rule lookup"], [/llm|llama|mistral|model/gi, "AI engine"], [/launching analysis engine/gi, "Loading AI model"]].forEach(([rx, rep]) => { s = s.replace(rx, rep); });
-    return s;
+    if (!label) return plainDetail(detail || "");
+    const L = label.toLowerCase();
+    if (L.includes("launch")) return "Starting up \u2014 loading AI model\u2026";
+    if (L.includes("reading file") || L.includes("parsing")) return "Loading your files\u2026";
+    if (L.includes("looking up rules") || L.includes("retrieving misra")) return "Matching rules to warnings\u2026";
+    if (L.includes("fix suggestion") || L.includes("generating fix")) return "Generating fixes with AI\u2026";
+    if (L.includes("quality check") || L.includes("evaluating fix")) return "Verifying fix quality\u2026";
+    if (L.includes("preparing") || L.includes("pipeline complete") || L.includes("report ready")) return "Preparing your report\u2026";
+    if (L.includes("processing:")) return "Generating fix for warning " + label.replace(/.*processing:\s*/i, "").replace(/\s*\(.*\)/, "");
+    if (L.includes("looking up rules:")) return "Looking up rules for warning " + label.replace(/.*looking up rules:\s*/i, "");
+    if (L.includes("context:")) return "Rules matched \u2014 " + label.replace(/.*context:\s*/i, "");
+    if (L.includes("fix generated")) return "Fix generated";
+    if (L.includes("file read") || L.includes("parsing complete")) return "Files loaded";
+    if (L.includes("rule lookup complete")) return "Rules matched";
+    if (L.includes("fix suggestions complete")) return "Fixes generated";
+    if (L.includes("all done") || L.includes("analysis complete")) return "All done! Click any record to view its result.";
+    return plainDetail(label + (detail ? " \u2014 " + detail : ""));
   }
-  function plainDetail(d) { if (!d) return ""; return d.replace(/qdrant|faiss|bge|embedding/gi, "rule lookup").replace(/llm|llama|mistral/gi, "AI engine").replace(/parsed_warnings?/gi, "warnings read"); }
+  function plainDetail(d) {
+    if (!d) return "";
+    return d
+      .replace(/querying\s+(qdrant|faiss|bge|embedding)[^,\n]*/gi, "matching rules")
+      .replace(/qdrant|faiss/gi, "rule database")
+      .replace(/bge[\s-]?embeddings?/gi, "AI search")
+      .replace(/embeddings?/gi, "AI search")
+      .replace(/llm|llama|mistral-?\d*b?/gi, "AI")
+      .replace(/self-critique pass/gi, "verifying fix quality")
+      .replace(/parsed_warnings?/gi, "warnings read")
+      .replace(/reading excel \+ source files/gi, "loading your files")
+      .replace(/phase\s*6a/gi, "Step 1")
+      .replace(/phase\s*6b/gi, "Step 2")
+      .replace(/phase\s*7/gi, "Step 3")
+      .replace(/phase\s*8/gi, "Step 4");
+  }
 }
 
 /* ============================================================
@@ -520,6 +800,8 @@ function initIndexPage() {
    ============================================================ */
 var _ruleState = { selected: new Set(), overrides: {}, built: false };
 window._ruleState = _ruleState;
+
+function cssId(id) { return id.replace(/\./g, "_").replace(/\s/g, "-"); }
 
 window.openSettingsModal = function () {
   const modal = document.getElementById("settings-modal");
@@ -546,146 +828,130 @@ window.applyAndCloseModal = function () {
 window.modalPreset = function (btn) {
   document.querySelectorAll(".preset-pill").forEach(b => b.classList.remove("pp-active"));
   btn.classList.add("pp-active");
-  applyRulePreset(btn.dataset.preset);
-};
-
-/* Filter modal to only show rules of a given severity */
-window.filterModalToSev = function (sev) {
-  RULES_DATA.forEach(r => {
-    const row = document.getElementById("mrow-" + cssId(r.id));
-    if (row) row.style.display = (r.sev === sev) ? "" : "none";
-  });
-};
-
-function applyRulePreset(preset) {
+  const preset = btn.dataset.preset;
   _ruleState.selected.clear();
-  const sevMap = { M: ["M"], R: ["R"], A: ["A"], ALL: ["M", "R", "A"], NONE: [] };
-  const sevs = sevMap[preset] || [];
-  RULES_DATA.forEach(r => { if (sevs.indexOf(r.sev) > -1) _ruleState.selected.add(r.id); });
+  if (preset === "ALL") RULES_DATA.forEach(r => _ruleState.selected.add(r.id));
   RULES_DATA.forEach(r => {
     const cb = document.getElementById("mrcb-" + cssId(r.id));
     const row = document.getElementById("mrow-" + cssId(r.id));
-    if (cb) cb.checked = _ruleState.selected.has(r.id);
-    if (row) row.classList.toggle("mrow-selected", _ruleState.selected.has(r.id));
+    const sel = _ruleState.selected.has(r.id);
+    if (cb) cb.checked = sel;
+    if (row) row.classList.toggle("mrow-selected", sel);
   });
   updateModalSummary();
-}
-
-function cssId(id) { return id.replace(/\./g, "_").replace(/\s/g, "-"); }
+};
 
 function buildModalRuleList() {
   const container = document.getElementById("modal-rule-list");
   if (!container) return;
   container.innerHTML = "";
 
-  const groups = { M: [], R: [], A: [] };
-  RULES_DATA.forEach(r => groups[r.sev].push(r));
-  const gInfo = { M: { label: "Mandatory", cls: "rc-sev-m" }, R: { label: "Required", cls: "rc-sev-r" }, A: { label: "Advisory", cls: "rc-sev-a" } };
+  const rulesOnly = RULES_DATA.filter(r => !r.is_dir);
 
-  ["M", "R", "A"].forEach(sev => {
-    const rules = groups[sev]; if (!rules.length) return;
-    const gi = gInfo[sev];
+  const sorted = [...rulesOnly].sort((a, b) => {
+    const parse = id => id.split(".").map(Number);
+    const [a1, a2] = parse(a.id), [b1, b2] = parse(b.id);
+    return a1 !== b1 ? a1 - b1 : (a2 || 0) - (b2 || 0);
+  });
 
-    const grpHeader = document.createElement("div");
-    grpHeader.className = "mgroup-header";
-    grpHeader.innerHTML = `<span class="rc-sev ${gi.cls}">${sev}</span><span class="mgroup-label">${gi.label} Rules</span><span class="rule-count-badge">${rules.length}</span>
-      <div class="mgroup-actions">
-        <button class="rga-btn" onclick="selectModalGroup('${sev}',true)">Select all</button>
-        <button class="rga-btn" style="color:var(--text-muted)" onclick="selectModalGroup('${sev}',false)">Deselect all</button>
-      </div>`;
-    container.appendChild(grpHeader);
+  sorted.forEach(r => {
+    const isSel = _ruleState.selected.has(r.id);
+    const ov = _ruleState.overrides[r.id] || null;
+    const effSev = ov || r.sev;
+    const sevLabel = { M: "Mandatory", R: "Required", A: "Advisory" };
 
-    rules.forEach(r => {
-      const warn = r.warnings.length > 12
-        ? r.warnings.slice(0, 12).join(", ") + " +" + (r.warnings.length - 12) + " more"
-        : r.warnings.join(", ");
+    const row = document.createElement("div");
+    row.className = "mrow" + (isSel ? " mrow-selected" : "");
+    row.id = "mrow-" + cssId(r.id);
 
-      /* Override options: exclude the rule's own severity */
-      const ovOpts = ["M", "R", "A"].filter(s => s !== r.sev);
-      const ov = _ruleState.overrides[r.id] || null;
-      const ovBtns = ovOpts.map(s => {
-        const lbl = { M: "Mandatory", R: "Required", A: "Advisory" }[s];
-        const active = ov === s ? "rc-ov-" + s.toLowerCase() : "";
-        return `<button class="rc-ov-btn ${active}" title="Override to ${lbl}" onclick="setModalOverride('${r.id}','${s}',this)">${s}</button>`;
-      }).join("");
+    const mraHtml = ["M", "R", "A"].map(s => {
+      const isActive = isSel && effSev === s;
+      return `<button class="mra-btn${isActive ? " mra-active mra-" + s.toLowerCase() : ""}"
+        onclick="setRuleSev('${r.id}','${s}',this)"
+        title="${sevLabel[s]}">${s}</button>`;
+    }).join("");
 
-      const row = document.createElement("div");
-      row.className = "mrow"; row.id = "mrow-" + cssId(r.id);
-      if (_ruleState.selected.has(r.id)) row.classList.add("mrow-selected");
-      row.innerHTML = `
-        <div class="mrow-left">
-          <input type="checkbox" class="rc-cb" id="mrcb-${cssId(r.id)}"
-            ${_ruleState.selected.has(r.id) ? "checked" : ""}
-            onchange="toggleModalRule('${r.id}',this.checked)">
-          <div class="mrow-info">
-            <div class="mrow-top">
-              <span class="rc-sev ${gi.cls}">${r.sev}</span>
-              <span class="rc-id">${r.is_dir ? "Dir " : "Rule "}${r.id}</span>
-              ${r.is_dir ? "<span class=\"rc-dir-tag\">Directive</span>" : ""}
-            </div>
-            <div class="mrow-warns" title="${r.warnings.join(", ")}">&#x26A0; ${escHtml(warn)}</div>
-          </div>
-        </div>
-        <div class="mrow-override">
-          <span class="rc-ov-label">Override to:</span>
-          ${ovBtns}
-          <span class="rc-ov-default">default: ${{ M: "Mandatory", R: "Required", A: "Advisory" }[r.sev]}</span>
-        </div>`;
-      container.appendChild(row);
-    });
+    row.innerHTML = `
+      <label class="mrow-check-label">
+        <input type="checkbox" class="rc-cb" id="mrcb-${cssId(r.id)}"
+          ${isSel ? "checked" : ""}
+          onchange="toggleModalRule('${r.id}',this.checked)">
+        <span class="mrow-rule-id">${r.is_dir ? "Dir " : "Rule "}${r.id}</span>
+      </label>
+      <div class="mrow-mra ${isSel ? "" : "mra-disabled"}" id="mra-${cssId(r.id)}">${mraHtml}</div>`;
+
+    container.appendChild(row);
   });
 
   updateModalSummary();
 }
 
 window.toggleModalRule = function (id, checked) {
-  if (checked) _ruleState.selected.add(id); else _ruleState.selected.delete(id);
+  if (checked) {
+    _ruleState.selected.add(id);
+    if (!_ruleState.overrides[id]) _ruleState.overrides[id] = (RULES_DATA.find(r => r.id === id) || {}).sev || "R";
+  } else {
+    _ruleState.selected.delete(id);
+  }
   const row = document.getElementById("mrow-" + cssId(id));
+  const mra = document.getElementById("mra-" + cssId(id));
   if (row) row.classList.toggle("mrow-selected", checked);
+  if (mra) mra.classList.toggle("mra-disabled", !checked);
+  _refreshMraButtons(id);
   updateModalSummary();
 };
 
-window.setModalOverride = function (id, sev, btn) {
-  const current = _ruleState.overrides[id];
-  btn.parentElement.querySelectorAll(".rc-ov-btn").forEach(b => b.className = "rc-ov-btn");
-  if (current === sev) { delete _ruleState.overrides[id]; }
-  else { _ruleState.overrides[id] = sev; btn.classList.add("rc-ov-" + sev.toLowerCase()); }
+window.setRuleSev = function (id, sev, btn) {
+  if (_ruleState.overrides[id] === sev && _ruleState.selected.has(id)) {
+    _ruleState.selected.delete(id);
+    delete _ruleState.overrides[id];
+    const cb = document.getElementById("mrcb-" + cssId(id));
+    if (cb) cb.checked = false;
+    const row = document.getElementById("mrow-" + cssId(id));
+    if (row) row.classList.remove("mrow-selected");
+    const mra = document.getElementById("mra-" + cssId(id));
+    if (mra) mra.classList.add("mra-disabled");
+    _refreshMraButtons(id);
+    updateModalSummary();
+    return;
+  }
+  _ruleState.selected.add(id);
+  _ruleState.overrides[id] = sev;
+  const cb = document.getElementById("mrcb-" + cssId(id));
+  if (cb) cb.checked = true;
+  const row = document.getElementById("mrow-" + cssId(id));
+  if (row) row.classList.add("mrow-selected");
+  const mra = document.getElementById("mra-" + cssId(id));
+  if (mra) mra.classList.remove("mra-disabled");
+  _refreshMraButtons(id);
   updateModalSummary();
 };
 
-window.selectModalGroup = function (sev, select) {
-  RULES_DATA.filter(r => r.sev === sev).forEach(r => {
-    if (select) _ruleState.selected.add(r.id); else _ruleState.selected.delete(r.id);
-    const cb = document.getElementById("mrcb-" + cssId(r.id));
-    const row = document.getElementById("mrow-" + cssId(r.id));
-    if (cb) cb.checked = select;
-    if (row) row.classList.toggle("mrow-selected", select);
+function _refreshMraButtons(id) {
+  const mra = document.getElementById("mra-" + cssId(id));
+  if (!mra) return;
+  const ov = _ruleState.overrides[id] || null;
+  const sel = _ruleState.selected.has(id);
+  mra.querySelectorAll(".mra-btn").forEach(btn => {
+    const s = btn.textContent.trim();
+    const isActive = sel && ov === s;
+    btn.className = "mra-btn" + (isActive ? " mra-active mra-" + s.toLowerCase() : "");
   });
-  updateModalSummary();
-};
+}
 
 window.filterModalRules = function () {
-  const q = (document.getElementById("modal-rule-search") || {}).value || "";
-  const ql = q.trim().toLowerCase();
-  RULES_DATA.forEach(r => {
+  const q = ((document.getElementById("modal-rule-search") || {}).value || "").trim().toLowerCase();
+  RULES_DATA.filter(r => !r.is_dir).forEach(r => {
     const row = document.getElementById("mrow-" + cssId(r.id));
     if (!row) return;
-    const match = !ql || r.id.toLowerCase().includes(ql) || r.warnings.some(w => w.includes(ql));
-    row.style.display = match ? "" : "none";
+    row.style.display = (!q || r.id.toLowerCase().includes(q)) ? "" : "none";
   });
 };
 
 function updateModalSummary() {
-  let tot = 0, m = 0, rv = 0, a = 0;
-  _ruleState.selected.forEach(id => {
-    const rule = RULES_DATA.find(x => x.id === id); if (!rule) return; tot++;
-    const eff = _ruleState.overrides[id] || rule.sev;
-    if (eff === "M") m++; else if (eff === "R") rv++; else a++;
-  });
-  const sc = document.getElementById("modal-sel-count"); if (sc) sc.textContent = tot;
-  const mv = document.getElementById("modal-m-val"); if (mv) mv.textContent = m + " Mandatory";
-  const rv2 = document.getElementById("modal-r-val"); if (rv2) rv2.textContent = rv + " Required";
-  const av = document.getElementById("modal-a-val"); if (av) av.textContent = a + " Advisory";
+  const tot = _ruleState.selected.size;
+  const sc = document.getElementById("modal-sel-count");
+  if (sc) sc.textContent = tot;
 }
 
 /* ============================================================
@@ -808,13 +1074,11 @@ function buildWarningDetail(w, ev, isReview, wId) {
   let html = "";
   if (isReview) html += `<div class="review-banner mt-16"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> Flagged for manual review.</div>`;
 
-  /* Warning details table */
   const SKIP = new Set(["source_context", "source_lines", "misra_context", "retrieved_context", "line_start", "line_end", "_excel_row", "_source_context", "_from_cache", "evaluation", "evaluator_result", "ranked_fixes", "fix_suggestions", "fixes"]);
   const row = w._excel_row || {};
   const rowKeys = Object.keys(row).filter(k => !SKIP.has(k) && row[k] && String(row[k]).trim());
   if (rowKeys.length) html += `<div class="detail-section"><div class="detail-section-title">Warning Details</div><table class="excel-table">${rowKeys.map(k => `<tr><td>${escHtml(friendlyKey(k))}</td><td>${escHtml(String(row[k]))}</td></tr>`).join("")}</table></div>`;
 
-  /* Source code — NO highlight */
   const srcCtxRaw = w._source_context || w.source_context || w.source_code || "";
   let sourceCode = "";
   if (typeof srcCtxRaw === "string") sourceCode = srcCtxRaw;
@@ -826,7 +1090,6 @@ function buildWarningDetail(w, ev, isReview, wId) {
     if (parsed.length) html += `<div class="detail-section"><div class="detail-section-title">Source Code</div><div class="source-block" id="src-${escHtml(wId)}">${parsed.map(({ num, code }) => `<div class="code-row"><span class="ln-num">${escHtml(num)}</span><span class="ln-code">${escHtml(code)}</span></div>`).join("")}</div></div>`;
   }
 
-  /* Explanation — render all sub-fields */
   const expl = w.explanation || ev.explanation || "";
   if (expl) {
     let explHtml = "";
@@ -839,7 +1102,6 @@ function buildWarningDetail(w, ev, isReview, wId) {
     if (explHtml) html += `<div class="detail-section"><div class="detail-section-title">What's Wrong</div><div class="info-box">${explHtml}</div></div>`;
   }
 
-  /* Risk analysis — render all sub-fields */
   const risk = w.risk_analysis || ev.risk_analysis || "";
   if (risk) {
     let riskHtml = "";
@@ -853,11 +1115,9 @@ function buildWarningDetail(w, ev, isReview, wId) {
     if (riskHtml) html += `<div class="detail-section"><div class="detail-section-title">Why It Matters</div><div class="info-box">${riskHtml}</div></div>`;
   }
 
-  /* Rule text */
   const ruleText = getRuleText(w);
   if (ruleText) html += `<div class="detail-section"><div class="detail-section-title">Rule ${escHtml(formatRuleId(w.rule_id || ""))}</div><div class="info-box">${escHtml(ruleText)}</div></div>`;
 
-  /* Fix suggestion — chips + After panel + Commit button INSIDE after block */
   const fixes = w.ranked_fixes || w.fix_suggestions || w.fixes || [];
   if (fixes.length) {
     window._fixData = window._fixData || {};
@@ -883,13 +1143,12 @@ function buildWarningDetail(w, ev, isReview, wId) {
     html += `<div class="detail-section"><div class="detail-section-title">Fix Suggestion</div><div class="info-box" style="color:var(--text-muted);font-style:italic;">No fix suggestions available for this warning.</div></div>`;
   }
 
-  /* Deviation note — render all sub-fields */
   const devRaw = w.deviation_advice || ev.deviation_advice || "";
   if (devRaw) {
     let devHtml = "";
     if (typeof devRaw === "object" && devRaw) {
       const lm = { deviation_possible: "Deviation possible", recommended_decision: "Recommended action", required_justification: "Justification required", review_notes: "Review notes" };
-      devHtml = Object.entries(devRaw).filter(([, v]) => v && String(v).trim()).map(([k, v]) => `<div style="margin-bottom:6px;"><span style="font-weight:600;color:var(--text);">${escHtml(lm[k] || k.replace(/_/g, " "))}:</span> <span style="color:var(--text-sub);">${escHtml(String(v))}</span></div>`).join("");
+      devHtml = Object.entries(devRaw).filter(([, v]) => v && String(v).trim()).map(([k, v]) => `<div style="margin-bottom:6px;"><span style="font-weight:600;color:var(--text);">${escHtml(lm[k] || k.replace(/_/g, " "))}: </span><span style="color:var(--text-sub);">${escHtml(String(v))}</span></div>`).join("");
     } else devHtml = escHtml(String(devRaw));
     if (devHtml) html += `<div class="detail-section"><div class="detail-section-title">Exception / Deviation Note</div><div class="info-box deviation">${devHtml}</div></div>`;
   }
@@ -903,32 +1162,88 @@ function buildWarningDetail(w, ev, isReview, wId) {
 window.selectFixChip = function (wId, idx) {
   const data = (window._fixData || {})[wId]; if (!data) return;
   data.selectedIdx = idx;
-  data.fixes.forEach((_, i) => { const chip = document.getElementById(`fixchip-${wId}-${i}`); if (chip) chip.classList.toggle("fix-chip-active", i === idx); });
+  data.fixes.forEach((_, i) => {
+    const chip = document.getElementById(`fixchip-${wId}-${i}`);
+    if (chip) chip.classList.toggle("fix-chip-active", i === idx);
+  });
   const fix = data.fixes[idx];
-  const newCode = extractAfterCode(fix);
   const codeEl = document.getElementById(`after-code-${wId}`);
-  const tagEl = document.getElementById(`fix-active-tag-${wId}`);
-  const descEl = document.getElementById(`fix-chip-desc-${wId}`);
-  if (codeEl) codeEl.innerHTML = renderAfterCode(newCode);
-  if (tagEl) tagEl.textContent = `Fix ${idx + 1} selected`;
-  if (descEl) descEl.textContent = fix.title || fix.fix_title || fix.why || "";
+  if (codeEl) codeEl.innerHTML = renderAfterCode(extractAfterCode(fix));
+  const titleEl = document.getElementById(`fix-title-${wId}`);
+  const whyEl = document.getElementById(`fix-why-${wId}`);
+  const notesEl = document.getElementById(`fix-notes-${wId}`);
+  if (titleEl) titleEl.textContent = fix.title || "";
+  const rwEl = document.getElementById(`fix-review-warn-${wId}`); if (rwEl) rwEl.innerHTML = fix.needs_review ? `<div class="fix-review-warning"><span class="fix-review-warning-icon">&#9888;</span><div><strong>Needs manual review</strong><ul>${(fix.validator_warnings || []).map(w => `<li>${escHtml(w)}</li>`).join("")}</ul></div></div>` : "";
+  if (whyEl) whyEl.textContent = fix.why || "";
+  if (notesEl) notesEl.innerHTML = fix.compliance_notes ? `<strong>Compliance:</strong> ${escHtml(fix.compliance_notes)}` : "";
+  const patchWrap = document.getElementById(`patched-wrap-${wId}`);
+  if (patchWrap) patchWrap.classList.add("hidden");
+  const btn = document.getElementById(`commit-btn-${wId}`);
+  if (btn) { btn.disabled = false; btn.textContent = "⬆ Commit Fix to File"; btn.classList.remove("committed"); }
 };
 
 window.commitFix = async function (wId) {
   const data = (window._fixData || {})[wId]; if (!data) return;
   const btn = document.getElementById(`commit-btn-${wId}`);
-  if (btn) { btn.disabled = true; btn.textContent = "Committing\u2026"; }
+  if (btn) { btn.disabled = true; btn.textContent = "Committing…"; }
   try {
     const fix = data.fixes[data.selectedIdx || 0];
     const afterCode = extractAfterCode(fix);
-    const resp = await fetch("/api/commit", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ warning_id: wId, patched_code: afterCode }) });
+    const resp = await fetch("/api/commit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ warning_id: wId, patched_code: afterCode, run_id: data.rid || "" })
+    });
     const result = await resp.json();
-    if (btn) { btn.textContent = "\u2713 Committed"; btn.classList.add("committed"); }
-    const statusEl = document.getElementById(`commit-status-${wId}`);
+    if (btn) { btn.textContent = "✓ Committed"; btn.classList.add("committed"); btn.disabled = true; }
+
+    const patchWrap = document.getElementById(`patched-wrap-${wId}`);
+    const patchTitle = document.getElementById(`patched-file-title-${wId}`);
+    const patchBlock = document.getElementById(`patched-code-${wId}`);
     const dlEl = document.getElementById(`download-link-${wId}`);
-    if (statusEl) statusEl.classList.remove("hidden");
-    if (dlEl && result.download_url) { dlEl.href = result.download_url; dlEl.style.display = "inline-flex"; }
-  } catch (e) { if (btn) { btn.disabled = false; btn.textContent = "\u2B06 Commit Fix"; } }
+
+    if (patchWrap) patchWrap.classList.remove("hidden");
+    if (patchTitle) {
+      patchTitle.textContent = result.is_full_file
+        ? `✓ Full patched file: ${result.original_file || "source.c"}`
+        : "✓ Patched code (snippet only — original source file not found)";
+    }
+    if (patchBlock && result.patched_code) {
+      const pStart = result.patch_line_start || 0;
+      const pCount = result.patch_line_count || 0;
+      const pEnd = pStart ? pStart + pCount - 1 : 0;
+
+      const allLines = result.patched_code.split("\n");
+      patchBlock.innerHTML = allLines.map((ln, i) => {
+        const num = i + 1;
+        const isChanged = pStart > 0 && num >= pStart && num <= pEnd;
+        return `<div class="code-row${isChanged ? " patch-highlight" : ""}">` +
+          `<span class="ln-num">${num}</span>` +
+          `<span class="ln-code">${escHtml(ln)}</span></div>`;
+      }).join("");
+    }
+    if (dlEl && result.download_url) {
+      dlEl.href = result.download_url;
+      dlEl.download = result.filename || "patched.c";
+    }
+    const auditNote = document.getElementById(`audit-note-${wId}`);
+    if (!auditNote) {
+      const note = document.createElement("div");
+      note.id = `audit-note-${wId}`;
+      note.className = "audit-note";
+      // Use the real resolved path returned by the server so the user knows
+      // exactly where to find the file (no more hardcoded guesses).
+      const auditPath = result.audit_path
+        ? result.audit_path.replace(/\\/g, "\\")   // keep Windows backslashes as-is
+        : "Output_excel_after_run/audit_report.xlsx";
+      note.textContent = `\u2713 Record added to audit report \u2192 ${auditPath}`;
+      patchWrap && patchWrap.parentElement && patchWrap.parentElement.appendChild(note);
+    }
+    if (patchWrap) patchWrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.textContent = "⬆ Commit Fix to File"; }
+    console.error("Commit failed:", e);
+  }
 };
 
 /* ============================================================

@@ -1,0 +1,1 @@
+5      int x = 0;       /* initialize x */

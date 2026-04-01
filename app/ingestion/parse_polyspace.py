@@ -38,10 +38,11 @@ SEVERITY_NORM = {
     "mandatory": "Mandatory", "required": "Required", "advisory": "Advisory",
     "high": "High", "medium": "Medium", "low": "Low",
     "m": "Mandatory", "r": "Required", "a": "Advisory",
+    "misra": "Required",
 }
-QAC_COLS  = {"file", "line no", "warning no", "description"}
+QAC_COLS  = {"file", "line no", "warning no", "warning number", "description"}
 MOCK_COLS = {"warning id", "rule id", "message", "file path"}
-NEW_MOCK_COLS = {"warning number", "rule id", "message", "file name"}
+NEW_MOCK_COLS = {"warning number", "rule id", "rule", "message", "file name", "file"}
 
 
 def _db_path() -> Path:
@@ -67,6 +68,13 @@ def _db_lookup(table: str, warning_no: str) -> Optional[Dict]:
 
 def _norm_sev(raw: str) -> str:
     return SEVERITY_NORM.get(str(raw).strip().lower(), str(raw).strip() or "Advisory")
+
+
+def _norm_rule(raw: str) -> str:
+    r = str(raw).strip()
+    if r.lower().startswith("rule "):
+        return r[5:].strip()
+    return r
 
 
 def extract_source_context(
@@ -184,17 +192,18 @@ def _parse_qac(rows, headers, source_dir, uploaded_stems) -> List[Dict]:
     idx = _build_idx(headers)
     warnings = []
     skipped = 0
+    seen_warnings = set()
 
     for row_num, row in enumerate(rows[1:], start=2):
         if not any(row):
             continue
 
-        file_path   = _get(row, idx, "file")
+        file_path   = _get(row, idx, "file", "file name", "file path")
         line_no_raw = _get(row, idx, "line no", "line no.")
-        warning_no  = _get(row, idx, "warning no", "warning no.")
-        description = _get(row, idx, "description")
-        severity_raw= _get(row, idx, "severity")
-        rule_raw    = _get(row, idx, "rule / directives no.", "rule/directives no.", "rule no")
+        warning_no  = _get(row, idx, "warning no", "warning no.", "warning number", "warning id")
+        description = _get(row, idx, "description", "message")
+        severity_raw= _get(row, idx, "severity", "category")
+        rule_raw    = _norm_rule(_get(row, idx, "rule / directives no.", "rule/directives no.", "rule no", "rule id", "rule"))
         inline_code = _get(row, idx, "line in code", "line_in_code", "code")
 
         if not file_path and not warning_no:
@@ -205,11 +214,16 @@ def _parse_qac(rows, headers, source_dir, uploaded_stems) -> List[Dict]:
             skipped += 1
             continue
 
+        base_wn = warning_no
+        if base_wn in seen_warnings:
+            warning_no = f"{base_wn}_{excel_stem}" if excel_stem else f"{base_wn}_{row_num}"
+        seen_warnings.add(warning_no)
+
         severity = _norm_sev(severity_raw)
         line_no  = int(line_no_raw) if line_no_raw and str(line_no_raw).strip().isdigit() else None
 
-        rule_map  = _db_lookup("warning_to_rule", warning_no) if warning_no else None
-        patch_rec = _db_lookup("patch_library",   warning_no) if warning_no else None
+        rule_map  = _db_lookup("warning_to_rule", base_wn) if base_wn else None
+        patch_rec = _db_lookup("patch_library",   base_wn) if base_wn else None
 
         rule_id        = rule_map.get("misra_rule", rule_raw) if rule_map else rule_raw
         misra_category = rule_map.get("misra_category", severity) if rule_map else severity
@@ -255,6 +269,7 @@ def _parse_mock(rows, headers, source_dir, uploaded_stems) -> List[Dict]:
     idx = _build_idx(headers)
     warnings = []
     skipped = 0
+    seen_warnings = set()
 
     for row in rows[1:]:
         if not any(row):
@@ -265,15 +280,20 @@ def _parse_mock(rows, headers, source_dir, uploaded_stems) -> List[Dict]:
         le_raw     = _get(row, idx, "line end",   "line no", "line")
         warning_no = _get(row, idx, "warning id", "warning number", "warning no", "warning_no")
         severity   = _get(row, idx, "severity") or "Medium"
-        rule_raw   = _get(row, idx, "rule id",   "rule/directives no.", "rule no", "rule")
+        rule_raw   = _norm_rule(_get(row, idx, "rule id",   "rule/directives no.", "rule no", "rule"))
 
         excel_stem = Path(file_path).stem.lower() if file_path else ""
         if uploaded_stems and excel_stem and excel_stem not in uploaded_stems:
             skipped += 1
             continue
 
-        rule_map  = _db_lookup("warning_to_rule", warning_no) if warning_no else None
-        patch_rec = _db_lookup("patch_library",   warning_no) if warning_no else None
+        base_wn = warning_no
+        if base_wn in seen_warnings:
+            warning_no = f"{base_wn}_{excel_stem}" if excel_stem else f"{base_wn}_dup"
+        seen_warnings.add(warning_no)
+
+        rule_map  = _db_lookup("warning_to_rule", base_wn) if base_wn else None
+        patch_rec = _db_lookup("patch_library",   base_wn) if base_wn else None
 
         rule_id        = rule_map.get("misra_rule", rule_raw) if rule_map else rule_raw
         misra_category = rule_map.get("misra_category", severity) if rule_map else severity

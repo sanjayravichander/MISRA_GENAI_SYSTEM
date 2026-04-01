@@ -1,0 +1,211 @@
+{
+  "warning_count": 4,
+  "warnings": [
+    {
+      "warning_id": "2980",
+      "warning_no": "2980",
+      "tool_name": "",
+      "category": "MISRA-R (Required)",
+      "checker_name": "",
+      "rule_id": "2.2",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Statement has no effect",
+      "file_path": "utils.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "helper_add",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "utils.c",
+        "found": true,
+        "context_text": "       1  #include <stdint.h>\n       2  \n       3  int helper_add(int a, int b)\n       4  {\n       5      int result = a + b;\n       6      result = result;\n       7      return result;\n       8  }\n       9  \n      10  void update_index(void)\n      11  {\n      12      int i = 0;\n      13      int arr[5] = {0};\n      14  \n      15      arr[i] = i++;\n      16      i = i++ + 1;\n      17  }\n      18  \n      19  int early_return(int value)\n      20  {\n      21      if (value == 0)\n      22      {\n      23          return 0;\n      24          value = 1;\n      25      }\n      26  \n      27      return value;\n      28  }\n      29  \n      30  int factorial(int n)\n      31  {\n      32      if (n <= 1)\n      33      {\n      34          return 1;\n      35      }\n      36  \n      37      return n * factorial(n - 1);\n      38  }",
+        "context_start_line": 1,
+        "context_end_line": 38,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 2.2",
+          "description": "There shall be no dead code",
+          "guidelines": "void f(void)\n{\n    int x = 0;\n    x = x + 1;\n    x;      /* statement has no effect */\n}",
+          "score": 0.7183383425569512
+        },
+        {
+          "rule_id": "Rule 21.2",
+          "description": "A reserved identifier or macro name shall not be declared",
+          "guidelines": "int errno;   /* reserved identifier declared */",
+          "score": 0.7112744758135217
+        },
+        {
+          "rule_id": "Rule 20.9",
+          "description": "All identifiers used in the controlling expression of #if or #elif shall be #define'd before evaluation",
+          "guidelines": "#if FEATURE_FLAG\n#endif   /* identifier not defined before use */",
+          "score": 0.7066565042948503
+        },
+        {
+          "rule_id": "Rule 14.4",
+          "description": "Non-Boolean if-controlling expression",
+          "guidelines": "int count = 10;\n/* non-Boolean controlling expression */\nif (count) {\n    do_something();\n}",
+          "score": 0.7025885049916138
+        }
+      ]
+    },
+    {
+      "warning_id": "400",
+      "warning_no": "400",
+      "tool_name": "",
+      "category": "MISRA-R (Required)",
+      "checker_name": "",
+      "rule_id": "13.2",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Evaluation order side effects",
+      "file_path": "utils.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "update_index",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "utils.c",
+        "found": true,
+        "context_text": "       1  #include <stdint.h>\n       2  \n       3  int helper_add(int a, int b)\n       4  {\n       5      int result = a + b;\n       6      result = result;\n       7      return result;\n       8  }\n       9  \n      10  void update_index(void)\n      11  {\n      12      int i = 0;\n      13      int arr[5] = {0};\n      14  \n      15      arr[i] = i++;\n      16      i = i++ + 1;\n      17  }\n      18  \n      19  int early_return(int value)\n      20  {\n      21      if (value == 0)\n      22      {\n      23          return 0;\n      24          value = 1;\n      25      }\n      26  \n      27      return value;\n      28  }\n      29  \n      30  int factorial(int n)\n      31  {\n      32      if (n <= 1)\n      33      {\n      34          return 1;\n      35      }\n      36  \n      37      return n * factorial(n - 1);\n      38  }",
+        "context_start_line": 1,
+        "context_end_line": 38,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 13.2",
+          "description": "The value of an expression and its persistent side effects shall be the same under all permitted evaluation orders",
+          "guidelines": "Rule 13.2 (Required): The value of an expression and its persistent side effects shall be the same under all permitted evaluation orders. This code violates Rule 13.2 because the value of an expression and its persistent side effects shall be the same under all permitted evaluation orders. Side effects in complex expressions make behaviour harder to predict and verify.",
+          "score": 0.8462238388743512
+        },
+        {
+          "rule_id": "Rule 13.3",
+          "description": "A full expression containing an increment or decrement operator should have no other potential side effects other than that caused by the increment or decrement operator",
+          "guidelines": "Rule 13.3 (Advisory): A full expression containing an increment or decrement operator should have no other potential side effects other than that caused by the increment or decrement operator. This code violates Rule 13.3 because a full expression containing an increment or decrement operator should have no other potential side effects other than that caused by the increment or decrement operator. Side effects in complex expressions make behaviour harder to predict and verify.",
+          "score": 0.8036866936031238
+        },
+        {
+          "rule_id": "Rule 13.1",
+          "description": "Initializer lists shall not contain persistent side effects",
+          "guidelines": "Rule 13.1 (Required): Initializer lists shall not contain persistent side effects. This code violates Rule 13.1 because initializer lists shall not contain persistent side effects. Side effects in complex expressions make behaviour harder to predict and verify.",
+          "score": 0.7828817709321968
+        },
+        {
+          "rule_id": "Rule 13.5",
+          "description": "The right hand operand of a logical && or || operator shall not contain persistent side effects",
+          "guidelines": "Rule 13.5 (Required): The right hand operand of a logical && or || operator shall not contain persistent side effects. This code violates Rule 13.5 because the right hand operand of a logical && or || operator shall not contain persistent side effects. Side effects in complex expressions make behaviour harder to predict and verify.",
+          "score": 0.7591934106229684
+        }
+      ]
+    },
+    {
+      "warning_id": "1460",
+      "warning_no": "1460",
+      "tool_name": "",
+      "category": "MISRA-R (Required)",
+      "checker_name": "",
+      "rule_id": "2.1",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Unreachable code detected",
+      "file_path": "utils.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "early_return",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "utils.c",
+        "found": true,
+        "context_text": "       1  #include <stdint.h>\n       2  \n       3  int helper_add(int a, int b)\n       4  {\n       5      int result = a + b;\n       6      result = result;\n       7      return result;\n       8  }\n       9  \n      10  void update_index(void)\n      11  {\n      12      int i = 0;\n      13      int arr[5] = {0};\n      14  \n      15      arr[i] = i++;\n      16      i = i++ + 1;\n      17  }\n      18  \n      19  int early_return(int value)\n      20  {\n      21      if (value == 0)\n      22      {\n      23          return 0;\n      24          value = 1;\n      25      }\n      26  \n      27      return value;\n      28  }\n      29  \n      30  int factorial(int n)\n      31  {\n      32      if (n <= 1)\n      33      {\n      34          return 1;\n      35      }\n      36  \n      37      return n * factorial(n - 1);\n      38  }",
+        "context_start_line": 1,
+        "context_end_line": 38,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 2.1",
+          "description": "A project shall not contain unreachable code",
+          "guidelines": "Rule 2.1 (Required): A project shall not contain unreachable code. This code violates Rule 2.1 because a project shall not contain unreachable code. Unused, dead, or unreachable constructs increase maintenance cost and can hide real defects.",
+          "score": 0.8320532639930821
+        },
+        {
+          "rule_id": "Rule 2.2",
+          "description": "There shall be no dead code",
+          "guidelines": "Rule 2.2 (Required): There shall be no dead code. This code violates Rule 2.2 because there shall be no dead code. Unused, dead, or unreachable constructs increase maintenance cost and can hide real defects.",
+          "score": 0.7914440945437703
+        },
+        {
+          "rule_id": "Rule 1.3",
+          "description": "There shall be no occurrence of undefined or critical unspecified behaviour",
+          "guidelines": "Rule 1.3 (Required): There shall be no occurrence of undefined or critical unspecified behaviour. This code violates Rule 1.3 because there shall be no occurrence of undefined or critical unspecified behaviour. Violating core language and implementation rules can make the program non-portable, non-compliant, or undefined.",
+          "score": 0.7657317179489628
+        }
+      ]
+    },
+    {
+      "warning_id": "1520",
+      "warning_no": "1520",
+      "tool_name": "",
+      "category": "MISRA-R (Required)",
+      "checker_name": "",
+      "rule_id": "17.2",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Recursive function detected",
+      "file_path": "utils.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "factorial",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "utils.c",
+        "found": true,
+        "context_text": "       1  #include <stdint.h>\n       2  \n       3  int helper_add(int a, int b)\n       4  {\n       5      int result = a + b;\n       6      result = result;\n       7      return result;\n       8  }\n       9  \n      10  void update_index(void)\n      11  {\n      12      int i = 0;\n      13      int arr[5] = {0};\n      14  \n      15      arr[i] = i++;\n      16      i = i++ + 1;\n      17  }\n      18  \n      19  int early_return(int value)\n      20  {\n      21      if (value == 0)\n      22      {\n      23          return 0;\n      24          value = 1;\n      25      }\n      26  \n      27      return value;\n      28  }\n      29  \n      30  int factorial(int n)\n      31  {\n      32      if (n <= 1)\n      33      {\n      34          return 1;\n      35      }\n      36  \n      37      return n * factorial(n - 1);\n      38  }",
+        "context_start_line": 1,
+        "context_end_line": 38,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 17.3",
+          "description": "A function shall not be declared implicitly",
+          "guidelines": "Rule 17.3 (Mandatory): A function shall not be declared implicitly. This code violates Rule 17.3 because a function shall not be declared implicitly. Function interfaces and calls must be explicit, safe, and consistently used.",
+          "score": 0.7562343303595722
+        },
+        {
+          "rule_id": "Rule 17.8",
+          "description": "A function parameter should not be modified",
+          "guidelines": "Rule 17.8 (Advisory): A function parameter should not be modified. This code violates Rule 17.8 because a function parameter should not be modified. Function interfaces and calls must be explicit, safe, and consistently used.",
+          "score": 0.7543699254555444
+        },
+        {
+          "rule_id": "Rule 17.2",
+          "description": "Functions shall not call themselves, either directly or indirectly",
+          "guidelines": "Rule 17.2 (Required): Functions shall not call themselves, either directly or indirectly. This code violates Rule 17.2 because functions shall not call themselves, either directly or indirectly. Function interfaces and calls must be explicit, safe, and consistently used.",
+          "score": 0.7533242395099792
+        },
+        {
+          "rule_id": "Rule 17.1",
+          "description": "The standard header file <stdarg.h> shall not be used",
+          "guidelines": "Rule 17.1 (Required): The standard header file <stdarg.h> shall not be used. This code violates Rule 17.1 because the standard header file <stdarg.h> shall not be used. Function interfaces and calls must be explicit, safe, and consistently used.",
+          "score": 0.7528229070952096
+        }
+      ]
+    }
+  ]
+}

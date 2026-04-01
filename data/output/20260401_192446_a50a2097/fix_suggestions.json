@@ -1,0 +1,41 @@
+{
+  "warning_count": 4,
+  "results": [
+    {
+      "warning_id": "2980",
+      "rule_id": "2.2",
+      "fix_suggestions": [],
+      "parse_error": true,
+      "explanation": {
+        "summary": "Expecting ',' delimiter: line 8 column 4 (char 839)"
+      }
+    },
+    {
+      "warning_id": "400",
+      "rule_id": "13.2",
+      "fix_suggestions": [],
+      "parse_error": true,
+      "explanation": {
+        "summary": "Requested tokens (2348) exceed context window of 2048"
+      }
+    },
+    {
+      "warning_id": "1460",
+      "rule_id": "2.1",
+      "fix_suggestions": [],
+      "parse_error": true,
+      "explanation": {
+        "summary": "Requested tokens (2624) exceed context window of 2048"
+      }
+    },
+    {
+      "warning_id": "1520",
+      "rule_id": "17.2",
+      "fix_suggestions": [],
+      "parse_error": true,
+      "explanation": {
+        "summary": "Expecting ',' delimiter: line 17 column 6 (char 901)"
+      }
+    }
+  ]
+}
