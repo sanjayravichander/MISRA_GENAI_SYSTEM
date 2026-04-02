@@ -499,3 +499,120 @@
     display: none;
   }
 }
+
+/* ── Omitted rule row (no chip selected) ────────────────── */
+.cm-row-omitted td {
+  opacity: 0.38;
+}
+
+.cm-row-omitted .rule-link {
+  color: var(--text-muted, #94a3b8);
+  text-decoration: line-through;
+  pointer-events: none;
+}
+
+.cm-row-omitted .cm-cat-badge {
+  filter: grayscale(1);
+}
+
+/* ── Folder / File upload pick buttons inside C drop zone ── */
+.c-upload-btns {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin: 8px 0 4px;
+}
+
+.c-pick-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  background: var(--surface, #f8fafc);
+  border: 1.5px solid var(--border, #e2e8f0);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text, #1e293b);
+  cursor: pointer;
+  transition: background 0.14s, border-color 0.14s;
+}
+
+.c-pick-btn:hover {
+  background: var(--surface-hover, #f1f5f9);
+  border-color: var(--primary, #2563eb);
+  color: var(--primary, #2563eb);
+}
+
+/* ── Override / Save Overrides button ───────────────────── */
+#override-config-btn {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transition: opacity 0.2s;
+}
+
+#override-config-btn:not([disabled]) {
+  opacity: 1;
+  cursor: pointer;
+}
+
+/* ── File map: completed/ran files ─────────────────────── */
+.fmap-ran {
+  opacity: 0.72;
+}
+
+.fmap-done-btn {
+  color: var(--green, #16a34a) !important;
+  border-color: var(--green, #16a34a) !important;
+  background: rgba(22, 163, 74, 0.06) !important;
+}
+
+/* ── Results page back / new analysis buttons ───────────── */
+.results-back-btn {
+  border-color: var(--border, #e2e8f0);
+}
+
+/* ── Config modal theme alignment with main UI ──────────── */
+.cm-dialog {
+  font-family: var(--font-ui, system-ui, -apple-system, sans-serif);
+  border: 1px solid var(--border, #e2e8f0);
+}
+
+.cm-header {
+  background: var(--surface, #f8fafc);
+}
+
+.cm-title {
+  font-family: var(--font-display, inherit);
+  color: var(--text, #0f172a);
+}
+
+.cm-table thead th {
+  background: var(--surface, #f8fafc);
+  color: var(--text-muted, #64748b);
+  font-family: var(--font-ui, inherit);
+}
+
+.cm-table tbody tr:hover {
+  background: var(--hover-bg, #f8fafc);
+}
+
+.cm-footer {
+  background: var(--surface, #f8fafc);
+}
+
+/* Make chip colours match the main UI's pill colours */
+.cm-spec-label input[type="checkbox"]:checked+.cm-spec-chip.chip-m {
+  background: var(--primary, #1e40af);
+  border-color: var(--primary, #1e40af);
+}
+
+.cm-spec-label input[type="checkbox"]:checked+.cm-spec-chip.chip-r {
+  background: #b45309;
+  border-color: #b45309;
+}
+
+.cm-spec-label input[type="checkbox"]:checked+.cm-spec-chip.chip-a {
+  background: var(--green, #15803d);
+  border-color: var(--green, #15803d);
+}

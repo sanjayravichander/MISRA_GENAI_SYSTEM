@@ -43,10 +43,26 @@ function initIndexPage() {
       const files = [...e.dataTransfer.files];
       zone === excelZone ? handleExcel(files[0]) : handleCFiles(files);
     });
-    /* No extra click handler needed — input[type=file] covers the entire zone via position:absolute inset:0 */
+    /* Make entire zone clickable → trigger the appropriate file picker */
+    zone.addEventListener("click", function (e) {
+      if (e.target.closest(".c-pick-btn") || e.target.closest("input")) return; // handled elsewhere
+      if (zone === excelZone) excelInput.click();
+      else document.getElementById("c-input").click();
+    });
   });
   excelInput.addEventListener("change", () => handleExcel(excelInput.files[0]));
+
+  /* File / Folder picker buttons for C source zone */
+  const cPickFiles = document.getElementById("c-pick-files-btn");
+  const cPickFolder = document.getElementById("c-folder-input");
+  const cFolderBtn = document.getElementById("c-pick-folder-btn");
+  if (cPickFiles) cPickFiles.addEventListener("click", e => { e.stopPropagation(); document.getElementById("c-input").click(); });
+  if (cFolderBtn) cFolderBtn.addEventListener("click", e => { e.stopPropagation(); if (cPickFolder) cPickFolder.click(); });
   cInput.addEventListener("change", () => handleCFiles([...cInput.files]));
+  if (cPickFolder) cPickFolder.addEventListener("change", () => {
+    const valid = [...cPickFolder.files].filter(f => /\.(c|h)$/i.test(f.name));
+    if (valid.length) handleCFiles(valid);
+  });
 
   function handleExcel(file) {
     if (!file) return;
@@ -231,16 +247,27 @@ function initIndexPage() {
     if (card) card.classList.toggle("fmap-open");
   };
 
+  /* Track which file indices have already been run — completed runs are static */
+  const _ranFiles = new Set();
+
   window.runSingleFile = function (e, idx) {
     e.stopPropagation();
+    if (_ranFiles.has(idx)) return;   // already ran — do not re-run
     const f = cFilesList[idx];
     if (!f) return;
-    startAnalysis([f]);
+    /* Disable this file's run button immediately */
+    const btn = document.querySelector(`#fmap-${idx} .fmap-run-btn`);
+    if (btn) { btn.disabled = true; btn.textContent = "Running…"; }
+    startAnalysis([f], idx);
   };
 
-  runAllBtn && runAllBtn.addEventListener("click", () => startAnalysis(cFilesList));
+  runAllBtn && runAllBtn.addEventListener("click", () => {
+    const pending = cFilesList.filter((_, i) => !_ranFiles.has(i));
+    if (!pending.length) { showError("All files have already been analysed."); return; }
+    startAnalysis(pending, null, true);
+  });
 
-  async function startAnalysis(srcFiles) {
+  async function startAnalysis(srcFiles, fileIdx, isRunAll) {
     showError("");
     const progressPanel = document.getElementById("progress-panel");
     const uploadCard = document.getElementById("upload-card");
@@ -250,6 +277,9 @@ function initIndexPage() {
     // Remove any old back button from a previous run
     const oldBack = document.getElementById("back-to-upload-btn");
     if (oldBack) oldBack.remove();
+    /* Remember which file was just started so we can mark it done later */
+    window._currentFileIdx = (fileIdx !== null && fileIdx !== undefined) ? fileIdx : null;
+    window._currentIsRunAll = !!isRunAll;
 
     const fd = new FormData();
     fd.append("warning_report", excelFile);
@@ -732,11 +762,36 @@ function initIndexPage() {
         counterEl.textContent = `All ${finalCount} records complete`;
         counterEl.className = "pr-counter pr-counter-done";
 
+        /* Mark the completed file(s) as ran — re-enable other file buttons */
+        if (window._currentIsRunAll) {
+          cFilesList.forEach((_, i) => _ranFiles.add(i));
+        } else if (window._currentFileIdx !== null && window._currentFileIdx !== undefined) {
+          _ranFiles.add(window._currentFileIdx);
+        }
+        /* Refresh the file map UI so ran files show as done, others stay runnable */
+        cFilesList.forEach(function (_, i) {
+          const card = document.getElementById("fmap-" + i);
+          if (!card) return;
+          const btn = card.querySelector(".fmap-run-btn");
+          if (_ranFiles.has(i)) {
+            /* Mark as completed — static, cannot re-run */
+            card.classList.add("fmap-ran");
+            if (btn) { btn.disabled = true; btn.textContent = "✓ Done"; btn.classList.add("fmap-done-btn"); }
+          } else {
+            /* Pending files get their button re-enabled */
+            if (btn) { btn.disabled = false; btn.textContent = "▶ Run"; btn.classList.remove("fmap-done-btn"); }
+          }
+        });
+
+        /* Re-enable upload card so user can run remaining files */
+        const uploadCard2 = document.getElementById("upload-card");
+        if (uploadCard2) { uploadCard2.style.opacity = "1"; uploadCard2.style.pointerEvents = "auto"; }
+
         if (!document.getElementById("back-to-upload-btn")) {
           const backBtn = document.createElement("button");
           backBtn.id = "back-to-upload-btn";
           backBtn.className = "back-to-upload-btn";
-          backBtn.innerHTML = "&#8592; New Analysis";
+          backBtn.innerHTML = "&#8592; Back to Upload";
           backBtn.onclick = function () {
             progressPanel.classList.remove("visible");
             const uploadCard = document.getElementById("upload-card");
@@ -979,12 +1034,32 @@ function initResultsPage() {
     } catch (err) { root.innerHTML = `<div class="error-panel">Failed to load: ${escHtml(err.message)}</div>`; }
   }
 
+  /* ── Warn user before page refresh (would lose in-progress work) ── */
+  window.addEventListener("beforeunload", function (e) {
+    e.preventDefault();
+    e.returnValue = "Refreshing this page may cause loss of your saved/ran records.";
+    return e.returnValue;
+  });
+
   function buildShell(data) {
     const s = data.summary || {};
     const total = s.total ?? (data.warnings || []).length;
     const manual = s.manual ?? 0;
     return `
     <div style="padding:40px 0 28px;border-bottom:1px solid var(--border);margin-bottom:28px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+        <a href="/" class="btn btn-ghost btn-sm results-back-btn"
+           onclick="return confirmLeave()"
+           style="display:inline-flex;align-items:center;gap:6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          Back to Upload
+        </a>
+        <button class="btn btn-ghost btn-sm" onclick="confirmNewAnalysis()"
+          style="display:inline-flex;align-items:center;gap:6px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          Run New Analysis
+        </button>
+      </div>
       <div class="hero-eyebrow" style="margin-bottom:12px;"><span class="hero-eyebrow-dot"></span>Run ${escHtml(data.run_id)}</div>
       <h1 style="font-family:var(--font-display);font-size:clamp(22px,3vw,34px);font-weight:700;letter-spacing:-.015em;margin-bottom:8px;">Review Report</h1>
       <p style="color:var(--text-sub);font-size:14px;">${total} warning${total !== 1 ? "s" : ""} reviewed</p>
@@ -1002,6 +1077,25 @@ function initResultsPage() {
     </div>
     <div class="warning-list" id="warning-list"></div>`;
   }
+
+  /* Leave confirmation for Back button */
+  window.confirmLeave = function () {
+    return confirm(
+      "Going back to the Upload page.\n\n" +
+      "Your current report will remain accessible at this URL, " +
+      "but refreshing this page may lose in-progress work.\n\nContinue?"
+    );
+  };
+
+  /* Run New Analysis confirmation */
+  window.confirmNewAnalysis = function () {
+    const ok = confirm(
+      "Start a fresh analysis?\n\n" +
+      "This will take you back to the Upload page to start from scratch. " +
+      "Your current report will remain saved on the server.\n\nContinue?"
+    );
+    if (ok) window.location.href = "/";
+  };
 
   function renderWarnings(ws) {
     const list = document.getElementById("warning-list");
