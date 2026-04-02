@@ -25,13 +25,16 @@ import json
 import os
 import queue
 import re as _re
+import shutil
 import subprocess
 import sys
 import threading
 import time
 import uuid
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
 
+import pandas as pd
 from flask import (Flask, Response, jsonify, render_template,
                    request, stream_with_context, send_file)
 from flask_cors import CORS
@@ -90,6 +93,102 @@ app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024
 
 # In-memory job tracker (pipeline subprocess jobs)
 JOBS: dict[str, dict] = {}
+
+# ---------------------------------------------------------------------------
+# Config — Excel MISRA rule configuration
+# ---------------------------------------------------------------------------
+_CONFIG_TMP = PROJECT_ROOT / "data" / "_config_tmp"
+_CONFIG_TMP.mkdir(parents=True, exist_ok=True)
+
+# token -> saved Excel path
+_CONFIG_FILES: Dict[str, Path] = {}
+
+# Folder where user specification Excel files are saved after Apply Configuration
+USER_SPEC_FOLDER = PROJECT_ROOT / "data" / "user_specification_excel_folder"
+USER_SPEC_FOLDER.mkdir(parents=True, exist_ok=True)
+
+
+def _safe_text(value: Any) -> str:
+    if value is None:
+        return ""
+    try:
+        if pd.isna(value):
+            return ""
+    except Exception:
+        pass
+    return str(value).strip()
+
+
+def _normalize_user_category(value: Any) -> str:
+    raw = _safe_text(value).upper()
+    if not raw:
+        return ""
+    if raw in {"M", "R", "A"}:
+        return raw
+    for ch in raw:
+        if ch in {"M", "R", "A"}:
+            return ch
+    return ""
+
+
+def _display_misra_category(value: Any) -> str:
+    raw = _safe_text(value)
+    upper = raw.upper()
+    if upper == "MISRA-M":
+        return "Mandatory"
+    if upper == "MISRA-R":
+        return "Required"
+    if upper == "MISRA-A":
+        return "Advisory"
+    return raw
+
+
+def _ensure_user_category_col(df: pd.DataFrame) -> pd.DataFrame:
+    df.columns = [str(c).strip() for c in df.columns]
+    if "User Category" not in df.columns:
+        df["User Category"] = ""
+    return df
+
+
+def _read_excel_df(path: Path) -> pd.DataFrame:
+    ext = path.suffix.lower()
+    if ext == ".xls":
+        try:
+            return pd.read_excel(path, engine="xlrd")
+        except Exception:
+            return pd.read_excel(path)
+    return pd.read_excel(path, engine="openpyxl")
+
+
+def _excel_rows_from_df(df: pd.DataFrame) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    for idx, row in df.iterrows():
+        rule_raw = _safe_text(row.get("MISRA Rule", ""))
+        rule_list = rule_raw.replace("Rule-", "").replace("Rule_", "").strip()
+        rows.append({
+            "row_index": int(idx),
+            "sl_no": _safe_text(row.get("SI.No", idx + 1)),
+            "rule_list": rule_list,
+            "misra_category": _safe_text(row.get("MISRA Category", "")),
+            "misra_category_display": _display_misra_category(row.get("MISRA Category", "")),
+            "user_category": _normalize_user_category(row.get("User Category", "")),
+            "warning_message_nos": _safe_text(row.get("Warning Message Nos.", "")),
+        })
+    return rows
+
+
+def _get_config_path(token: str) -> Optional[Path]:
+    token = Path(token).name
+    path = _CONFIG_FILES.get(token)
+    if path and path.exists():
+        return path
+    matches = list(_CONFIG_TMP.glob(f"{token}_*.xlsx"))
+    if matches:
+        return matches[0]
+    matches = list(_CONFIG_TMP.glob(f"{token}_*.xls"))
+    if matches:
+        return matches[0]
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -690,6 +789,132 @@ def _filter_excel_by_rules(src_excel: Path, rule_selected: list,
     filtered_path = src_excel.parent / ("filtered_" + src_excel.name)
     wb2.save(str(filtered_path))
     return filtered_path
+
+
+# ---------------------------------------------------------------------------
+# API — Excel MISRA config load / save
+# ---------------------------------------------------------------------------
+@app.route("/api/config/load", methods=["GET"])
+def load_config():
+    """Load MISRA rule config from the Excel file in the data folder."""
+    try:
+        data_folder = PROJECT_ROOT / "data"
+        if not data_folder.exists():
+            return jsonify({"error": f"Data folder not found: {data_folder}"}), 500
+
+        # Priority: load from previously saved user specification if it exists
+        _saved = USER_SPEC_FOLDER / "user_specification.xlsx"
+        if _saved.exists():
+            file_path = _saved
+        else:
+            files = [f for f in os.listdir(data_folder) if f.endswith((".xlsx", ".xls"))]
+            if not files:
+                return jsonify({"error": "No Excel file found in data folder"}), 404
+            file_path = data_folder / files[0]
+
+        df = pd.read_excel(file_path, engine="openpyxl")
+        df.columns = [str(c).strip() for c in df.columns]
+        df = df.fillna("")
+
+        RULE_COL     = "MISRA Rule"
+        CAT_COL      = "MISRA Category"
+        USER_CAT_COL = "User Category"
+
+        missing = [c for c in [RULE_COL, CAT_COL] if c not in df.columns]
+        if missing:
+            return jsonify({
+                "error": f"Expected columns not found: {missing}. Found: {list(df.columns)}"
+            }), 400
+
+        rows = []
+        for i, row in df.iterrows():
+            rule_raw = str(row.get(RULE_COL, "")).strip()
+            cat_raw  = str(row.get(CAT_COL,  "")).strip()
+            user_cat = str(row.get(USER_CAT_COL, "")).strip() if USER_CAT_COL in df.columns else ""
+
+            if not rule_raw:
+                continue
+
+            rule_display = rule_raw
+            m = _re.match(r"Rule[-_](.+)", rule_raw, _re.I)
+            if m:
+                rule_display = m.group(1).strip()
+            else:
+                m2 = _re.match(r"Dir[-_](.+)", rule_raw, _re.I)
+                if m2:
+                    rule_display = "Dir " + m2.group(1).strip()
+
+            cat_display = {"MISRA-M": "Mandatory", "MISRA-R": "Required",
+                           "MISRA-A": "Advisory"}.get(cat_raw, cat_raw)
+
+            warn_nos = str(row.get("Warning Message Nos.", "")).strip() \
+                if "Warning Message Nos." in df.columns else ""
+
+            rows.append({
+                "row_index":              int(i),
+                "rule_list":              rule_display,
+                "misra_category":         cat_display,
+                "misra_category_display": cat_display,
+                "user_category":          _normalize_user_category(user_cat),
+                "warning_message_nos":    warn_nos,
+            })
+
+        if not rows:
+            return jsonify({"error": "No valid data rows found in Excel"}), 400
+
+        token = uuid.uuid4().hex
+        _CONFIG_FILES[token] = Path(file_path)
+
+        return jsonify({"token": token, "rows": rows, "count": len(rows)})
+
+    except Exception:
+        import traceback
+        print("GET /api/config/load ERROR:\n", traceback.format_exc())
+        return jsonify({"error": "Internal server error loading config"}), 500
+
+
+@app.route("/api/config/save", methods=["POST"])
+def api_config_save():
+    """Save user category selections back to the user_specification Excel."""
+    data    = request.get_json(silent=True) or {}
+    token   = _safe_text(data.get("token", ""))
+    updates = data.get("updates", [])
+
+    if not token:
+        return jsonify(error="Missing config token."), 400
+
+    path = _get_config_path(token)
+    if not path:
+        return jsonify(error="Excel file not found for this session."), 404
+
+    try:
+        df = _read_excel_df(path)
+        df.columns = [str(c).strip() for c in df.columns]
+
+        USER_CAT_COL = "User Category"
+        if USER_CAT_COL not in df.columns:
+            df[USER_CAT_COL] = ""
+
+        for item in updates:
+            try:
+                idx      = int(item.get("row_index"))
+                user_cat = _normalize_user_category(item.get("user_category", ""))
+                if idx in df.index:
+                    df.at[idx, USER_CAT_COL] = user_cat if user_cat else "-"
+            except Exception:
+                continue
+
+        USER_SPEC_FOLDER.mkdir(parents=True, exist_ok=True)
+        new_path = USER_SPEC_FOLDER / "user_specification.xlsx"
+        df.to_excel(new_path, index=False, engine="openpyxl")
+
+        rows = _excel_rows_from_df(df)
+
+    except Exception as exc:
+        return jsonify(error=f"Could not save Excel: {exc}"), 400
+
+    return jsonify(status="updated", token=token, rows=rows,
+                   saved_file="user_specification.xlsx")
 
 
 # ---------------------------------------------------------------------------

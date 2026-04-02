@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <title>SRM Technologies — MISRA Compliance Reviewer</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='config_modal.css') }}" />
   <!-- SheetJS for client-side Excel parsing -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
@@ -24,14 +25,14 @@
           </svg>
         </div>
         <div>
-          <div class="logo-name">SRM <em>Technologies</em></div>
-          <div class="logo-sub">MISRA Compliance Reviewer</div>
+          <div class="logo-name">MISRA  <em>Compliance AI</em></div>
+          
         </div>
       </a>
       <div class="header-divider"></div>
       <div class="header-tags">
         <span class="header-tag">MISRA-C 2012</span>
-        <span class="header-tag">QAC Compatible</span>
+        
       </div>
       <div class="header-status">
         <div class="status-dot"></div>Ready
@@ -39,19 +40,92 @@
     </div>
   </header>
 
+  <!-- ── CONFIGURE MISRA RULES MODAL ────────────────────── -->
+  <div class="cm-overlay" id="config-modal-overlay">
+    <div class="cm-dialog" id="config-modal" role="dialog" aria-modal="true" aria-labelledby="cm-title">
+
+      <div class="cm-header">
+        <div>
+          <div class="cm-title" id="cm-title">Configure MISRA Rules</div>
+          <div class="cm-subtitle">Rules are automatically loaded from the <b>data</b> folder.</div>
+        </div>
+        <button class="cm-close" id="modal-close-btn" aria-label="Close">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="cm-note-bar" id="config-note">Loading configuration…</div>
+
+      <div class="cm-body">
+        <table class="cm-table">
+          <thead>
+            <tr>
+              <th>Rule List</th>
+              <th>MISRA Category</th>
+              <th>User Specification</th>
+            </tr>
+          </thead>
+          <tbody id="config-body">
+            <tr>
+              <td colspan="3" class="cm-loading-row">
+                <div class="cm-spinner"></div> Loading rules…
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="cm-footer">
+        <div class="cm-footer-left">
+          <span class="cm-legend-dot cm-dot-m"></span><span class="cm-legend-txt">Mandatory</span>
+          <span class="cm-legend-dot cm-dot-r"></span><span class="cm-legend-txt">Required</span>
+          <span class="cm-legend-dot cm-dot-a"></span><span class="cm-legend-txt">Advisory</span>
+          <span class="cm-legend-txt" style="margin-left:8px;color:#94a3b8;">· Click a rule number to see warning IDs</span>
+        </div>
+        <div class="cm-footer-right">
+          <span class="cm-save-status" id="config-status"></span>
+          <button class="btn btn-primary" id="save-config-btn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            Apply Configuration
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── WARNING NUMBERS POPCARD ────────────────────────── -->
+  <div class="wn-card" id="warning-card" style="display:none;">
+    <div class="wn-card-header">
+      <span class="wn-card-title" id="wn-card-title">Warning Message Nos.</span>
+      <button class="wn-close" id="wn-close-btn">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+    </div>
+    <div class="wn-card-body" id="wn-card-body"></div>
+  </div>
+
   <section class="page-hero">
     <div class="hero-grid"></div>
     <div class="hero-torii"></div>
     <div class="container">
-      <div class="hero-eyebrow"><span class="hero-eyebrow-dot"></span>SRM Technologies · Automotive Software Quality
+      <div class="hero-eyebrow"><span class="hero-eyebrow-dot"></span>Automotive Software Quality
       </div>
-      <h1>MISRA-C <span class="highlight">Compliance</span><br />Fix Reviewer</h1>
-      <p>Upload your QAC warning report and source code files. The system maps each violation to its MISRA rule,
+      <h1>MISRA <span class="highlight">Compliance AI</span><br /></h1>
+      <p>Upload your warning report and source code files. The system maps each violation to its MISRA rule,
         surfaces verified fix templates, and generates intelligent suggestions.</p>
       <div class="cap-chips">
-        <span class="cap-chip"><span class="cap-chip-dot"></span>Advisory · Required · Mandatory</span>
+        <span class="cap-chip"><span class="cap-chip-dot"></span>Polyspace Compatible</span>
         <span class="cap-chip"><span class="cap-chip-dot"></span>QAC Compatible</span>
-        <span class="cap-chip"><span class="cap-chip-dot"></span>DB-Verified Fix Templates</span>
+        
       </div>
     </div>
   </section>
@@ -60,19 +134,18 @@
   <main class="main-content">
     <div class="container">
 
+
+
       <div class="panel" id="upload-card">
         <div class="panel-heading">
           <div class="panel-title">Upload Files</div>
-          <span class="panel-tag">Step 1</span>
-          <button class="settings-icon-btn" id="open-settings-btn" title="Configure MISRA rules"
-            onclick="openSettingsModal()">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-              stroke-linecap="round">
+          <button type="button" class="btn-configure-misra" id="config-open-btn" style="padding: 6px 12px; font-size: 0.9em; margin-left: auto;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
               <circle cx="12" cy="12" r="3" />
-              <path
-                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
             </svg>
-            Rule Config
+            Configure MISRA Rules
           </button>
         </div>
 
@@ -88,7 +161,7 @@
                   <path d="M7 13l2 2 4-4" />
                 </svg>
               </div>
-              <div class="drop-label">QAC Warning Report</div>
+              <div class="drop-label">Warning Report</div>
               <div class="drop-sub">Drop here or click to browse</div>
               <div class="drop-accept">.xlsx &nbsp;·&nbsp; .xls</div>
               <div class="file-list" id="excel-list"></div>
@@ -106,7 +179,7 @@
                   <line x1="16" y1="17" x2="8" y2="17" />
                 </svg>
               </div>
-              <div class="drop-label">C Source Files</div>
+              <div class="drop-label">Source Files</div>
               <div class="drop-sub">Drop here or click to browse</div>
               <div class="drop-accept">.c &nbsp;·&nbsp; .h &nbsp;·&nbsp; one or more</div>
               <div class="file-list" id="c-list"></div>
@@ -255,6 +328,7 @@
   </div>
 
   <script src="{{ url_for('static', filename='script.js') }}"></script>
+  <script src="{{ url_for('static', filename='config_modal.js') }}"></script>
 </body>
 
 </html>
