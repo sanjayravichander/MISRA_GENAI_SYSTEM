@@ -483,11 +483,11 @@ function initIndexPage() {
 
           <div class="fix-diff-wrap">
             <div class="fix-diff-col">
-              <div class="fix-diff-header before-header">&#128308; Before (violated code)</div>
+              <div class="fix-diff-header before-header">&#128308; BEFORE (VIOLATED CODE)</div>
               <div class="source-block before-block" id="before-block-${escHtml(wid)}">${beforeRows}</div>
             </div>
             <div class="fix-diff-col">
-              <div class="fix-diff-header after-header">&#128994; After (fix applied)</div>
+              <div class="fix-diff-header after-header">&#128994; AFTER (FIXED CODE)</div>
               <div class="source-block after-block" id="after-block-${escHtml(wid)}">
                 <div id="after-code-${escHtml(wid)}">${renderAfterCode(afterCode)}</div>
               </div>
@@ -1127,7 +1127,7 @@ function buildWarningDetail(w, ev, isReview, wId) {
     html += `<div class="detail-section"><div class="detail-section-title">Fix Suggestion</div>
       <div class="fix-chips-row" id="fixchips-${escHtml(wId)}">${chips}<span class="fix-chip-label" id="fix-chip-desc-${escHtml(wId)}">${escHtml(fixes[0].title || fixes[0].fix_title || fixes[0].why || "")}</span></div>
       <div class="fix-after-wrap">
-        <div class="fix-after-header"><span class="fix-after-label">After (fix applied)</span><span class="fix-active-tag" id="fix-active-tag-${escHtml(wId)}">Fix 1 selected</span></div>
+        <div class="fix-after-header"><span class="fix-after-label">AFTER (FIXED CODE)</span><span class="fix-active-tag" id="fix-active-tag-${escHtml(wId)}">Fix 1 selected</span></div>
         <div class="code-diff-panel after" id="after-block-${escHtml(wId)}">
           <div class="code-diff-label">After
             <button class="commit-inline-btn" id="commit-btn-${escHtml(wId)}" onclick="commitFix('${escHtml(wId)}')" title="Commit this fix">&#x2B06; Commit Fix</button>

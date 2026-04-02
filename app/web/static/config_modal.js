@@ -9,20 +9,20 @@
 
   /* ── State ─────────────────────────────────────────────── */
   let _configToken = null;
-  let _configRows  = [];     // rows as returned from /api/config/load
+  let _configRows = [];     // rows as returned from /api/config/load
 
   /* ── DOM refs ──────────────────────────────────────────── */
-  const overlay     = document.getElementById("config-modal-overlay");
-  const closeBtn    = document.getElementById("modal-close-btn");
-  const openBtn     = document.getElementById("config-open-btn");
-  const configNote  = document.getElementById("config-note");
-  const configBody  = document.getElementById("config-body");
-  const saveBtn     = document.getElementById("save-config-btn");
-  const saveStatus  = document.getElementById("config-status");
+  const overlay = document.getElementById("config-modal-overlay");
+  const closeBtn = document.getElementById("modal-close-btn");
+  const openBtn = document.getElementById("config-open-btn");
+  const configNote = document.getElementById("config-note");
+  const configBody = document.getElementById("config-body");
+  const saveBtn = document.getElementById("save-config-btn");
+  const saveStatus = document.getElementById("config-status");
   const warningCard = document.getElementById("warning-card");
-  const wnTitle     = document.getElementById("wn-card-title");
-  const wnBody      = document.getElementById("wn-card-body");
-  const wnCloseBtn  = document.getElementById("wn-close-btn");
+  const wnTitle = document.getElementById("wn-card-title");
+  const wnBody = document.getElementById("wn-card-body");
+  const wnCloseBtn = document.getElementById("wn-close-btn");
 
   /* ── Open / Close ──────────────────────────────────────── */
   function openModal() {
@@ -59,7 +59,7 @@
     saveStatus.className = "cm-save-status";
 
     try {
-      const res  = await fetch("/api/config/load");
+      const res = await fetch("/api/config/load");
       const data = await res.json();
 
       if (data.error) {
@@ -70,7 +70,7 @@
       }
 
       _configToken = data.token;
-      _configRows  = data.rows || [];
+      _configRows = data.rows || [];
 
       configNote.textContent =
         `${data.count} rule(s) loaded. Select M / R / A for each rule, then click Apply Configuration.`;
@@ -96,11 +96,11 @@
 
       /* ── Col 1: Rule link ── */
       const tdRule = document.createElement("td");
-      const link   = document.createElement("a");
-      link.className   = "rule-link";
+      const link = document.createElement("a");
+      link.className = "rule-link";
       link.textContent = row.rule_list || "—";
-      link.href        = "#";
-      link.title       = "Click to view Warning Message Nos. for Rule " + row.rule_list;
+      link.href = "#";
+      link.title = "Click to view Warning Message Nos. for Rule " + row.rule_list;
       link.addEventListener("click", function (e) {
         e.preventDefault();
         showWarningCard(e, row);
@@ -108,16 +108,16 @@
       tdRule.appendChild(link);
 
       /* ── Col 2: MISRA Category badge ── */
-      const tdCat   = document.createElement("td");
+      const tdCat = document.createElement("td");
       const catText = row.misra_category || row.misra_category_display || "";
-      const badge   = document.createElement("span");
+      const badge = document.createElement("span");
       badge.className = "cm-cat-badge " + badgeClass(catText);
       badge.textContent = catText;
       tdCat.appendChild(badge);
 
       /* ── Col 3: M / R / A checkboxes (radio-style) ── */
-      const tdSpec  = document.createElement("td");
-      const group   = document.createElement("div");
+      const tdSpec = document.createElement("td");
+      const group = document.createElement("div");
       group.className = "cm-spec-group";
 
       const currentVal = (row.user_category || "").toUpperCase();
@@ -127,13 +127,13 @@
         label.className = "cm-spec-label";
         label.title = { M: "Mandatory", R: "Required", A: "Advisory" }[opt];
 
-        const cb   = document.createElement("input");
-        cb.type    = "checkbox";
-        cb.name    = "rule_spec_" + row.row_index;
-        cb.value   = opt;
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.name = "rule_spec_" + row.row_index;
+        cb.value = opt;
         cb.checked = currentVal === opt;
         cb.dataset.rowIndex = row.row_index;
-        cb.dataset.opt      = opt;
+        cb.dataset.opt = opt;
 
         /* Enforce single-select: uncheck siblings when this is ticked */
         cb.addEventListener("change", function () {
@@ -166,8 +166,8 @@
   function badgeClass(cat) {
     const c = (cat || "").toLowerCase();
     if (c.includes("mandatory")) return "badge-mandatory";
-    if (c.includes("required"))  return "badge-required";
-    if (c.includes("advisory"))  return "badge-advisory";
+    if (c.includes("required")) return "badge-required";
+    if (c.includes("advisory")) return "badge-advisory";
     return "badge-other";
   }
 
@@ -178,10 +178,10 @@
 
     if (warnNos) {
       wnBody.textContent = warnNos;
-      wnBody.className   = "wn-card-body";
+      wnBody.className = "wn-card-body";
     } else {
       wnBody.textContent = "No warning message numbers available for this rule.";
-      wnBody.className   = "wn-card-body empty";
+      wnBody.className = "wn-card-body empty";
     }
 
     warningCard.style.display = "block";
@@ -190,7 +190,7 @@
     const rect = clickEvent.target.getBoundingClientRect();
     const cardW = 280;
     let left = rect.left;
-    let top  = rect.bottom + window.scrollY + 6;
+    let top = rect.bottom + window.scrollY + 6;
 
     // Keep card within viewport horizontally
     if (left + cardW > window.innerWidth - 16) {
@@ -199,7 +199,7 @@
     if (left < 8) left = 8;
 
     warningCard.style.left = left + "px";
-    warningCard.style.top  = top  + "px";
+    warningCard.style.top = top + "px";
   }
 
   function hideWarningCard() {
@@ -223,13 +223,13 @@
   saveBtn.addEventListener("click", async function () {
     if (!_configToken) {
       saveStatus.textContent = "⚠ No config loaded.";
-      saveStatus.className   = "cm-save-status error";
+      saveStatus.className = "cm-save-status error";
       return;
     }
 
     saveStatus.textContent = "Saving…";
-    saveStatus.className   = "cm-save-status";
-    saveBtn.disabled       = true;
+    saveStatus.className = "cm-save-status";
+    saveBtn.disabled = true;
 
     /* Collect updates from the rendered table rows */
     const updates = [];
@@ -241,22 +241,22 @@
 
       const checked = tr.querySelector('input[type="checkbox"]:checked');
       updates.push({
-        row_index:     row.row_index,
+        row_index: row.row_index,
         user_category: checked ? checked.value : "",   // "" → server stores "-"
       });
     });
 
     try {
-      const res  = await fetch("/api/config/save", {
-        method:  "POST",
+      const res = await fetch("/api/config/save", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ token: _configToken, updates }),
+        body: JSON.stringify({ token: _configToken, updates }),
       });
       const data = await res.json();
 
       if (data.error) {
         saveStatus.textContent = "⚠ " + data.error;
-        saveStatus.className   = "cm-save-status error";
+        saveStatus.className = "cm-save-status error";
         return;
       }
 
@@ -267,13 +267,13 @@
 
       const savedFile = data.saved_file ? `  →  ${data.saved_file}` : "";
       saveStatus.textContent = "✓ Saved!" + savedFile;
-      saveStatus.className   = "cm-save-status";
+      saveStatus.className = "cm-save-status";
 
       /* Auto-close modal after a moment */
       setTimeout(closeModal, 1600);
     } catch (err) {
       saveStatus.textContent = "⚠ Network error: " + err.message;
-      saveStatus.className   = "cm-save-status error";
+      saveStatus.className = "cm-save-status error";
     } finally {
       saveBtn.disabled = false;
     }

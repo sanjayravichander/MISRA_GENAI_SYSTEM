@@ -107,6 +107,12 @@ _CONFIG_FILES: Dict[str, Path] = {}
 USER_SPEC_FOLDER = PROJECT_ROOT / "data" / "user_specification_excel_folder"
 USER_SPEC_FOLDER.mkdir(parents=True, exist_ok=True)
 
+# Locked original — NEVER written to by the app
+ORIGINAL_SPEC = PROJECT_ROOT / "data" / "user_specification.xlsx"
+
+# Single working copy saved under user_specification_excel_folder — updated on every Apply
+WORKING_SPEC  = USER_SPEC_FOLDER / "user_specification.xlsx"
+
 
 def _safe_text(value: Any) -> str:
     if value is None:
@@ -558,9 +564,7 @@ def commit_fix():
 
                         full_patched = "\n".join(merged)
         except Exception as merge_err:
-            import traceback as _tb
-            _merge_err_detail = _tb.format_exc()
-            app.logger.error(f"[commit] Patch merge FAILED warning={warning_id} run={run_id}: {merge_err}\n{_merge_err_detail}")
+            app.logger.warning(f"Patch merge failed (will save snippet only): {merge_err}")
 
     # Fall back to saving the snippet alone
     content_to_save = full_patched if full_patched else patched
@@ -798,23 +802,26 @@ def _filter_excel_by_rules(src_excel: Path, rule_selected: list,
 # ---------------------------------------------------------------------------
 @app.route("/api/config/load", methods=["GET"])
 def load_config():
-    """Load MISRA rule config from the Excel file in the data folder."""
+    """Load MISRA rule config from the locked original (or working copy if it exists).
+    On first run: copies locked original → WORKING_SPEC.
+    On subsequent runs: reads WORKING_SPEC (preserves previous overrides).
+    Original is NEVER written to.
+    """
     try:
-        data_folder = PROJECT_ROOT / "data"
-        if not data_folder.exists():
-            return jsonify({"error": f"Data folder not found: {data_folder}"}), 500
-
-        # Priority: load from previously saved user specification if it exists
-        _saved = USER_SPEC_FOLDER / "user_specification.xlsx"
-        if _saved.exists():
-            file_path = _saved
+        # Ensure working copy exists
+        if not WORKING_SPEC.exists():
+            if not ORIGINAL_SPEC.exists():
+                return jsonify({"error":
+                    f"Original file not found: {ORIGINAL_SPEC}\n"
+                    "Place user_specification.xlsx in:\n"
+                    f"  {PROJECT_ROOT / 'data'}"}), 404
+            shutil.copy2(str(ORIGINAL_SPEC), str(WORKING_SPEC))
+            app.logger.info(f"[config/load] Created working copy: {WORKING_SPEC}")
         else:
-            files = [f for f in os.listdir(data_folder) if f.endswith((".xlsx", ".xls"))]
-            if not files:
-                return jsonify({"error": "No Excel file found in data folder"}), 404
-            file_path = data_folder / files[0]
+            app.logger.info(f"[config/load] Reading working copy: {WORKING_SPEC}")
 
-        df = pd.read_excel(file_path, engine="openpyxl")
+        file_path = WORKING_SPEC
+        df = pd.read_excel(str(file_path), engine="openpyxl")
         df.columns = [str(c).strip() for c in df.columns]
         df = df.fillna("")
 
@@ -865,7 +872,7 @@ def load_config():
             return jsonify({"error": "No valid data rows found in Excel"}), 400
 
         token = uuid.uuid4().hex
-        _CONFIG_FILES[token] = Path(file_path)
+        _CONFIG_FILES[token] = WORKING_SPEC
 
         return jsonify({"token": token, "rows": rows, "count": len(rows)})
 
@@ -885,17 +892,17 @@ def api_config_save():
     if not token:
         return jsonify(error="Missing config token."), 400
 
-    path = _get_config_path(token)
-    if not path:
-        return jsonify(error="Excel file not found for this session."), 404
+    # Always write to the single working copy — original untouched
+    if not WORKING_SPEC.exists():
+        return jsonify(error="Working copy not found. Please open the modal first."), 404
 
     try:
-        df = _read_excel_df(path)
+        df = _read_excel_df(WORKING_SPEC)
         df.columns = [str(c).strip() for c in df.columns]
 
         USER_CAT_COL = "User Category"
         if USER_CAT_COL not in df.columns:
-            df[USER_CAT_COL] = ""
+            df[USER_CAT_COL] = "-"
 
         for item in updates:
             try:
@@ -906,9 +913,8 @@ def api_config_save():
             except Exception:
                 continue
 
-        USER_SPEC_FOLDER.mkdir(parents=True, exist_ok=True)
-        new_path = USER_SPEC_FOLDER / "user_specification.xlsx"
-        df.to_excel(new_path, index=False, engine="openpyxl")
+        df.to_excel(str(WORKING_SPEC), index=False, engine="openpyxl")
+        app.logger.info(f"[config/save] Overrides saved → {WORKING_SPEC}")
 
         rows = _excel_rows_from_df(df)
 
@@ -916,7 +922,8 @@ def api_config_save():
         return jsonify(error=f"Could not save Excel: {exc}"), 400
 
     return jsonify(status="updated", token=token, rows=rows,
-                   saved_file="user_specification.xlsx")
+                   saved_file=WORKING_SPEC.name,
+                   saved_path=str(WORKING_SPEC))
 
 
 # ---------------------------------------------------------------------------
