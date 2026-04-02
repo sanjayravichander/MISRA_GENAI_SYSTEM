@@ -459,7 +459,9 @@ def commit_fix():
 
                         full_patched = "\n".join(merged)
         except Exception as merge_err:
-            app.logger.warning(f"Patch merge failed (will save snippet only): {merge_err}")
+            import traceback as _tb
+            _merge_err_detail = _tb.format_exc()
+            app.logger.error(f"[commit] Patch merge FAILED warning={warning_id} run={run_id}: {merge_err}\n{_merge_err_detail}")
 
     # Fall back to saving the snippet alone
     content_to_save = full_patched if full_patched else patched
