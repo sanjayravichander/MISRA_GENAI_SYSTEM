@@ -1646,14 +1646,14 @@ a:hover {
 }
 
 .detail-section-title {
-    font-size: 10.5px;
+    font-size: 11px;
     font-weight: 800;
-    color: var(--text-muted);
+    color: var(--text);
     text-transform: uppercase;
-    letter-spacing: .09em;
+    letter-spacing: .08em;
     margin-bottom: 10px;
     padding-bottom: 7px;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 2px solid var(--border);
     font-family: var(--font-ui);
 }
 
@@ -1662,9 +1662,9 @@ a:hover {
     border: 1px solid var(--border);
     border-radius: var(--r2);
     padding: 14px 18px;
-    font-size: 13px;
-    color: var(--text-sub);
-    line-height: 1.75;
+    font-size: 13.5px;
+    color: var(--text);
+    line-height: 1.8;
 }
 
 .info-box.eval-note {
@@ -2981,16 +2981,30 @@ a:hover {
 
 .pr-step-line {
     flex: 1;
-    height: 2px;
+    height: 3px;
     background: #e2e8f0;
-    border-radius: 2px;
+    border-radius: 3px;
     margin-bottom: 19px;
-    transition: background 0.4s ease;
+    transition: background 0.6s cubic-bezier(.4, 0, .2, 1);
     min-width: 12px;
+    overflow: hidden;
+    position: relative;
 }
 
 .pr-step-line-done {
-    background: #10b981;
+    background: linear-gradient(90deg, #059669, #10b981, #34d399);
+    background-size: 200% 100%;
+    animation: shimmer-bar 2s linear infinite;
+}
+
+@keyframes shimmer-bar {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
 }
 
 /* pending state — default */
@@ -3194,8 +3208,8 @@ a:hover {
 }
 
 .sp-msg {
-    font-size: 13.5px;
-    color: var(--text-sub);
+    font-size: 14px;
+    color: var(--text);
     line-height: 1.65;
     margin-bottom: 18px;
 }
@@ -3913,28 +3927,30 @@ body.pr-panel-open {
 }
 
 .sp-section-title {
-    font-family: var(--font-display);
-    font-size: 11.5px;
-    font-weight: 700;
-    letter-spacing: .06em;
+    font-family: var(--font-ui);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .08em;
     text-transform: uppercase;
-    color: var(--text-muted);
+    color: var(--text);
     margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 1.5px solid var(--border);
 }
 
 /* ── Field rows ── */
 .sp-field {
     display: grid;
-    grid-template-columns: 130px 1fr;
-    gap: 6px 12px;
-    margin-bottom: 8px;
-    font-size: 13px;
-    line-height: 1.55;
+    grid-template-columns: 140px 1fr;
+    gap: 8px 14px;
+    margin-bottom: 10px;
+    font-size: 13.5px;
+    line-height: 1.65;
 }
 
 .sp-label {
-    font-weight: 600;
-    color: var(--text-sub);
+    font-weight: 700;
+    color: var(--text);
     padding-top: 1px;
 }
 
@@ -4385,6 +4401,37 @@ body.pr-panel-open {
     width: 100%;
 }
 
+/* ── Violated line — stronger red highlight with left bar ── */
+.code-row.violated-line {
+    border-left: 3px solid #c0392b;
+    background: rgba(192, 57, 43, .07);
+}
+
+.code-row.violated-line .ln-num {
+    color: #c0392b;
+    font-weight: 700;
+    margin-left: -3px;
+}
+
+.code-row.violated-line .ln-code {
+    background: rgba(192, 57, 43, .10);
+    color: #c0392b;
+    font-weight: 600;
+    display: block;
+    width: 100%;
+}
+
+/* ── Legend label beside "Violated Source Code" heading ── */
+.violated-legend {
+    font-size: 10px;
+    font-weight: 500;
+    color: #c0392b;
+    text-transform: none;
+    letter-spacing: 0;
+    margin-left: 8px;
+    opacity: 0.75;
+}
+
 /* =============================================================
    RULE CONFIG MODAL — new flat-list design
    ============================================================= */
@@ -4529,4 +4576,41 @@ body.pr-panel-open {
     font-weight: 600;
     color: var(--green-text);
     font-family: var(--font-ui);
+    word-break: break-all;
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+/* ── Info tooltip (ⓘ) ──────────────────────────────────── */
+.info-tip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: var(--text-muted, #94a3b8);
+    margin-left: 4px;
+    cursor: help;
+    vertical-align: middle;
+    transition: color 0.15s;
+    font-style: normal;
+}
+
+.info-tip:hover {
+    color: var(--accent, #2563eb);
+}
+
+/* ── Pipeline status tag transitions ───────────────────── */
+.pipeline-status-tag {
+    transition: background 0.4s, color 0.4s, border-color 0.4s;
+}
+
+#pipeline-status-dot {
+    transition: background 0.4s;
+}
+
+/* ── sp-section-title, sp-label, sp-value: already fixed at source above ── */
+
+/* ── Header status dot: green=server running ─────────────── */
+.status-dot {
+    transition: background 0.3s;
 }

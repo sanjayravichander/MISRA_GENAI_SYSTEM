@@ -322,7 +322,8 @@ def get_result(run_id):
                     # Attach raw warning fields (file, line, message, severity)
                     for field in ("file_path", "line_start", "line_end",
                                   "message", "severity", "rule_id",
-                                  "function_name", "checker_name"):
+                                  "function_name", "checker_name",
+                                  "category"):   # category = "MISRA-R (Required)" etc. for filter
                         if field not in r and ew.get(field):
                             r[field] = ew[field]
         except Exception:
@@ -577,29 +578,14 @@ def commit_fix():
     out_path = commit_dir / fname
     out_path.write_text(content_to_save, encoding="utf-8")
 
-    # Build violated_code from source_context for audit log
-    violated_code = ""
-    if run_id:
+    # Save backup of original source file for potential revert
+    if src_file_path and src_file_path.exists():
         try:
-            run_dir2 = OUTPUT_DIR / secure_filename(run_id)
-            ep2 = run_dir2 / "enriched_warnings.json"
-            if ep2.exists():
-                import json as _j2
-                ed2 = _j2.loads(ep2.read_text(encoding="utf-8"))
-                for w2 in ed2.get("warnings", []):
-                    if str(w2.get("warning_id")) == str(warning_id):
-                        sc2 = w2.get("source_context", {})
-                        violated_code = sc2.get("context_text", "") if isinstance(sc2, dict) else str(sc2)
-                        break
+            backup_path = commit_dir / f"orig_{safe_wid}_{src_file_path.stem}.bak"
+            if not backup_path.exists():
+                shutil.copy2(str(src_file_path), str(backup_path))
         except Exception:
             pass
-
-    # Update audit Excel in background
-    threading.Thread(
-        target=_update_audit_excel,
-        args=(warning_id, run_id or "", violated_code, patched),
-        daemon=True,
-    ).start()
 
     return jsonify({
         "status":            "ok",
@@ -609,10 +595,11 @@ def commit_fix():
         "patched_code":      content_to_save,
         "is_full_file":      is_full_file,
         "original_file":     original_filename or "",
-        "audit_updated":     True,
-        "audit_path":        str(AUDIT_EXCEL),                  # real resolved path shown in UI
-        "patch_line_start":  patch_line_start,                  # 1-indexed line where fix begins
+        "audit_updated":     False,
+        "audit_path":        str(AUDIT_EXCEL),
+        "patch_line_start":  patch_line_start,
         "patch_line_count":  patch_line_count_val if is_full_file else len((patched or "").splitlines()),
+        "run_id":            run_id,
     })
 
 
@@ -629,7 +616,95 @@ def download_file(filename):
 
 
 # ---------------------------------------------------------------------------
-# Audit Excel log — updated automatically after each commit
+# Route — Save audit Excel (manually triggered from Review Report tab)
+# ---------------------------------------------------------------------------
+@app.route("/api/save_audit", methods=["POST"])
+def save_audit():
+    body       = request.get_json(force=True) or {}
+    warning_id = str(body.get("warning_id", "unknown"))
+    run_id     = str(body.get("run_id", ""))
+    patched    = body.get("patched_code", "")
+
+    # Build violated_code from enriched warnings
+    violated_code = ""
+    if run_id:
+        try:
+            rdir = OUTPUT_DIR / secure_filename(run_id)
+            ep   = rdir / "enriched_warnings.json"
+            if ep.exists():
+                import json as _jx
+                ed = _jx.loads(ep.read_text(encoding="utf-8"))
+                for wx in ed.get("warnings", []):
+                    if str(wx.get("warning_id")) == str(warning_id):
+                        sc = wx.get("source_context", {})
+                        violated_code = sc.get("context_text", "") if isinstance(sc, dict) else str(sc)
+                        break
+        except Exception:
+            pass
+
+    ok = _update_audit_excel(warning_id, run_id, violated_code, patched)
+    if ok:
+        return jsonify({"status": "ok", "audit_path": str(AUDIT_EXCEL)})
+    return jsonify({"status": "error", "message": "Failed to update audit Excel"}), 500
+
+
+# ---------------------------------------------------------------------------
+# Route — Revert committed fix (restore original source from backup)
+# ---------------------------------------------------------------------------
+@app.route("/api/revert", methods=["POST"])
+def revert_fix():
+    body       = request.get_json(force=True) or {}
+    warning_id = str(body.get("warning_id", ""))
+    run_id     = str(body.get("run_id", ""))
+
+    if not warning_id:
+        return jsonify(error="No warning_id provided"), 400
+
+    safe_wid   = secure_filename(warning_id)
+    commit_dir = PROJECT_ROOT / "data" / "commits"
+
+    # Find backup files for this warning
+    backups = list(commit_dir.glob(f"orig_{safe_wid}_*.bak"))
+    if not backups:
+        return jsonify(error="No backup found for this warning — cannot revert"), 404
+
+    backup_path = backups[0]
+    # Derive original stem from backup filename: orig_<wid>_<stem>.bak
+    stem = backup_path.stem[len(f"orig_{safe_wid}_"):]
+
+    # Search upload dirs for the live source file
+    exact_job_id = run_id.split("_")[-1] if run_id else ""
+    search_roots = []
+    if exact_job_id and UPLOAD_DIR.exists():
+        d = UPLOAD_DIR / exact_job_id
+        if d.exists(): search_roots += [d / "source_code", d]
+    if UPLOAD_DIR.exists():
+        for d in sorted(UPLOAD_DIR.iterdir(), reverse=True):
+            if d.is_dir() and d.name != exact_job_id:
+                search_roots += [d / "source_code", d]
+    _tmp = PROJECT_ROOT / "data" / "_upload_tmp"
+    if _tmp.exists():
+        for d in sorted(_tmp.iterdir(), reverse=True):
+            if d.is_dir(): search_roots += [d / "source", d]
+
+    restored = False
+    for root in search_roots:
+        for ext in [".c", ".h"]:
+            candidate = root / (stem + ext)
+            if candidate.exists():
+                shutil.copy2(str(backup_path), str(candidate))
+                restored = True
+                break
+        if restored: break
+
+    if not restored:
+        return jsonify(error="Could not find original source file to restore"), 404
+
+    return jsonify({"status": "ok", "message": "File reverted to original"})
+
+
+# ---------------------------------------------------------------------------
+# Audit Excel log
 # ---------------------------------------------------------------------------
 def _update_audit_excel(warning_id: str, run_id: str,
                          violated_code: str, fixed_code: str) -> bool:
@@ -927,10 +1002,10 @@ def api_config_save():
 
 
 # ---------------------------------------------------------------------------
-# Route — start analysis (saves uploads, launches orchestrator subprocess)
+# Route — save uploads once (called when user selects files, before any run)
 # ---------------------------------------------------------------------------
-@app.route("/api/analyse", methods=["POST"])
-def start_analysis():
+@app.route("/api/save_uploads", methods=["POST"])
+def save_uploads():
     if "warning_report" not in request.files:
         return jsonify(error="No warning report uploaded"), 400
     excel_file = request.files["warning_report"]
@@ -941,14 +1016,8 @@ def start_analysis():
     if not c_files or all(f.filename == "" for f in c_files):
         return jsonify(error="No C source files uploaded"), 400
 
-    try:
-        batch_size = max(1, min(15, int(request.form.get("batch_size", DEFAULT_BATCH_SIZE))))
-    except (TypeError, ValueError):
-        batch_size = DEFAULT_BATCH_SIZE
-
-    job_id  = str(uuid.uuid4())[:8]
-    run_id  = time.strftime("%Y%m%d_%H%M%S") + "_" + job_id
-    job_dir = UPLOAD_DIR / job_id
+    upload_session_id = str(uuid.uuid4())[:8]
+    job_dir = UPLOAD_DIR / upload_session_id
     src_dir = job_dir / "source_code"
     src_dir.mkdir(parents=True, exist_ok=True)
 
@@ -964,6 +1033,86 @@ def start_analysis():
 
     if not saved_c:
         return jsonify(error="No valid .c / .h files received"), 400
+
+    return jsonify(
+        upload_session_id=upload_session_id,
+        excel_filename=secure_filename(excel_file.filename),
+        c_files=saved_c,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Route — start analysis (saves uploads, launches orchestrator subprocess)
+# ---------------------------------------------------------------------------
+@app.route("/api/analyse", methods=["POST"])
+def start_analysis():
+    try:
+        batch_size = max(1, min(15, int(request.form.get("batch_size", DEFAULT_BATCH_SIZE))))
+    except (TypeError, ValueError):
+        batch_size = DEFAULT_BATCH_SIZE
+
+    upload_session_id = request.form.get("upload_session_id", "").strip()
+
+    if upload_session_id:
+        # ── Fast path: files already saved by /api/save_uploads ──
+        session_dir = UPLOAD_DIR / secure_filename(upload_session_id)
+        src_dir = session_dir / "source_code"
+        if not session_dir.exists():
+            return jsonify(error="Upload session not found — please re-upload your files"), 400
+
+        # Find the excel file in the session dir
+        excel_candidates = [p for p in session_dir.iterdir()
+                            if p.suffix.lower() in ALLOWED_EXCEL]
+        if not excel_candidates:
+            return jsonify(error="Warning report not found in upload session"), 400
+        excel_path = excel_candidates[0]
+
+        # Determine which .c files to run (subset or all)
+        run_files = request.form.getlist("run_filenames")
+        if run_files:
+            saved_c = [secure_filename(n) for n in run_files
+                       if (src_dir / secure_filename(n)).exists()]
+        else:
+            saved_c = [p.name for p in src_dir.iterdir()
+                       if p.suffix.lower() in ALLOWED_C]
+
+        if not saved_c:
+            return jsonify(error="No matching source files found in upload session"), 400
+
+        # Create a new job_id/run_id but reuse the same src_dir
+        job_id = str(uuid.uuid4())[:8]
+        run_id = time.strftime("%Y%m%d_%H%M%S") + "_" + job_id
+
+    else:
+        # ── Standard path: fresh file upload ──
+        if "warning_report" not in request.files:
+            return jsonify(error="No warning report uploaded"), 400
+        excel_file = request.files["warning_report"]
+        if Path(excel_file.filename).suffix.lower() not in ALLOWED_EXCEL:
+            return jsonify(error="Warning report must be .xlsx or .xls"), 400
+
+        c_files = request.files.getlist("source_files")
+        if not c_files or all(f.filename == "" for f in c_files):
+            return jsonify(error="No C source files uploaded"), 400
+
+        job_id  = str(uuid.uuid4())[:8]
+        run_id  = time.strftime("%Y%m%d_%H%M%S") + "_" + job_id
+        job_dir = UPLOAD_DIR / job_id
+        src_dir = job_dir / "source_code"
+        src_dir.mkdir(parents=True, exist_ok=True)
+
+        excel_path = job_dir / secure_filename(excel_file.filename)
+        excel_file.save(str(excel_path))
+
+        saved_c = []
+        for f in c_files:
+            if Path(f.filename).suffix.lower() in ALLOWED_C and f.filename:
+                dest = src_dir / secure_filename(f.filename)
+                f.save(str(dest))
+                saved_c.append(dest.name)
+
+        if not saved_c:
+            return jsonify(error="No valid .c / .h files received"), 400
 
     # Apply rule config filter — keep only selected rules, apply overrides
     import json as _json

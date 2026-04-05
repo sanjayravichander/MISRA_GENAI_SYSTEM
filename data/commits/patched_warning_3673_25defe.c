@@ -1,0 +1,1 @@
+6  void log_message(const char * msg)

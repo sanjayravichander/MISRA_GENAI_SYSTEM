@@ -1,0 +1,111 @@
+{
+  "warning_count": 2,
+  "warnings": [
+    {
+      "warning_id": "3673",
+      "warning_no": "3673",
+      "tool_name": "",
+      "category": "MISRA-A (Advisory)",
+      "checker_name": "",
+      "rule_id": "8.13",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Pointer parameter should be const",
+      "file_path": "logger.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "log_message",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "logger.c",
+        "found": true,
+        "context_text": "       1  #include <stdio.h>\n       2  #include <string.h>\n       3  \n       4  static char log_buffer[64];\n       5  \n       6  void log_message(char * msg)\n       7  {\n       8      int status = 0;\n       9  \n      10      strcpy(log_buffer, msg);\n      11  \n      12      status = puts(log_buffer);\n      13  \n      14      status = status;\n      15  }",
+        "context_start_line": 1,
+        "context_end_line": 15,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 8.13",
+          "description": "A pointer should point to a const-qualified type whenever possible",
+          "guidelines": "Rule 8.13 (Advisory): A pointer should point to a const-qualified type whenever possible. This code violates Rule 8.13 because a pointer should point to a const-qualified type whenever possible. Inconsistent declarations and linkage decisions reduce maintainability and can break interface correctness.",
+          "score": 0.861847995482683
+        },
+        {
+          "rule_id": "Rule 18.3",
+          "description": "The relational operators > >= < <= shall not be applied to objects of pointer type except where they point into the same array",
+          "guidelines": "Rule 18.3 (Required): The relational operators > >= < <= shall not be applied to objects of pointer type except where they point into the same array. This code violates Rule 18.3 because the relational operators > >= < <= shall not be applied to objects of pointer type except where they point into the same array. Pointer lifetime and pointer arithmetic mistakes can easily produce undefined behaviour.",
+          "score": 0.806582045872552
+        },
+        {
+          "rule_id": "Rule 17.8",
+          "description": "A function parameter should not be modified",
+          "guidelines": "void scale(int *value)\n{\n    *value = *value * 2;   /* parameter modified */\n}",
+          "score": 0.747807214865334
+        },
+        {
+          "rule_id": "Rule 8.3",
+          "description": "All declarations of an object or function shall use the same names and type qualifiers",
+          "guidelines": "extern const int limit;\nextern int limit;   /* qualifiers differ */",
+          "score": 0.7475823034256703
+        }
+      ]
+    },
+    {
+      "warning_id": "3200",
+      "warning_no": "3200",
+      "tool_name": "",
+      "category": "MISRA-R (Required)",
+      "checker_name": "",
+      "rule_id": "17.7",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Return value ignored",
+      "file_path": "logger.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "log_message",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "logger.c",
+        "found": true,
+        "context_text": "       1  #include <stdio.h>\n       2  #include <string.h>\n       3  \n       4  static char log_buffer[64];\n       5  \n       6  void log_message(char * msg)\n       7  {\n       8      int status = 0;\n       9  \n      10      strcpy(log_buffer, msg);\n      11  \n      12      status = puts(log_buffer);\n      13  \n      14      status = status;\n      15  }",
+        "context_start_line": 1,
+        "context_end_line": 15,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 17.7",
+          "description": "The value returned by a function having non-void return type shall be used",
+          "guidelines": "Rule 17.7 (Required): The value returned by a function having non-void return type shall be used. This code violates Rule 17.7 because the value returned by a function having non-void return type shall be used. Function interfaces and calls must be explicit, safe, and consistently used.",
+          "score": 0.7842949132062854
+        },
+        {
+          "rule_id": "Rule 17.8",
+          "description": "A function parameter should not be modified",
+          "guidelines": "Rule 17.8 (Advisory): A function parameter should not be modified. This code violates Rule 17.8 because a function parameter should not be modified. Function interfaces and calls must be explicit, safe, and consistently used.",
+          "score": 0.7624081023952666
+        },
+        {
+          "rule_id": "Rule 17.4",
+          "description": "All exit paths from a function with non-void return type shall have an explicit return statement with an expression",
+          "guidelines": "Rule 17.4 (Mandatory): All exit paths from a function with non-void return type shall have an explicit return statement with an expression. This code violates Rule 17.4 because all exit paths from a function with non-void return type shall have an explicit return statement with an expression. Function interfaces and calls must be explicit, safe, and consistently used.",
+          "score": 0.7559374300290872
+        },
+        {
+          "rule_id": "Rule 17.3",
+          "description": "A function shall not be declared implicitly",
+          "guidelines": "Rule 17.3 (Mandatory): A function shall not be declared implicitly. This code violates Rule 17.3 because a function shall not be declared implicitly. Function interfaces and calls must be explicit, safe, and consistently used.",
+          "score": 0.7527749803073832
+        }
+      ]
+    }
+  ]
+}

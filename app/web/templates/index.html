@@ -35,7 +35,7 @@
 
       </div>
       <div class="header-status">
-        <div class="status-dot"></div>Ready
+        <div class="status-dot" style="background:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.2);"></div>Ready
       </div>
     </div>
   </header>
@@ -160,6 +160,8 @@
                 d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
             </svg>
             Configure MISRA Rules
+            <span class="info-tip"
+              title="Set which MISRA rules to include in analysis. Mandatory rules are auto-selected; you can override the category or omit specific rules.">ⓘ</span>
           </button>
         </div>
 
@@ -175,7 +177,9 @@
                   <path d="M7 13l2 2 4-4" />
                 </svg>
               </div>
-              <div class="drop-label">Warning Report</div>
+              <div class="drop-label">Warning Report <span class="info-tip"
+                  title="Upload the QAC or Polyspace Excel report (.xlsx/.xls) that lists MISRA violations found in your code.">ⓘ</span>
+              </div>
               <div class="drop-sub">Drop here or click to browse</div>
               <div class="drop-accept">.xlsx &nbsp;·&nbsp; .xls</div>
               <div class="file-list" id="excel-list"></div>
@@ -195,7 +199,9 @@
                   <line x1="16" y1="17" x2="8" y2="17" />
                 </svg>
               </div>
-              <div class="drop-label">Source Files</div>
+              <div class="drop-label">Source Files <span class="info-tip"
+                  title="Upload the C source (.c) or header (.h) files that contain the violations. The AI uses these to show the exact violated code and generate context-aware fixes.">ⓘ</span>
+              </div>
               <div class="drop-sub">Drop here, or choose:</div>
               <div class="c-upload-btns">
                 <button type="button" class="c-pick-btn" id="c-pick-files-btn">
@@ -232,11 +238,14 @@
           </div>
           <div id="file-map-list"></div>
           <div class="action-row" style="margin-top:16px">
-            <button class="btn btn-primary" id="run-all-btn">
+            <button class="btn btn-primary" id="run-all-btn"
+              title="Runs the full AI analysis pipeline on all uploaded source files — reads violations, matches MISRA rules, and generates fix suggestions">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
                 <polygon points="5 3 19 12 5 21 5 3" />
               </svg>
               Run Analysis — All Files
+              <span class="info-tip"
+                title="Runs the full AI analysis pipeline on all uploaded source files simultaneously — reads warnings, matches MISRA rules, generates fix suggestions, and checks quality.">ⓘ</span>
             </button>
             <span class="file-meta-text" id="file-summary"></span>
           </div>
@@ -247,10 +256,11 @@
       <div class="panel" id="progress-panel">
         <div class="panel-heading">
           <div class="panel-title">Review in Progress</div>
-          <span class="panel-tag"
+          <span class="panel-tag pipeline-status-tag" id="pipeline-status-tag"
             style="background:rgba(192,57,43,.07);color:var(--red);border-color:rgba(192,57,43,.2);">
-            <span
-              style="display:inline-block;width:6px;height:6px;background:var(--red);border-radius:50%;margin-right:5px;vertical-align:middle;animation:pulse-dot 1.2s infinite;"></span>Live
+            <span id="pipeline-status-dot"
+              style="display:inline-block;width:7px;height:7px;background:var(--red);border-radius:50%;margin-right:6px;vertical-align:middle;animation:pulse-dot 1.2s infinite;"></span>
+            <span id="pipeline-status-label">Analysing…</span>
           </span>
         </div>
         <div class="pipeline-track" id="phase-list">
