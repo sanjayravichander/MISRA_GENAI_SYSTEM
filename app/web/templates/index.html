@@ -25,17 +25,17 @@
           </svg>
         </div>
         <div>
-          <div class="logo-name">MISRA  <em>Compliance AI</em></div>
-          
+          <div class="logo-name">MISRA <em>Compliance AI</em></div>
+
         </div>
       </a>
       <div class="header-divider"></div>
       <div class="header-tags">
         <span class="header-tag">MISRA-C 2012</span>
-        
+
       </div>
       <div class="header-status">
-        <div class="status-dot"></div>Ready
+        <div class="status-dot" style="background:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.2);"></div>Ready
       </div>
     </div>
   </header>
@@ -52,7 +52,8 @@
         <button class="cm-close" id="modal-close-btn" aria-label="Close">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
             stroke-linecap="round">
-            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
       </div>
@@ -83,10 +84,20 @@
           <span class="cm-legend-dot cm-dot-m"></span><span class="cm-legend-txt">Mandatory</span>
           <span class="cm-legend-dot cm-dot-r"></span><span class="cm-legend-txt">Required</span>
           <span class="cm-legend-dot cm-dot-a"></span><span class="cm-legend-txt">Advisory</span>
-          <span class="cm-legend-txt" style="margin-left:8px;color:#94a3b8;">· Click a rule number to see warning IDs</span>
+          <span class="cm-legend-txt" style="margin-left:8px;color:#94a3b8;">· Click a rule number to see warning
+            IDs</span>
         </div>
         <div class="cm-footer-right">
           <span class="cm-save-status" id="config-status"></span>
+          <button class="btn btn-ghost btn-sm" id="override-config-btn" disabled
+            title="Change a chip from its default to enable this">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+            Save Overrides
+          </button>
           <button class="btn btn-primary" id="save-config-btn">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
               stroke-linecap="round" stroke-linejoin="round">
@@ -106,7 +117,8 @@
       <button class="wn-close" id="wn-close-btn">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
           stroke-linecap="round">
-          <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
         </svg>
       </button>
     </div>
@@ -125,7 +137,7 @@
       <div class="cap-chips">
         <span class="cap-chip"><span class="cap-chip-dot"></span>Polyspace Compatible</span>
         <span class="cap-chip"><span class="cap-chip-dot"></span>QAC Compatible</span>
-        
+
       </div>
     </div>
   </section>
@@ -139,13 +151,17 @@
       <div class="panel" id="upload-card">
         <div class="panel-heading">
           <div class="panel-title">Upload Files</div>
-          <button type="button" class="btn-configure-misra" id="config-open-btn" style="padding: 6px 12px; font-size: 0.9em; margin-left: auto;">
+          <button type="button" class="btn-configure-misra" id="config-open-btn"
+            style="padding: 6px 12px; font-size: 0.9em; margin-left: auto;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
               <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              <path
+                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
             </svg>
             Configure MISRA Rules
+            <span class="info-tip"
+              title="Set which MISRA rules to include in analysis. Mandatory rules are auto-selected; you can override the category or omit specific rules.">ⓘ</span>
           </button>
         </div>
 
@@ -161,7 +177,9 @@
                   <path d="M7 13l2 2 4-4" />
                 </svg>
               </div>
-              <div class="drop-label">Warning Report</div>
+              <div class="drop-label">Warning Report <span class="info-tip"
+                  title="Upload the QAC or Polyspace Excel report (.xlsx/.xls) that lists MISRA violations found in your code.">ⓘ</span>
+              </div>
               <div class="drop-sub">Drop here or click to browse</div>
               <div class="drop-accept">.xlsx &nbsp;·&nbsp; .xls</div>
               <div class="file-list" id="excel-list"></div>
@@ -169,7 +187,9 @@
           </div>
           <div>
             <div class="drop-zone" id="c-zone">
-              <input type="file" id="c-input" accept=".c,.h" multiple />
+              <!-- Hidden inputs: one for files, one for folder -->
+              <input type="file" id="c-input" accept=".c,.h" multiple style="display:none" />
+              <input type="file" id="c-folder-input" webkitdirectory mozdirectory multiple style="display:none" />
               <div class="drop-icon-wrap">
                 <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
                   stroke-linecap="round">
@@ -179,9 +199,28 @@
                   <line x1="16" y1="17" x2="8" y2="17" />
                 </svg>
               </div>
-              <div class="drop-label">Source Files</div>
-              <div class="drop-sub">Drop here or click to browse</div>
-              <div class="drop-accept">.c &nbsp;·&nbsp; .h &nbsp;·&nbsp; one or more</div>
+              <div class="drop-label">Source Files <span class="info-tip"
+                  title="Upload the C source (.c) or header (.h) files that contain the violations. The AI uses these to show the exact violated code and generate context-aware fixes.">ⓘ</span>
+              </div>
+              <div class="drop-sub">Drop here, or choose:</div>
+              <div class="c-upload-btns">
+                <button type="button" class="c-pick-btn" id="c-pick-files-btn">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                  Upload Files
+                </button>
+                <button type="button" class="c-pick-btn" id="c-pick-folder-btn">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                  </svg>
+                  Upload Folder
+                </button>
+              </div>
+              <div class="drop-accept">.c &nbsp;·&nbsp; .h</div>
               <div class="file-list" id="c-list"></div>
             </div>
           </div>
@@ -199,11 +238,14 @@
           </div>
           <div id="file-map-list"></div>
           <div class="action-row" style="margin-top:16px">
-            <button class="btn btn-primary" id="run-all-btn">
+            <button class="btn btn-primary" id="run-all-btn"
+              title="Runs the full AI analysis pipeline on all uploaded source files — reads violations, matches MISRA rules, and generates fix suggestions">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
                 <polygon points="5 3 19 12 5 21 5 3" />
               </svg>
               Run Analysis — All Files
+              <span class="info-tip"
+                title="Runs the full AI analysis pipeline on all uploaded source files simultaneously — reads warnings, matches MISRA rules, generates fix suggestions, and checks quality.">ⓘ</span>
             </button>
             <span class="file-meta-text" id="file-summary"></span>
           </div>
@@ -214,10 +256,11 @@
       <div class="panel" id="progress-panel">
         <div class="panel-heading">
           <div class="panel-title">Review in Progress</div>
-          <span class="panel-tag"
+          <span class="panel-tag pipeline-status-tag" id="pipeline-status-tag"
             style="background:rgba(192,57,43,.07);color:var(--red);border-color:rgba(192,57,43,.2);">
-            <span
-              style="display:inline-block;width:6px;height:6px;background:var(--red);border-radius:50%;margin-right:5px;vertical-align:middle;animation:pulse-dot 1.2s infinite;"></span>Live
+            <span id="pipeline-status-dot"
+              style="display:inline-block;width:7px;height:7px;background:var(--red);border-radius:50%;margin-right:6px;vertical-align:middle;animation:pulse-dot 1.2s infinite;"></span>
+            <span id="pipeline-status-label">Analysing…</span>
           </span>
         </div>
         <div class="pipeline-track" id="phase-list">
@@ -283,7 +326,6 @@
     </div>
   </main>
 
-  <footer class="site-footer">SRM Technologies &nbsp;·&nbsp; MISRA Compliance Reviewer</footer>
 
   <!-- SETTINGS MODAL -->
   <div class="modal-overlay hidden" id="settings-modal">

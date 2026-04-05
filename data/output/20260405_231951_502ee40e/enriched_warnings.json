@@ -1,0 +1,111 @@
+{
+  "warning_count": 2,
+  "warnings": [
+    {
+      "warning_id": "2883",
+      "warning_no": "2883",
+      "tool_name": "",
+      "category": "MISRA-M (Mandatory)",
+      "checker_name": "",
+      "rule_id": "9.1",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Variable used before initialization",
+      "file_path": "sensor.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "read_sensor",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "sensor.c",
+        "found": true,
+        "context_text": "       1  #include <stdint.h>\n       2  \n       3  int read_sensor(void)\n       4  {\n       5      int raw_value;\n       6      int output = 0;\n       7  \n       8      if (output == 0)\n       9      {\n      10          output = raw_value;\n      11      }\n      12  \n      13      return output;\n      14  }\n      15  \n      16  uint8_t scale_value(uint16_t input)\n      17  {\n      18      uint8_t scaled;\n      19  \n      20      scaled = input;\n      21      return scaled;\n      22  }",
+        "context_start_line": 1,
+        "context_end_line": 22,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 9.1",
+          "description": "Non-initialized local variable",
+          "guidelines": "Rule 9.1 (Mandatory): Non-initialized local variable. Variable 'x' is read before being assigned a value. Reading an automatic variable before it is set leads to undefined behaviour and unpredictable results.",
+          "score": 0.876738135507812
+        },
+        {
+          "rule_id": "Rule 9.4",
+          "description": "An element of an object shall not be initialized more than once",
+          "guidelines": "Rule 9.4 (Required): An element of an object shall not be initialized more than once. This code violates Rule 9.4 because an element of an object shall not be initialized more than once. Incorrect initialization can leave objects in unexpected states and introduce subtle runtime defects.",
+          "score": 0.8217901328162805
+        },
+        {
+          "rule_id": "Rule 20.9",
+          "description": "All identifiers used in the controlling expression of #if or #elif shall be #define'd before evaluation",
+          "guidelines": "Rule 20.9 (Required): All identifiers used in the controlling expression of #if or #elif shall be #define'd before evaluation. This code violates Rule 20.9 because all identifiers used in the controlling expression of #if or #elif shall be #define'd before evaluation. Preprocessor misuse can obscure intent and create fragile expansions.",
+          "score": 0.8217685166516584
+        },
+        {
+          "rule_id": "Rule 9.2",
+          "description": "Braces shall be used to indicate and match the structure in the non-zero initialization of arrays and structures",
+          "guidelines": "Rule 9.2 (Required): Braces shall be used to indicate and match the structure in the non-zero initialization of arrays and structures. This code violates Rule 9.2 because braces shall be used to indicate and match the structure in the non-zero initialization of arrays and structures. Incorrect initialization can leave objects in unexpected states and introduce subtle runtime defects.",
+          "score": 0.7978266803760293
+        }
+      ]
+    },
+    {
+      "warning_id": "1266",
+      "warning_no": "1266",
+      "tool_name": "",
+      "category": "MISRA-R (Required)",
+      "checker_name": "",
+      "rule_id": "10.3",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Narrowing conversion",
+      "file_path": "sensor.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "scale_value",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "sensor.c",
+        "found": true,
+        "context_text": "       1  #include <stdint.h>\n       2  \n       3  int read_sensor(void)\n       4  {\n       5      int raw_value;\n       6      int output = 0;\n       7  \n       8      if (output == 0)\n       9      {\n      10          output = raw_value;\n      11      }\n      12  \n      13      return output;\n      14  }\n      15  \n      16  uint8_t scale_value(uint16_t input)\n      17  {\n      18      uint8_t scaled;\n      19  \n      20      scaled = input;\n      21      return scaled;\n      22  }",
+        "context_start_line": 1,
+        "context_end_line": 22,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 10.3",
+          "description": "Implicit narrowing conversion",
+          "guidelines": "Rule 10.3 (Required): Implicit narrowing conversion. The value of 'u16val' (uint16_t) is assigned to 'u8val' (uint8_t). This implicit narrowing conversion may silently truncate the value (300 → 44), causing data loss and incorrect program behaviour.",
+          "score": 0.8634639776174552
+        },
+        {
+          "rule_id": "Rule 10.5",
+          "description": "The value of an expression should not be cast to an inappropriate essential type",
+          "guidelines": "uint32_t wide = 300U;\nuint8_t  small = (uint8_t)wide;   /* cast to inappropriate essential type */",
+          "score": 0.7124482343960833
+        },
+        {
+          "rule_id": "Rule 7.3",
+          "description": "The lowercase character \"l\" shall not be used in a literal suffix",
+          "guidelines": "long value = 10l;   /* lowercase l suffix */",
+          "score": 0.7053589746890625
+        },
+        {
+          "rule_id": "Rule 10.8",
+          "description": "The value of a composite expression shall not be cast to a different essential type category or a wider essential type",
+          "guidelines": "uint16_t a, b;\nuint32_t x = (uint32_t)(a + b);   /* cast composite expression to wider category */",
+          "score": 0.7015159781284985
+        }
+      ]
+    }
+  ]
+}

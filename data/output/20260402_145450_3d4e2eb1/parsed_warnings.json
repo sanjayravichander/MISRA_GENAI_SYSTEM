@@ -1,0 +1,59 @@
+{
+  "warning_count": 2,
+  "warnings": [
+    {
+      "warning_id": "3344",
+      "warning_no": "3344",
+      "tool_name": "",
+      "category": "MISRA-R (Required)",
+      "checker_name": "",
+      "rule_id": "14.4",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Controlling expression not Boolean",
+      "file_path": "control.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "stop_motor",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "control.c",
+        "found": true,
+        "context_text": "       1  #include <stdint.h>\n       2  \n       3  void start_motor(void)\n       4  {\n       5  }\n       6  \n       7  void stop_motor(int state)\n       8  {\n       9      if (state)\n      10      {\n      11      }\n      12  }\n      13  \n      14  void spin_wait(void)\n      15  {\n      16      int i;\n      17  \n      18      for (i = 10; i < 0; i++)\n      19      {\n      20      }\n      21  }",
+        "context_start_line": 1,
+        "context_end_line": 21,
+        "flagged_lines": []
+      }
+    },
+    {
+      "warning_id": "3340",
+      "warning_no": "3340",
+      "tool_name": "",
+      "category": "MISRA-R (Required)",
+      "checker_name": "",
+      "rule_id": "14.1",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Loop never executes",
+      "file_path": "control.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "spin_wait",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "control.c",
+        "found": true,
+        "context_text": "       1  #include <stdint.h>\n       2  \n       3  void start_motor(void)\n       4  {\n       5  }\n       6  \n       7  void stop_motor(int state)\n       8  {\n       9      if (state)\n      10      {\n      11      }\n      12  }\n      13  \n      14  void spin_wait(void)\n      15  {\n      16      int i;\n      17  \n      18      for (i = 10; i < 0; i++)\n      19      {\n      20      }\n      21  }",
+        "context_start_line": 1,
+        "context_end_line": 21,
+        "flagged_lines": []
+      }
+    }
+  ]
+}

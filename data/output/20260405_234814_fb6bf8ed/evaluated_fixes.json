@@ -1,0 +1,1392 @@
+{
+  "warning_count": 15,
+  "confidence_high": 0,
+  "confidence_medium": 11,
+  "confidence_low": 1,
+  "needs_manual_review": 4,
+  "results": [
+    {
+      "guideline_id": "Rule 14.4",
+      "guideline_title": "Non-Boolean if-controlling expression",
+      "explanation": {
+        "summary": "The controlling expression of the 'if' statement is 'state', an integer, not an essentially Boolean type. Using non-Boolean values as conditions reduces readability and may mask logic errors where the value is non-zero but not the intended condition.",
+        "rule_basis": "Rule 14.4 (Required): Non-Boolean if-controlling expression.",
+        "code_evidence": "The provided code snippet contains an if statement with a non-Boolean controlling expression."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Convert if statement to a conditional expression",
+          "why": "This approach converts the if statement to a conditional expression, making it clearer that a Boolean value is expected.",
+          "patched_code": "7  void stop_motor(int state)\n       8  {\n       9    (state != 0) ? {\n      10      } : {};\n      11  }",
+          "compliance_notes": "This fix ensures that the if statement is only executed when the controlling expression is a Boolean value.",
+          "risk_reduction": "This fix reduces the risk of logic errors and improves readability.",
+          "original_patched_code": "7  void stop_motor(int state)\n       8  {\n       9    (state != 0) ? {\n      10      } : {};\n      11  }",
+          "original_title": "Convert if statement to a conditional expression",
+          "confidence": "Medium",
+          "is_correct": true,
+          "issues_found": []
+        }
+      ],
+      "risk_analysis": {
+        "severity": "Medium",
+        "why": "The use of a non-Boolean value as a controlling expression can lead to logic errors and reduced readability.",
+        "potential_failures": [
+          "Logic errors due to incorrect interpretation of non-Boolean values"
+        ],
+        "runtime_risk": "Medium",
+        "maintainability_risk": "Medium"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Implement the fix",
+        "required_justification": "The use of non-Boolean values as controlling expressions is not allowed according to MISRA guidelines.",
+        "review_notes": "Ensure that all if statements use essentially Boolean types as controlling expressions."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "ca495443-61eb-4f47-a1c5-63f95be23040",
+          "d60078ca-7fbd-4c75-871c-6fdd1a403f3f",
+          "8ec8440d-148a-474f-a13e-c324b18340c4"
+        ],
+        "retrieval_score_raw": 0.791543,
+        "retrieval_score_reranked": 0.871543,
+        "confidence": 0.9,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear consistent."
+        ]
+      },
+      "warning_id": "3344",
+      "source": "final_cache",
+      "_from_cache": true,
+      "evaluation": {
+        "version": "3.0.1",
+        "description": "Evaluation of MISRA fixes for Warning 3344 Rule 14.4",
+        "properties": {
+          "source_code": {
+            "type": "string",
+            "description": "The original source code with the MISRA warning"
+          },
+          "patched_code": {
+            "type": "string",
+            "description": "The patched source code after applying the MISRA fix"
+          },
+          "rule_text": {
+            "type": "string",
+            "description": "The text of the MISRA rule related to the warning"
+          },
+          "fixes_to_evaluate": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "The unique identifier for the fix"
+                },
+                "description": {
+                  "type": "string",
+                  "description": "A brief description of the fix"
+                },
+                "why": {
+                  "type": "string",
+                  "description": "The reason for applying the fix"
+                },
+                "patched_code": {
+                  "type": "string",
+                  "description": "The patched source code after applying the fix"
+                },
+                "compliance": {
+                  "type": "string",
+                  "description": "Whether the fix ensures compliance with the MISRA rule"
+                },
+                "risk_reduction": {
+                  "type": "string",
+                  "description": "The reduction in risk achieved by applying the fix"
+                }
+              },
+              "required": [
+                "id",
+                "description",
+                "why",
+                "patched_code",
+                "compliance",
+                "risk_reduction"
+              ]
+            }
+          },
+          "evaluation": {
+            "type": "object",
+            "properties": {
+              "summary": {
+                "type": "string",
+                "description": "A summary of the evaluation results"
+              },
+              "rule_basis": {
+                "type": "string",
+                "description": "The basis for the MISRA rule related to the warning"
+              }
+            },
+            "required": [
+              "summary",
+              "rule_basis"
+            ]
+          }
+        },
+        "warning_id": "3344",
+        "rule_id": "",
+        "overall_confidence": "Medium",
+        "needs_manual_review": false,
+        "evaluated_fixes": [],
+        "evaluator_notes": "",
+        "_eval_from_cache": true
+      },
+      "overall_confidence": "Medium",
+      "needs_manual_review": false,
+      "evaluator_notes": "",
+      "_eval_from_cache": true
+    },
+    {
+      "guideline_id": "Rule 21.7",
+      "guideline_title": "The atof, atoi, atol and atoll functions of <stdlib.h> shall not be used",
+      "explanation": {
+        "summary": "The code uses atoi function which is not allowed according to MISRA.",
+        "rule_basis": "This code violates Rule 21.7 because the atoi function of <stdlib.h> shall not be used. Restricted standard-library features are disallowed because they reduce determinism, analyzability, or portability.",
+        "code_evidence": "The atoi function is used in the code snippet."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Replace atoi with a safer alternative",
+          "why": "The atoi function is not recommended due to its potential for undefined behavior.",
+          "patched_code": "/* Replace atoi with sscanf */\nint i = 0;\nsscanf(some_string, \"%d\", &i);",
+          "compliance_notes": "This fix replaces the atoi function with sscanf, which is a safer alternative for converting strings to integers.",
+          "risk_reduction": "Using sscanf instead of atoi reduces the risk of undefined behavior.",
+          "original_patched_code": "/* Replace atoi with sscanf */\nint i = 0;\nsscanf(some_string, \"%d\", &i);",
+          "original_title": "Replace atoi with a safer alternative",
+          "confidence": "Medium",
+          "is_correct": true,
+          "issues_found": []
+        }
+      ],
+      "risk_analysis": {
+        "severity": "High",
+        "why": "The use of atoi function can lead to undefined behavior.",
+        "potential_failures": [
+          "Undefined behavior due to incorrect input"
+        ],
+        "runtime_risk": "High",
+        "maintainability_risk": "High"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Implement the fix",
+        "required_justification": "The use of atoi function is not allowed according to MISRA.",
+        "review_notes": "Ensure that all instances of atoi are replaced with safer alternatives."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "ae5fc129-e704-4b08-9b30-c09715775425",
+          "755186d5-3629-410c-8f29-aff0630d2719",
+          "8ec8440d-148a-474f-a13e-c324b18340c4"
+        ],
+        "retrieval_score_raw": 0.711057,
+        "retrieval_score_reranked": 0.791057,
+        "confidence": 0.9,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear inconsistent. The warning text suggests a loop never executes, while the retrieved context indicates a violation of Rule 21.7.",
+          "Warning text and retrieved rule statement may not fully align."
+        ]
+      },
+      "warning_id": "3340",
+      "source": "final_cache",
+      "_from_cache": true,
+      "evaluation": {
+        "jsonSchema": {
+          "title": "MISRA Fix Evaluation",
+          "type": "object",
+          "properties": {
+            "SOURCE": {
+              "type": "string",
+              "description": "The original source code"
+            },
+            "MISRA_RULE_TEXT": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "The text of the MISRA rule that was violated"
+            },
+            "FIXES_TO_EVALUATE": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "number",
+                    "description": "The unique identifier for the fix"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "A brief description of the fix"
+                  },
+                  "patched_code": {
+                    "type": "string",
+                    "description": "The patched code after applying the fix"
+                  },
+                  "compliance": {
+                    "type": "string",
+                    "description": "A statement about whether the fix complies with the MISRA rule"
+                  },
+                  "risk_reduction": {
+                    "type": "string",
+                    "description": "An explanation of how the fix reduces risk"
+                  },
+                  "explanation": {
+                    "type": "object",
+                    "properties": {
+                      "summary": {
+                        "type": "string",
+                        "description": "A summary of the issue"
+                      },
+                      "rule_basis": {
+                        "type": "string",
+                        "description": "The basis for the MISRA rule"
+                      }
+                    },
+                    "required": [
+                      "summary",
+                      "rule_basis"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "description",
+                  "patched_code",
+                  "compliance",
+                  "risk_reduction",
+                  "explanation"
+                ]
+              }
+            }
+          },
+          "required": [
+            "SOURCE",
+            "MISRA_RULE_TEXT",
+            "FIXES_TO_EVALUATE"
+          ]
+        },
+        "warning_id": "3340",
+        "rule_id": "",
+        "overall_confidence": "Medium",
+        "needs_manual_review": false,
+        "evaluated_fixes": [],
+        "evaluator_notes": "",
+        "_eval_from_cache": true
+      },
+      "overall_confidence": "Medium",
+      "needs_manual_review": false,
+      "evaluator_notes": "",
+      "_eval_from_cache": true
+    },
+    {
+      "guideline_id": "Rule 8.13",
+      "guideline_title": "A pointer should point to a const-qualified type whenever possible",
+      "explanation": {
+        "summary": "The pointer parameter 'log_message' should be const-qualified.",
+        "rule_basis": "This code violates Rule 8.13 because a pointer should point to a const-qualified type whenever possible. Inconsistent declarations and linkage decisions reduce maintainability and can break interface correctness.",
+        "code_evidence": "The code snippet provided uses a non-const pointer for the 'log_message' function parameter."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Change the 'log_message' function parameter to const",
+          "why": "Making the parameter const ensures that it points to a const-qualified type.",
+          "patched_code": "6  void log_message(const char * msg)",
+          "compliance_notes": "This change brings the code into compliance with MISRA C:2012 Rule 8.13.",
+          "risk_reduction": "By making the parameter const, the risk of unintended modification of the log buffer is reduced.",
+          "original_patched_code": "6  void log_message(const char * msg)",
+          "original_title": "Change the 'log_message' function parameter to const",
+          "confidence": "Medium",
+          "is_correct": true,
+          "issues_found": []
+        }
+      ],
+      "risk_analysis": {
+        "severity": "Medium",
+        "why": "The use of a non-const pointer can lead to unintended modifications of the log buffer, which can result in incorrect logging or unexpected behavior.",
+        "potential_failures": [
+          "Incorrect logging due to unintended modifications of the log buffer"
+        ],
+        "runtime_risk": "Medium",
+        "maintainability_risk": "Medium"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Implement the suggested fix to bring the code into compliance with MISRA C:2012 Rule 8.13.",
+        "required_justification": "The use of a non-const pointer in this context can lead to maintainability and correctness issues.",
+        "review_notes": "Ensure that all function parameters are appropriately const-qualified."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "bff8d6a1-c782-4fd3-aac4-e9cde544b5f2",
+          "b4b6beae-7941-442c-9a40-e0a8eacf60f7",
+          "e11f3b72-bad1-4f01-a8b6-b5317555a97a",
+          "c320a515-829f-4754-9647-ecdb1844444b"
+        ],
+        "retrieval_score_raw": 0.76169,
+        "retrieval_score_reranked": 0.84169,
+        "confidence": 0.9,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear consistent."
+        ]
+      },
+      "warning_id": "3673",
+      "source": "final_cache",
+      "_from_cache": true,
+      "evaluation": {
+        "warning_id": "3673",
+        "rule_id": "",
+        "overall_confidence": "Low",
+        "needs_manual_review": true,
+        "evaluated_fixes": [],
+        "evaluator_notes": "Evaluator error: Expecting value: line 6 column 13 (char 148)",
+        "eval_parse_error": true
+      },
+      "overall_confidence": "Low",
+      "needs_manual_review": true,
+      "evaluator_notes": "Evaluator error: Expecting value: line 6 column 13 (char 148)"
+    },
+    {
+      "guideline_id": "Rule 17.7",
+      "guideline_title": "The value returned by a function having non-void return type shall be used",
+      "explanation": {
+        "summary": "The value returned by the function 'puts' is being ignored.",
+        "rule_basis": "The standard input/output library <stdio.h> shall not be used.",
+        "code_evidence": "The code snippet includes the <stdio.h> library and ignores the return value of the 'puts' function."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Use the return value of puts",
+          "why": "The return value of puts indicates the number of characters written. Ignoring it can lead to undefined behavior.",
+          "patched_code": "1  #include <stdio.h>\n       2  #include <string.h>\n       3  \n       4  static char log_buffer[64];\n       5  \n       6  void log_message(char * msg)\n       7  {\n       8      int status = 0;\n       9  \n      10      strcpy(log_buffer, msg);\n      11  \n      12      status = puts(log_buffer);\n      13  \n      14      printf(\"puts returned: %d\\n\", status);\n      15  }",
+          "compliance_notes": "The return value of puts is now being used.",
+          "risk_reduction": "Using the return value of puts reduces the risk of undefined behavior.",
+          "original_patched_code": "1  #include <stdio.h>\n       2  #include <string.h>\n       3  \n       4  static char log_buffer[64];\n       5  \n       6  void log_message(char * msg)\n       7  {\n       8      int status = 0;\n       9  \n      10      strcpy(log_buffer, msg);\n      11  \n      12      status = puts(log_buffer);\n      13  \n      14      printf(\"puts returned: %d\\n\", status);\n      15  }",
+          "original_title": "Use the return value of puts",
+          "confidence": "Medium",
+          "is_correct": true,
+          "issues_found": []
+        }
+      ],
+      "risk_analysis": {
+        "severity": "Medium",
+        "why": "The ignored return value can lead to undefined behavior.",
+        "potential_failures": [
+          "Memory leaks",
+          "Incorrect logging",
+          "Program crashes"
+        ],
+        "runtime_risk": "Medium",
+        "maintainability_risk": "Medium"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Implement one of the provided fixes.",
+        "required_justification": "Ignoring the return value of a function with a non-void return type is not allowed.",
+        "review_notes": "Ensure that the return value of puts is used or replaced with a more robust logging function."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "7f705978-bf3b-4a1c-b2e2-e26890f24da4",
+          "73009af8-3657-49d1-9e1e-3bbb9703614d",
+          "7c4ef163-6909-4460-bf30-6f32170a5681",
+          "dada1bc3-6e2e-4d90-b11f-63a2dfb08ec7"
+        ],
+        "retrieval_score_raw": 0.724341,
+        "retrieval_score_reranked": 0.804341,
+        "confidence": 0.9,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear inconsistent as the warning is about ignoring the return value, while the retrieved rule is about not using the standard input/output library <stdio.h>.",
+          "Rejected 'Replace puts with a more robust logging function': Patch contains unsafe pointer cast (int*, void*, char*).; Patch introduces numeric constant not present in original code. Cannot verify this value is correct without additional context."
+        ]
+      },
+      "warning_id": "3200",
+      "source": "final_cache",
+      "_from_cache": true,
+      "evaluation": {
+        "summary": "The value returned by the function 'puts' is being ignored.",
+        "rule_basis": "The standard input/output library <stdio.h> shall not be used.",
+        "code_evidence": "The code snippet includes the <stdio.h> library and ignores the return value of the 'puts' function.",
+        "warning_id": "3200",
+        "rule_id": "",
+        "overall_confidence": "Medium",
+        "needs_manual_review": false,
+        "evaluated_fixes": [],
+        "evaluator_notes": "",
+        "_eval_from_cache": true
+      },
+      "overall_confidence": "Medium",
+      "needs_manual_review": false,
+      "evaluator_notes": "",
+      "_eval_from_cache": true
+    },
+    {
+      "guideline_id": "Rule 10.3",
+      "guideline_title": "Implicit narrowing conversion",
+      "explanation": {
+        "summary": "The code performs an implicit narrowing conversion which may lead to data loss and incorrect program behavior.",
+        "rule_basis": "The value of 'total' (int) is assigned to 'small' (uint8_t). This implicit narrowing conversion may silently truncate the value (300 + total > 255), causing data loss and incorrect program behavior.",
+        "code_evidence": "The code snippet contains an implicit narrowing conversion from int to uint8_t."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Explicit cast",
+          "why": "To avoid implicit narrowing conversion and potential data loss.",
+          "patched_code": "small = (uint8_t)(total + 300);",
+          "compliance_notes": "This fix ensures that the conversion is explicit and less prone to errors.",
+          "risk_reduction": "High",
+          "original_patched_code": "small = (uint8_t)(total + 300);",
+          "original_title": "Explicit cast",
+          "confidence": "Medium",
+          "is_correct": true,
+          "issues_found": []
+        },
+        {
+          "rank": 2,
+          "title": "Use a larger data type",
+          "why": "To prevent potential data loss due to narrowing conversion.",
+          "patched_code": "uint16_t small;",
+          "compliance_notes": "This fix reduces the risk of data loss by using a larger data type.",
+          "risk_reduction": "Medium",
+          "original_patched_code": "uint16_t small;",
+          "original_title": "Use a larger data type",
+          "confidence": "Medium",
+          "is_correct": true,
+          "issues_found": []
+        }
+      ],
+      "risk_analysis": {
+        "severity": "High",
+        "why": "The implicit narrowing conversion may lead to data loss and incorrect program behavior.",
+        "potential_failures": [
+          "Data loss due to implicit narrowing conversion",
+          "Incorrect program behavior due to truncated values"
+        ],
+        "runtime_risk": "High",
+        "maintainability_risk": "High"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Implement one of the provided fixes.",
+        "required_justification": "Implicit narrowing conversion is not allowed in MISRA C.",
+        "review_notes": "Ensure that the fix does not introduce new issues."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "ac195ae8-bb0d-484f-9b1e-b777db09c5cc",
+          "2e618e23-85df-409e-82e6-f6094004e480",
+          "5f982fcc-83fe-4c58-a8d3-c057556e444c",
+          "7bad2d39-853b-4a5a-97b6-5c3e0994ae4a"
+        ],
+        "retrieval_score_raw": 0.834182,
+        "retrieval_score_reranked": 0.914182,
+        "confidence": 0.9,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear inconsistent as the warning message does not explicitly mention 'narrowing conversion'."
+        ]
+      },
+      "warning_id": "1257",
+      "source": "final_cache",
+      "_from_cache": true,
+      "evaluation": {
+        "rule_id": "MISRA 2012 Rule 10.3",
+        "issue": {
+          "code": "1257",
+          "description": "Narrowing conversion"
+        },
+        "source_code": {
+          "filename": "main.c",
+          "lines": [
+            12,
+            13
+          ]
+        },
+        "issues": [
+          {
+            "line": 12,
+            "column": 23,
+            "issue": "Narrowing conversion",
+            "explanation": "The value of 'total' (int) is assigned to 'small' (uint8_t). This implicit narrowing conversion may silently truncate the value (300 + total > 255), causing data loss and incorrect program behavior."
+          }
+        ],
+        "fixes": [
+          {
+            "id": "Fix [1]",
+            "description": "Explicit cast",
+            "compliance": "This fix ensures that the conversion is explicit and less prone to errors.",
+            "risk_reduction": "High"
+          },
+          {
+            "id": "Fix [2]",
+            "description": "Use a larger data type",
+            "compliance": "This fix reduces the risk of data loss by using a larger data type.",
+            "risk_reduction": "Medium"
+          }
+        ],
+        "warning_id": "1257",
+        "overall_confidence": "Medium",
+        "needs_manual_review": false,
+        "evaluated_fixes": [],
+        "evaluator_notes": ""
+      },
+      "overall_confidence": "Medium",
+      "needs_manual_review": false,
+      "evaluator_notes": ""
+    },
+    {
+      "guideline_id": "Rule 21.6",
+      "guideline_title": "The standard input/output library <stdio.h> shall not be used",
+      "explanation": {
+        "summary": "The standard input/output library <stdio.h> is used, which is not allowed according to MISRA C.",
+        "rule_basis": "MISRA C:2012, Rule 21.6",
+        "code_evidence": "The code snippet includes the #include <stdio.h> line."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Replace printf with a safer alternative",
+          "why": "printf is a standard I/O function that violates MISRA C.",
+          "patched_code": "replace printf(\"%d\\n\", total); with printf(\"value=%d\\n\", total);",
+          "compliance_notes": "This fix addresses the violation but introduces a new violation of Rule 21.6. Consider using a safer alternative such as snprintf or vprintf.",
+          "risk_reduction": "Low",
+          "original_patched_code": "replace printf(\"%d\\n\", total); with printf(\"value=%d\\n\", total);",
+          "original_title": "Replace printf with a safer alternative",
+          "confidence": "Medium",
+          "is_correct": true,
+          "issues_found": []
+        }
+      ],
+      "risk_analysis": {
+        "severity": "Medium",
+        "why": "The use of standard I/O functions can lead to portability issues and reduced determinism.",
+        "potential_failures": [
+          "Portability issues",
+          "Reduced determinism"
+        ],
+        "runtime_risk": "Medium",
+        "maintainability_risk": "Medium"
+      },
+      "deviation_advice": {
+        "deviation_possible": "Conditional",
+        "recommended_decision": "Avoid using standard I/O functions unless there is a compelling reason.",
+        "required_justification": "If a deviation is necessary, document the reason and the potential risks.",
+        "review_notes": "Consider using a safer alternative such as snprintf or vprintf."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "73009af8-3657-49d1-9e1e-3bbb9703614d",
+          "ae5fc129-e704-4b08-9b30-c09715775425",
+          "cbe32b38-a8cf-4356-8262-b59826738cb7"
+        ],
+        "retrieval_score_raw": 0.793019,
+        "retrieval_score_reranked": 0.873019,
+        "confidence": 0.9,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear inconsistent. The warning text suggests the use of printf, while the retrieved rule text forbids it."
+        ]
+      },
+      "warning_id": "5124",
+      "source": "final_cache",
+      "_from_cache": true,
+      "evaluation": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "string"
+          },
+          "rule_basis": {
+            "type": "string"
+          },
+          "code_evidence": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "summary",
+          "rule_basis",
+          "code_evidence"
+        ],
+        "warning_id": "5124",
+        "rule_id": "",
+        "overall_confidence": "Medium",
+        "needs_manual_review": false,
+        "evaluated_fixes": [],
+        "evaluator_notes": "",
+        "_eval_from_cache": true
+      },
+      "overall_confidence": "Medium",
+      "needs_manual_review": false,
+      "evaluator_notes": "",
+      "_eval_from_cache": true
+    },
+    {
+      "guideline_id": "Rule 17.8",
+      "guideline_title": "A function parameter should not be modified",
+      "explanation": {
+        "summary": "The function parameter 'data' is being modified, which violates Rule 17.8.",
+        "rule_basis": "Function interfaces and calls must be explicit, safe, and consistently used.",
+        "code_evidence": "The code snippet shows that the function parameter 'data' is being modified."
+      },
+      "fix_suggestions": [],
+      "risk_analysis": {
+        "severity": "Medium",
+        "why": "Modifying function parameters can lead to unexpected behavior and inconsistent results.",
+        "potential_failures": [
+          "Data corruption",
+          "Inconsistent results"
+        ],
+        "runtime_risk": "Medium",
+        "maintainability_risk": "Medium"
+      },
+      "deviation_advice": {
+        "deviation_possible": "Conditional",
+        "recommended_decision": "Avoid modifying function parameters unless absolutely necessary.",
+        "required_justification": "If a justification is needed, it should clearly explain why modifying the function parameter is necessary and how it will not lead to unexpected behavior or inconsistent results.",
+        "review_notes": "Consider refactoring the code to avoid modifying the function parameter."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "d1a3e72b-bb5d-492d-a097-0f1939467895",
+          "ac195ae8-bb0d-484f-9b1e-b777db09c5cc",
+          "d4c21f0f-1faa-49e9-be35-70aba8355be9",
+          "1f6d05d6-9e5c-49af-b020-a704501beb12"
+        ],
+        "retrieval_score_raw": 0.775789,
+        "retrieval_score_reranked": 0.855789,
+        "confidence": 0.9,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear inconsistent as the warning message does not explicitly mention function parameters.",
+          "Rejected 'Avoid modifying function parameters': Patch introduces variable-length array (MISRA Rule 18.8 violation).",
+          "All generated fix suggestions were rejected by the generic safety validator. The LLM output contained unsafe patterns (magic numbers, pointer casts, new symbols, or VLAs). Review the raw LLM output manually."
+        ]
+      },
+      "warning_id": "1338",
+      "source": "final_cache",
+      "_from_cache": true,
+      "evaluation_skipped": true,
+      "needs_manual_review": true
+    },
+    {
+      "guideline_id": "Rule 10.3",
+      "guideline_title": "The right hand operand of a shift operator shall lie between zero and one less than the width in bits of the essential type of the left hand operand",
+      "explanation": {
+        "summary": "The right hand operand of a shift operator should be within the range of the width in bits of the essential type of the left hand operand.",
+        "rule_basis": "To prevent undefined behavior and ensure safe shifts.",
+        "code_evidence": "The right hand operand of the shift operator (8) is greater than the width in bits of the essential type of the left hand operand (1U)."
+      },
+      "fix_suggestions": [],
+      "risk_analysis": {
+        "severity": "Medium",
+        "why": "The shift operator is used with a count greater than the width in bits of the essential type of the left hand operand, which may lead to undefined behavior.",
+        "potential_failures": [
+          "Data loss or incorrect program behavior due to undefined behavior."
+        ],
+        "runtime_risk": "Medium",
+        "maintainability_risk": "Medium"
+      },
+      "deviation_advice": {
+        "deviation_possible": "Conditional",
+        "recommended_decision": "Do not deviate from the rule unless necessary.",
+        "required_justification": "If a deviation is necessary, provide a justification and ensure that the potential risks are understood and mitigated.",
+        "review_notes": "Review the justification for any deviation from this rule."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "ac195ae8-bb0d-484f-9b1e-b777db09c5cc",
+          "b86cb560-3733-4718-a908-da8e47b79bfd",
+          "58d22287-4c6d-46ee-8ccd-8047a055cf55",
+          "fc77b2e5-eb95-4e0b-9ec5-9e861d837e06",
+          "5f982fcc-83fe-4c58-a8d3-c057556e444c"
+        ],
+        "retrieval_score_raw": 0.758317,
+        "retrieval_score_reranked": 0.838317,
+        "confidence": 0.9,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear inconsistent. The warning text suggests a shift range issue, while the retrieved context indicates a violation of Rule 12.2 related to the right hand operand of a shift operator.",
+          "Warning text and retrieved rule statement may not fully align.",
+          "Rejected 'Limit shift count': Patch introduces numeric constant not present in original code. Cannot verify this value is correct without additional context.; Patch introduces variable-length array (MISRA Rule 18.8 violation).",
+          "All generated fix suggestions were rejected by the generic safety validator. The LLM output contained unsafe patterns (magic numbers, pointer casts, new symbols, or VLAs). Review the raw LLM output manually."
+        ]
+      },
+      "warning_id": "2790",
+      "source": "final_cache",
+      "_from_cache": true,
+      "evaluation_skipped": true,
+      "needs_manual_review": true
+    },
+    {
+      "guideline_id": "Rule 9.1",
+      "guideline_title": "Non-initialized local variable",
+      "explanation": {
+        "summary": "The variable 'raw_value' is read before being assigned a value, leading to undefined behavior.",
+        "rule_basis": "Rule 9.1 (Mandatory): Non-initialized local variable.",
+        "code_evidence": "The code snippet provided initializes the variable 'output' but not 'raw_value', which is read before it is set."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Initialize 'raw_value' before reading it",
+          "why": "To prevent undefined behavior caused by reading an uninitialized variable.",
+          "patched_code": "5      int raw_value = 0;",
+          "compliance_notes": "Initializing the variable 'raw_value' to a known value ensures it is not read before being assigned.",
+          "risk_reduction": "High",
+          "original_patched_code": "5      int raw_value = 0;",
+          "original_title": "Initialize 'raw_value' before reading it",
+          "confidence": "Medium",
+          "is_correct": true,
+          "issues_found": []
+        }
+      ],
+      "risk_analysis": {
+        "severity": "High",
+        "why": "Reading an uninitialized variable can lead to unpredictable results and potential runtime errors.",
+        "potential_failures": [
+          "Runtime errors due to unpredictable values"
+        ],
+        "runtime_risk": "High",
+        "maintainability_risk": "High"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Fix the issue according to the provided fix_suggestions.",
+        "required_justification": "None",
+        "review_notes": "Ensure that all variables are properly initialized before being used."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "bcb19b99-61ee-499b-aa06-29fc74218955",
+          "b4b6beae-7941-442c-9a40-e0a8eacf60f7"
+        ],
+        "retrieval_score_raw": 0.781088,
+        "retrieval_score_reranked": 0.861088,
+        "confidence": 0.981088,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear consistent.",
+          "Warning text and retrieved rule statement may not fully align."
+        ]
+      },
+      "warning_id": "2883",
+      "source": "final_cache",
+      "_from_cache": true,
+      "evaluation": {
+        "rule_id": "MISRA 2012 Rule 9.1",
+        "rule_name": "Non-initialized local variable",
+        "rule_category": "Mandatory",
+        "issue_description": "The variable 'raw_value' is read before being assigned a value, leading to undefined behavior.",
+        "code_evidence": "The code snippet provided initializes the variable 'output' but not 'raw_value', which is read before",
+        "fixes": [
+          {
+            "fix_id": "Fix [1]",
+            "fix_description": "Initialize 'raw_value' before reading it",
+            "fix_implementation": "5      int raw_value = 0;",
+            "risk_reduction": "High",
+            "compliance": "Initializing the variable 'raw_value' to a known value ensures it is not read before being assigned."
+          }
+        ],
+        "warning_id": "2883",
+        "overall_confidence": "Medium",
+        "needs_manual_review": false,
+        "evaluated_fixes": [],
+        "evaluator_notes": "",
+        "_eval_from_cache": true
+      },
+      "overall_confidence": "Medium",
+      "needs_manual_review": false,
+      "evaluator_notes": "",
+      "_eval_from_cache": true
+    },
+    {
+      "guideline_id": "Rule 10.3",
+      "guideline_title": "Implicit narrowing conversion",
+      "explanation": {
+        "summary": "The value of 'output' (int) is assigned to 'scaled' (uint8_t). This implicit narrowing conversion may silently truncate the value, causing data loss and incorrect program behavior.",
+        "rule_basis": "Rule 10.3 (Required): Implicit narrowing conversion.",
+        "code_evidence": "The code snippet contains an implicit narrowing conversion from int to uint8_t."
+      },
+      "fix_suggestions": [],
+      "risk_analysis": {
+        "severity": "High",
+        "why": "The implicit narrowing conversion may lead to data loss and incorrect program behavior.",
+        "potential_failures": [
+          "Data loss",
+          "Incorrect program behavior"
+        ],
+        "runtime_risk": "High",
+        "maintainability_risk": "High"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Implement the fix to avoid data loss and incorrect program behavior.",
+        "required_justification": "MISRA C:2012 Rule 10.3 requires explicit casts for narrowing conversions.",
+        "review_notes": "Ensure that the fix does not introduce new issues."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "ac195ae8-bb0d-484f-9b1e-b777db09c5cc",
+          "2e618e23-85df-409e-82e6-f6094004e480",
+          "5f982fcc-83fe-4c58-a8d3-c057556e444c"
+        ],
+        "retrieval_score_raw": 0.844588,
+        "retrieval_score_reranked": 0.924588,
+        "confidence": 0.9,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear inconsistent. The warning text suggests a narrowing conversion from int to uint8_t, while the retrieved context mentions a narrowing conversion from uint16_t to uint8_t.",
+          "Rejected 'Explicit cast': Patch introduces numeric constant not present in original code. Cannot verify this value is correct without additional context.",
+          "All generated fix suggestions were rejected by the generic safety validator. The LLM output contained unsafe patterns (magic numbers, pointer casts, new symbols, or VLAs). Review the raw LLM output manually."
+        ]
+      },
+      "warning_id": "1266",
+      "source": "final_cache",
+      "_from_cache": true,
+      "evaluation_skipped": true,
+      "needs_manual_review": true
+    },
+    {
+      "guideline_id": "Rule 9.1",
+      "guideline_title": "Non-initialized local variable",
+      "explanation": {
+        "summary": "The variable 'x' is used before being initialized, leading to undefined behavior.",
+        "rule_basis": "MISRA C:2012 Rule 9.1",
+        "code_evidence": "The code snippet provided shows the variable 'x' being used before it is assigned a value."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Initialize the variable 'x' before using it",
+          "why": "This will prevent the variable from being used before it is assigned a value.",
+          "patched_code": "5      int x = 0;       /* initialize x */",
+          "compliance_notes": "This fix ensures compliance with MISRA C:2012 Rule 9.1.",
+          "risk_reduction": "This fix reduces the risk of undefined behavior.",
+          "original_patched_code": "5      int x = 0;       /* initialize x */",
+          "original_title": "Initialize the variable 'x' before using it",
+          "confidence": "Medium",
+          "is_correct": true,
+          "issues_found": []
+        }
+      ],
+      "risk_analysis": {
+        "severity": "High",
+        "why": "Using a variable before it is initialized can lead to undefined behavior and unpredictable results.",
+        "potential_failures": [
+          "Unpredictable program behavior",
+          "Runtime errors"
+        ],
+        "runtime_risk": "High",
+        "maintainability_risk": "High"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Implement the fix to ensure compliance with MISRA C:2012 Rule 9.1.",
+        "required_justification": "The use of a variable before it is initialized can lead to undefined behavior and unpredictable results.",
+        "review_notes": "Ensure that all local variables are initialized before they are used."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "bcb19b99-61ee-499b-aa06-29fc74218955",
+          "24c45106-be22-42d1-8fb0-dca20cc89ae4",
+          "4677ce74-ebe0-4eb6-8b0e-aaef70fa1c4e"
+        ],
+        "retrieval_score_raw": 0.827,
+        "retrieval_score_reranked": 0.907,
+        "confidence": 0.99,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear consistent.",
+          "Warning text and retrieved rule statement may not fully align."
+        ]
+      },
+      "warning_id": "2883_uninit_read",
+      "source": "final_cache",
+      "_from_cache": true,
+      "evaluation": {
+        "summary": "The variable 'x' is used before being initialized, leading to undefined behavior.",
+        "rule_basis": "MISRA C:2012 Rule 9.1",
+        "code_evidence": "The code snippet provided shows the variable 'x' being used before it is assigned a value.",
+        "warning_id": "2883",
+        "rule_id": "",
+        "overall_confidence": "Medium",
+        "needs_manual_review": false,
+        "evaluated_fixes": [],
+        "evaluator_notes": "",
+        "_eval_from_cache": true
+      },
+      "overall_confidence": "Medium",
+      "needs_manual_review": false,
+      "evaluator_notes": "",
+      "_eval_from_cache": true
+    },
+    {
+      "guideline_id": "Rule 13.3",
+      "guideline_title": "A full expression containing an increment or decrement operator should have no other potential side effects other than that caused by the increment or decrement operator",
+      "explanation": {
+        "summary": "The code contains a full expression with an increment operator (i++) that has other potential side effects, making the behavior harder to predict and verify.",
+        "rule_basis": "The code violates Rule 13.3 because a full expression containing an increment or decrement operator should have no other potential side effects other than that caused by the increment or decrement operator.",
+        "code_evidence": "The code snippet contains an expression (arr[i] = i++; i = i++ + 1) that has side effects other than the increment operation."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Remove the side effects",
+          "why": "Removing the side effects will make the behavior of the code easier to predict and verify.",
+          "patched_code": "15  arr[i] = i;\n      16  i++;",
+          "compliance_notes": "The code now complies with Rule 13.3.",
+          "risk_reduction": "Low",
+          "original_patched_code": "15  arr[i] = i;\n      16  i++;",
+          "original_title": "Remove the side effects",
+          "confidence": "Medium",
+          "is_correct": true,
+          "issues_found": []
+        }
+      ],
+      "risk_analysis": {
+        "severity": "Medium",
+        "why": "The code has a potential side effect that makes the behavior harder to predict and verify.",
+        "potential_failures": [
+          "Unpredictable behavior due to side effects"
+        ],
+        "runtime_risk": "Medium",
+        "maintainability_risk": "Medium"
+      },
+      "deviation_advice": {
+        "deviation_possible": "Conditional",
+        "recommended_decision": "Do not deviate from the rule unless absolutely necessary.",
+        "required_justification": "If a deviation is necessary, a justification should be provided and the potential risks should be carefully considered.",
+        "review_notes": "The code violates Rule 13.3, but a deviation may be justified in certain cases."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "9479676a-5824-4b91-a9b3-5769bd051dd8",
+          "4d765f15-6853-4789-b9de-2afd1df2c6c2",
+          "5f2de44c-1c4d-417d-a054-97c9a040d193"
+        ],
+        "retrieval_score_raw": 0.723713,
+        "retrieval_score_reranked": 0.803713,
+        "confidence": 0.9,
+        "limitations": [
+          "The retrieved rule (Rule 13.3) does not exactly match the warning (Rule 2.2), but they are related.",
+          "Warning text and retrieved rule statement may not fully align.",
+          "Rejected 'Use a temporary variable': Patch declares new variable(s) not present in original snippet. Cannot verify these are safe to introduce."
+        ]
+      },
+      "warning_id": "2980",
+      "source": "final_cache",
+      "_from_cache": true,
+      "evaluation": {
+        "version": "3.0.1",
+        "schemaVersion": "3.16.0",
+        "title": "MISRA Fixes Evaluation",
+        "description": "Evaluation of MISRA fixes for a given code snippet",
+        "type": "object",
+        "properties": {
+          "source_code": {
+            "type": "string",
+            "description": "The original source code"
+          },
+          "flagged_source_code": {
+            "type": "string",
+            "description": "The source code flagged by MISRA"
+          },
+          "rule_text": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The text of the MISRA rule(s) violated"
+          },
+          "fixes_to_evaluate": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "fix_number": {
+                  "type": "integer",
+                  "description": "The number of the fix to evaluate"
+                },
+                "description": {
+                  "type": "string",
+                  "description": "A description of the fix"
+                },
+                "patched_code": {
+                  "type": "string",
+                  "description": "The patched code after applying the fix"
+                },
+                "compliance": {
+                  "type": "string",
+                  "description": "The compliance status of the code after applying the fix"
+                },
+                "risk_reduction": {
+                  "type": "string",
+                  "description": "The risk reduction achieved by applying the fix"
+                },
+                "explanation": {
+                  "type": "object",
+                  "properties": {
+                    "summary": {
+                      "type": "string",
+                      "description": "A summary of the issue and the fix"
+                    },
+                    "rule_basis": {
+                      "type": "string",
+                      "description": "The basis for the MISRA rule violation"
+                    }
+                  },
+                  "required": [
+                    "summary",
+                    "rule_basis"
+                  ]
+                }
+              },
+              "required": [
+                "fix_number",
+                "description",
+                "patched_code",
+                "compliance",
+                "risk_reduction",
+                "explanation"
+              ]
+            }
+          }
+        },
+        "required": [
+          "source_code",
+          "flagged_source_code",
+          "rule_text",
+          "fixes_to_evaluate"
+        ],
+        "warning_id": "2980",
+        "rule_id": "",
+        "overall_confidence": "Medium",
+        "needs_manual_review": false,
+        "evaluated_fixes": [],
+        "evaluator_notes": ""
+      },
+      "overall_confidence": "Medium",
+      "needs_manual_review": false,
+      "evaluator_notes": ""
+    },
+    {
+      "guideline_id": "Rule 13.3",
+      "guideline_title": "A full expression containing an increment or decrement operator should have no other potential side effects other than that caused by the increment or decrement operator",
+      "explanation": {
+        "summary": "The code contains a full expression containing an increment operator (i++) with potential side effects other than the increment itself.",
+        "rule_basis": "The code violates Rule 13.3 because a full expression containing an increment or decrement operator should have no other potential side effects other than that caused by the increment or decrement operator. Side effects in complex expressions make behaviour harder to predict and verify.",
+        "code_evidence": "arr[i] = i++;"
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Use a post-increment operator",
+          "why": "This fix uses the post-increment operator, which performs the increment after the value has been used in the expression.",
+          "patched_code": "arr[i++] = i;",
+          "compliance_notes": "This fix ensures compliance with Rule 13.3.",
+          "risk_reduction": "Low",
+          "original_patched_code": "arr[i++] = i;",
+          "original_title": "Use a post-increment operator",
+          "confidence": "Medium",
+          "is_correct": true,
+          "issues_found": []
+        }
+      ],
+      "risk_analysis": {
+        "severity": "Medium",
+        "why": "The code contains a potential logic error due to the side effects in the expression.",
+        "potential_failures": [
+          "Logic errors"
+        ],
+        "runtime_risk": "Medium",
+        "maintainability_risk": "Medium"
+      },
+      "deviation_advice": {
+        "deviation_possible": "Conditional",
+        "recommended_decision": "Implement one of the suggested fixes to ensure compliance with Rule 13.3.",
+        "required_justification": "If a deviation is necessary, a justification should be provided explaining why the suggested fixes are not applicable and what alternative approach will be used.",
+        "review_notes": "This deviation should be reviewed by a senior developer or architect."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "9479676a-5824-4b91-a9b3-5769bd051dd8",
+          "2c4b96b4-edc3-4f3a-8550-fb3520091fed",
+          "39c49636-3405-4373-aca8-6722c4209628"
+        ],
+        "retrieval_score_raw": 0.780864,
+        "retrieval_score_reranked": 0.860864,
+        "confidence": 0.9,
+        "limitations": [
+          "The retrieved rule (Rule 13.3) does not exactly match the warning message (Evaluation order side effects).",
+          "Rejected 'Separate the increment operation': Patch declares new variable(s) not present in original snippet. Cannot verify these are safe to introduce.",
+          "Rejected 'Use a temporary variable': Patch declares new variable(s) not present in original snippet. Cannot verify these are safe to introduce."
+        ]
+      },
+      "warning_id": "400",
+      "source": "generation",
+      "evaluation": {
+        "rules": [
+          {
+            "id": "13.3",
+            "description": "Avoid full expressions containing increment or decrement operators",
+            "fixes": [
+              {
+                "id": "1",
+                "description": "Use a post-increment operator",
+                "code": "arr[i++] = i;",
+                "compliance": "Ensures compliance with Rule 13.3",
+                "risk_reduction": "Low"
+              }
+            ]
+          }
+        ],
+        "warning_id": "400",
+        "rule_id": "",
+        "overall_confidence": "Medium",
+        "needs_manual_review": false,
+        "evaluated_fixes": [],
+        "evaluator_notes": ""
+      },
+      "overall_confidence": "Medium",
+      "needs_manual_review": false,
+      "evaluator_notes": ""
+    },
+    {
+      "guideline_id": "Rule 2.1",
+      "guideline_title": "A project shall not contain unreachable code",
+      "explanation": {
+        "summary": "The code contains unreachable code which increases maintenance cost and can hide real defects.",
+        "rule_basis": "The code violates Rule 2.1 because a project shall not contain unreachable code.",
+        "code_evidence": "The code snippet provided contains a line (15) where the variable 'i' is assigned a value and then immediately incremented, making it unreachable."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Add a conditional statement",
+          "why": "Adding a conditional statement can make the unreachable code reachable in certain conditions.",
+          "patched_code": "1  #include <stdint.h>\n       2  \n       3  int helper_add(int a, int b)\n       4  {\n       5      int result = a + b;\n       6      return result;\n       7  }\n       8  \n      10  void update_index(void)\n      11  {\n      12      int i = 0;\n      13      int arr[5] = {0};\n      14  \n      15      if (condition) {\n      16          arr[i] = i++;\n      17      }",
+          "compliance_notes": "The code now complies with Rule 2.1 if the condition is met.",
+          "risk_reduction": "Adding a conditional statement reduces the risk of hidden defects and improves code maintainability.",
+          "original_patched_code": "1  #include <stdint.h>\n       2  \n       3  int helper_add(int a, int b)\n       4  {\n       5      int result = a + b;\n       6      return result;\n       7  }\n       8  \n      10  void update_index(void)\n      11  {\n      12      int i = 0;\n      13      int arr[5] = {0};\n      14  \n      15      if (condition) {\n      16          arr[i] = i++;\n      17      }",
+          "original_title": "Add a conditional statement",
+          "confidence": "Medium",
+          "is_correct": true,
+          "issues_found": []
+        }
+      ],
+      "risk_analysis": {
+        "severity": "Medium",
+        "why": "The unreachable code increases maintenance cost and can hide real defects.",
+        "potential_failures": [
+          "Hidden defects",
+          "Increased maintenance cost"
+        ],
+        "runtime_risk": "Low",
+        "maintainability_risk": "Medium"
+      },
+      "deviation_advice": {
+        "deviation_possible": "Conditional",
+        "recommended_decision": "It is recommended to remove the unreachable code or make it reachable with a conditional statement.",
+        "required_justification": "If a conditional deviation is chosen, a justification should be provided explaining why the unreachable code is necessary in certain conditions.",
+        "review_notes": "The code should be reviewed to ensure that the unreachable code is necessary and that the chosen deviation is appropriate."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "c60d55c0-d8b4-415e-8892-223efe115a8f",
+          "15eeb4ee-a641-4739-8bd9-a1b5aa3b00b6",
+          "a39ba492-6147-4b96-a9d3-f65ccf1e6af3",
+          "ce666d9c-8538-49d8-8ba3-f435b0152fd0",
+          "bb869044-79cd-4176-969c-841f8815186d"
+        ],
+        "retrieval_score_raw": 0.749494,
+        "retrieval_score_reranked": 0.829494,
+        "confidence": 0.9494940000000001,
+        "limitations": [
+          "The warning and retrieved rule are consistent.",
+          "Rejected 'Remove unreachable code': Patch introduces numeric constant not present in original code. Cannot verify this value is correct without additional context."
+        ]
+      },
+      "warning_id": "1460",
+      "source": "generation",
+      "evaluation": {
+        "schemaVersion": "4.4",
+        "title": "MISRA Fix Evaluation",
+        "type": "object",
+        "properties": {
+          "source_code": {
+            "type": "string",
+            "description": "The original source code"
+          },
+          "patched_code": {
+            "type": "string",
+            "description": "The patched source code"
+          },
+          "rule_text": {
+            "type": "string",
+            "description": "The text of the MISRA rule violated"
+          },
+          "fixes_to_evaluate": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "number": {
+                  "type": "integer",
+                  "description": "The number of the fix"
+                },
+                "description": {
+                  "type": "string",
+                  "description": "The description of the fix"
+                }
+              }
+            }
+          },
+          "compliance": {
+            "type": "string",
+            "description": "Whether the code complies with the rule after the fix"
+          },
+          "risk_reduction": {
+            "type": "string",
+            "description": "The risk reduction achieved by the fix"
+          },
+          "explanation": {
+            "type": "object",
+            "properties": {
+              "summary": {
+                "type": "string",
+                "description": "A summary of the issue and the fix"
+              },
+              "rule_basis": {
+                "type": "string",
+                "description": "The basis for the MISRA rule violation"
+              },
+              "code_evidence": {
+                "type": "string",
+                "description": "The evidence from the code that supports the rule violation"
+              }
+            }
+          }
+        },
+        "warning_id": "1460",
+        "rule_id": "",
+        "overall_confidence": "Medium",
+        "needs_manual_review": false,
+        "evaluated_fixes": [],
+        "evaluator_notes": ""
+      },
+      "overall_confidence": "Medium",
+      "needs_manual_review": false,
+      "evaluator_notes": ""
+    },
+    {
+      "guideline_id": "Rule 17.2",
+      "guideline_title": "Recursive functions should be avoided",
+      "explanation": {
+        "summary": "Recursion can lead to stack overflow and serious failures.",
+        "rule_basis": "Recursion can lead to unpredictable stack usage.",
+        "code_evidence": "Recursive function detected in the provided code."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Replace recursion with an iterative solution",
+          "why": "Iterative solutions are generally more efficient and less prone to stack overflow.",
+          "patched_code": "void update_index(void) {\n  int i = 0;\n  int arr[5] = {0};\n  for (; i < 5; i++) {\n    arr[i] = i;\n  }\n}",
+          "compliance_notes": "This solution replaces the recursive function with an iterative one.",
+          "risk_reduction": "High",
+          "original_patched_code": "void update_index(void) {\n  int i = 0;\n  int arr[5] = {0};\n  for (; i < 5; i++) {\n    arr[i] = i;\n  }\n}",
+          "original_title": "Replace recursion with an iterative solution",
+          "confidence": "Medium",
+          "is_correct": true,
+          "issues_found": []
+        },
+        {
+          "rank": 2,
+          "title": "Use a tail recursion",
+          "why": "Tail recursion can be optimized by the compiler to avoid stack overflow.",
+          "patched_code": "int helper_add(int a, int b) {\n  if (b != 0) {\n    return helper_add(a + b - b, b);\n  }\n  return a;\n}",
+          "compliance_notes": "This solution uses tail recursion to optimize the function.",
+          "risk_reduction": "Medium",
+          "original_patched_code": "int helper_add(int a, int b) {\n  if (b != 0) {\n    return helper_add(a + b - b, b);\n  }\n  return a;\n}",
+          "original_title": "Use a tail recursion",
+          "confidence": "Medium",
+          "is_correct": true,
+          "issues_found": []
+        }
+      ],
+      "risk_analysis": {
+        "severity": "High",
+        "why": "Recursion can lead to stack overflow and serious failures.",
+        "potential_failures": [
+          "Stack overflow"
+        ],
+        "runtime_risk": "High",
+        "maintainability_risk": "High"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Implement one of the suggested fixes.",
+        "required_justification": "Recursion can lead to unpredictable stack usage and should be avoided.",
+        "review_notes": "Ensure that the chosen fix does not introduce other issues."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "96e1d114-6a26-40bc-9a00-916f7a2786d1",
+          "39c302ff-588e-4226-a551-41125eefe7fa",
+          "1f6d05d6-9e5c-49af-b020-a704501beb12"
+        ],
+        "retrieval_score_raw": 0.723496,
+        "retrieval_score_reranked": 0.763496,
+        "confidence": 0.9,
+        "limitations": [
+          "The warning and retrieved rule are consistent.",
+          "Warning text and retrieved rule statement may not fully align.",
+          "Rejected 'Limit recursion depth': Patch declares new variable(s) not present in original snippet. Cannot verify these are safe to introduce."
+        ]
+      },
+      "warning_id": "1520",
+      "source": "generation",
+      "evaluation": {
+        "summary": "Recursion can lead to stack overflow and serious failures.",
+        "rule_basis": "Recursion can lead to unpredictable stack usage.",
+        "code_evidence": "Recursive function detected in the provided code.",
+        "fixes": [
+          {
+            "id": 1,
+            "description": "Replace recursion with an iterative solution",
+            "patched_code": "void update_index(void) {\n  int i = 0;\n  int arr[5] = {0};\n  for (; i < 5; i++) {\n    arr[i] = i;\n  }\n}",
+            "compliance": "This solution replaces the recursive function with an iterative one.",
+            "risk_reduction": "High"
+          },
+          {
+            "id": 2,
+            "description": "Use a tail recursion",
+            "patched_code": "int helper_add(int a, int b) {\n  if (b != 0) {\n    return helper_add(a + b - b, b);\n  }\n  return a;\n}",
+            "compliance": "This solution uses tail recursion to optimize the function.",
+            "risk_reduction": "Medium"
+          }
+        ],
+        "warning_id": "1520",
+        "rule_id": "",
+        "overall_confidence": "Medium",
+        "needs_manual_review": false,
+        "evaluated_fixes": [],
+        "evaluator_notes": ""
+      },
+      "overall_confidence": "Medium",
+      "needs_manual_review": false,
+      "evaluator_notes": ""
+    }
+  ]
+}

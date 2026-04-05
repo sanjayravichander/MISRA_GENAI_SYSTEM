@@ -30,9 +30,126 @@ function initIndexPage() {
 
   let excelFile = null;
   let cFilesList = [];
+  let uploadSessionId = null;   // set after /api/save_uploads succeeds
   let parsedExcelData = [];   // [{fileName, ruleId, message, warningNumbers, functionName}]
   let fileMappings = {};   // { fileName: [warnings] }
   let currentRunId = null;
+
+  // ── Restore previously completed run cards (Back navigation) ──
+  (function _restoreRuns() {
+    /* Always init side panel first — openSidePanel() needs it even if we return early */
+    _initSidePanel();
+    try {
+      /* Restore upload session so pending files can be run without re-uploading */
+      var _usess = JSON.parse(sessionStorage.getItem("misra_upload_session") || "null");
+      if (_usess && _usess.id) {
+        uploadSessionId = _usess.id;
+        /* Rebuild cFilesList as lightweight objects (name only) so runSingleFile works */
+        if (_usess.allFiles && _usess.allFiles.length) {
+          cFilesList = _usess.allFiles.map(function (n) { return { name: n, _serverOnly: true }; });
+        }
+      }
+    } catch (e) { console.error("restore upload session error:", e); }
+    try {
+      /* Restore file mapping section (shows ran vs pending files) */
+      var _fstate = JSON.parse(sessionStorage.getItem("misra_file_state") || "null");
+      if (_fstate && _fstate.allFiles && _fstate.allFiles.length) {
+        var _ranSet = new Set(_fstate.ranFiles || []);
+        var _fml = document.getElementById("file-map-list");
+        var _fms = document.getElementById("file-mapping-section");
+        var _fsm = document.getElementById("file-summary");
+        if (_fml && _fms) {
+          _fml.innerHTML = "";
+          _fstate.allFiles.forEach(function (fname, idx) {
+            var isDone = _ranSet.has(fname);
+            var card = document.createElement("div");
+            card.className = "fmap-card" + (isDone ? " fmap-ran" : "");
+            card.id = "fmap-" + idx;
+            var actionHtml;
+            if (isDone) {
+              actionHtml = '<button class="btn btn-ghost btn-sm fmap-run-btn fmap-done-btn" disabled>\u2713 Done</button>';
+            } else if (uploadSessionId) {
+              actionHtml = '<button class="btn btn-ghost btn-sm fmap-run-btn" onclick="runSingleFile(event,' + idx + ')">\u25b6 Run This File</button>';
+            } else {
+              actionHtml = '<span class="fmap-badge" style="font-size:11px;color:var(--text-muted)">Re-upload files to run</span>';
+            }
+            card.innerHTML = '<div class="fmap-card-header">'
+              + '<div class="fmap-file-info">'
+              + '<span class="fmap-filename">' + escHtml(fname) + '</span>'
+              + '</div>'
+              + '<div class="fmap-actions">' + actionHtml + '</div></div>';
+            _fml.appendChild(card);
+          });
+          var totalFiles = _fstate.allFiles.length;
+          var ranCount = _fstate.ranFiles ? _fstate.ranFiles.length : 0;
+          if (_fsm) _fsm.textContent = totalFiles + " file" + (totalFiles !== 1 ? "s" : "") + " \u00b7 " + ranCount + " analysed";
+          _fms.classList.remove("hidden");
+        }
+      }
+    } catch (e) { console.error("restore file state error:", e); }
+    try {
+      var saved = JSON.parse(sessionStorage.getItem("misra_completed_runs") || "[]");
+      if (!saved.length) return;
+      var pp = document.getElementById("progress-panel"); if (!pp) return;
+      pp.classList.add("visible");
+      // Set pipeline status to green "Ready" (not red "Analysing")
+      var _st = document.getElementById("pipeline-status-tag");
+      var _sd = document.getElementById("pipeline-status-dot");
+      var _sl = document.getElementById("pipeline-status-label");
+      if (_st) { _st.style.background = "rgba(16,185,129,.08)"; _st.style.color = "#065f46"; _st.style.borderColor = "rgba(16,185,129,.25)"; }
+      if (_sd) { _sd.style.background = "#10b981"; _sd.style.animation = "none"; }
+      if (_sl) _sl.textContent = "Report Ready";
+      // Mark all pipeline phase steps as done
+      ["ph-6a", "ph-6b", "ph-7", "ph-8", "ph-done"].forEach(function (id) {
+        var el = document.getElementById(id); if (!el) return;
+        el.classList.remove("active", "error"); el.classList.add("done");
+        var b = el.querySelector(".phase-badge"); if (b) b.textContent = "\u2713";
+        var d = el.querySelector(".phase-detail"); if (d) d.textContent = "Complete";
+      });
+      // Create/find records wrapper
+      var rw = document.getElementById("per-record-wrap");
+      if (!rw) {
+        rw = document.createElement("div"); rw.id = "per-record-wrap"; rw.className = "per-record-wrap";
+        var anc = pp.querySelector(".progress-section") || pp; pp.insertBefore(rw, anc);
+      }
+      var ce = document.getElementById("pr-counter");
+      if (!ce) {
+        ce = document.createElement("div"); ce.id = "pr-counter"; pp.insertBefore(ce, rw);
+      }
+      var RP = [{ ph: "6a", lb: "Read" }, { ph: "6b", lb: "Rules" }, { ph: "7", lb: "Fix" }, { ph: "8", lb: "Check" }, { ph: "done", lb: "Done" }];
+      var tot = 0;
+      saved.forEach(function (run) {
+        var rid = run.runId;
+        (run.wids || []).forEach(function (wid) {
+          if (document.getElementById("prcard-" + wid)) return;
+          // Build step rings (all green/done)
+          var st = '<div class="pr-steps-bar">';
+          RP.forEach(function (p, i) {
+            st += '<div class="pr-step-item pr-step-done" id="prstep-' + wid + '-' + p.ph + '">'
+              + '<div class="pr-step-node"><span class="pr-step-check">&#10003;</span><span class="pr-step-dot"></span></div>'
+              + '<span class="pr-step-lbl">' + p.lb + '</span></div>';
+            if (i < RP.length - 1)
+              st += '<div class="pr-step-line pr-step-line-done" id="prline-' + wid + '-' + i + '"></div>';
+          });
+          st += '</div>';
+          var card = document.createElement("div");
+          card.className = "pr-card pr-card-done"; card.id = "prcard-" + wid;
+          card.innerHTML = '<div class="pr-header">'
+            + '<span class="pr-wid">' + escHtml(wid) + '</span>'
+            + '<span class="pr-status-badge pr-done">Complete</span>'
+            + '<button class="pr-view-btn" onclick="openSidePanel(\u0027' + escHtml(wid) + '\u0027,\u0027' + escHtml(rid) + '\u0027)">View Result &#8594;</button>'
+            + '</div>' + st;
+          rw.appendChild(card); tot++;
+        });
+      });
+      if (tot > 0) {
+        var lr = saved[saved.length - 1];
+        ce.textContent = "All " + lr.total + " records complete";
+        ce.className = "pr-counter pr-counter-done";
+        currentRunId = lr.runId;
+      }
+    } catch (e) { console.error("restore error:", e); }
+  })();
 
   /* ── Drop zones ── */
   [excelZone, cZone].forEach(zone => {
@@ -43,10 +160,39 @@ function initIndexPage() {
       const files = [...e.dataTransfer.files];
       zone === excelZone ? handleExcel(files[0]) : handleCFiles(files);
     });
-    /* No extra click handler needed — input[type=file] covers the entire zone via position:absolute inset:0 */
+    /* Make entire zone clickable → trigger file picker (not folder picker) */
+    zone.addEventListener("click", function (e) {
+      /* Ignore clicks on the pick buttons, folder input, or any input element */
+      if (e.target.closest(".c-pick-btn")) return;
+      if (e.target.closest("input")) return;
+      if (zone === excelZone) {
+        excelInput.click();
+      } else {
+        /* Default click on zone body opens file picker (not folder) */
+        document.getElementById("c-input").click();
+      }
+    });
   });
   excelInput.addEventListener("change", () => handleExcel(excelInput.files[0]));
-  cInput.addEventListener("change", () => handleCFiles([...cInput.files]));
+
+  /* File / Folder picker buttons for C source zone */
+  const cPickFiles = document.getElementById("c-pick-files-btn");
+  const cPickFolder = document.getElementById("c-folder-input");
+  const cFolderBtn = document.getElementById("c-pick-folder-btn");
+  const cFolderInput = document.getElementById("c-folder-input");
+  if (cPickFiles) cPickFiles.addEventListener("click", e => { e.stopPropagation(); cInput.click(); });
+  if (cFolderBtn) cFolderBtn.addEventListener("click", function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    if (cFolderInput) { cFolderInput.value = ""; cFolderInput.click(); }
+  });
+  cInput.addEventListener("change", () => { if (cInput.files.length) handleCFiles([...cInput.files]); });
+  if (cFolderInput) cFolderInput.addEventListener("change", () => {
+    const valid = [...cFolderInput.files].filter(f => /\.(c|h)$/i.test(f.name));
+    if (valid.length) handleCFiles(valid);
+    else showError("No .c or .h files found in the selected folder.");
+  });
 
   function handleExcel(file) {
     if (!file) return;
@@ -128,6 +274,33 @@ function initIndexPage() {
   function tryBuildMapping() {
     if (!excelFile || !cFilesList.length) return;
     buildFileMappingUI();
+    _saveUploadsToServer();
+  }
+
+  async function _saveUploadsToServer() {
+    uploadSessionId = null;  // reset while saving
+    try {
+      const fd = new FormData();
+      fd.append("warning_report", excelFile);
+      cFilesList.forEach(f => fd.append("source_files", f));
+      const resp = await fetch("/api/save_uploads", { method: "POST", body: fd });
+      const data = await resp.json();
+      if (resp.ok && data.upload_session_id) {
+        uploadSessionId = data.upload_session_id;
+        /* Persist so Back navigation can reuse the session */
+        try {
+          sessionStorage.setItem("misra_upload_session", JSON.stringify({
+            id: uploadSessionId,
+            allFiles: data.c_files,
+            excelName: data.excel_filename
+          }));
+        } catch (e) { }
+      } else {
+        console.warn("save_uploads failed:", data.error);
+      }
+    } catch (e) {
+      console.warn("save_uploads error:", e.message);
+    }
   }
 
   function buildFileMappingUI() {
@@ -231,16 +404,27 @@ function initIndexPage() {
     if (card) card.classList.toggle("fmap-open");
   };
 
+  /* Track which file indices have already been run — completed runs are static */
+  const _ranFiles = new Set();
+
   window.runSingleFile = function (e, idx) {
     e.stopPropagation();
+    if (_ranFiles.has(idx)) return;   // already ran — do not re-run
     const f = cFilesList[idx];
     if (!f) return;
-    startAnalysis([f]);
+    /* Disable this file's run button immediately */
+    const btn = document.querySelector(`#fmap-${idx} .fmap-run-btn`);
+    if (btn) { btn.disabled = true; btn.textContent = "Running…"; }
+    startAnalysis([f], idx);
   };
 
-  runAllBtn && runAllBtn.addEventListener("click", () => startAnalysis(cFilesList));
+  runAllBtn && runAllBtn.addEventListener("click", () => {
+    const pending = cFilesList.filter((_, i) => !_ranFiles.has(i));
+    if (!pending.length) { showError("All files have already been analysed."); return; }
+    startAnalysis(pending, null, true);
+  });
 
-  async function startAnalysis(srcFiles) {
+  async function startAnalysis(srcFiles, fileIdx, isRunAll) {
     showError("");
     const progressPanel = document.getElementById("progress-panel");
     const uploadCard = document.getElementById("upload-card");
@@ -250,10 +434,11 @@ function initIndexPage() {
     // Remove any old back button from a previous run
     const oldBack = document.getElementById("back-to-upload-btn");
     if (oldBack) oldBack.remove();
+    /* Remember which file was just started so we can mark it done later */
+    window._currentFileIdx = (fileIdx !== null && fileIdx !== undefined) ? fileIdx : null;
+    window._currentIsRunAll = !!isRunAll;
 
     const fd = new FormData();
-    fd.append("warning_report", excelFile);
-    srcFiles.forEach(f => fd.append("source_files", f));
 
     // Send rule config — selected rules + overrides as filter
     const ruleSelected = [..._ruleState.selected];
@@ -263,6 +448,16 @@ function initIndexPage() {
 
     // Pass the most recent completed run_id so Phase 7 can resume from cache
     if (currentRunId) fd.append("resume_run_id", currentRunId);
+
+    if (uploadSessionId) {
+      /* Fast path — files already on server, just send session ID + target filenames */
+      fd.append("upload_session_id", uploadSessionId);
+      srcFiles.forEach(f => fd.append("run_filenames", f.name));
+    } else {
+      /* Fallback — upload files now (e.g. session expired or save_uploads failed) */
+      fd.append("warning_report", excelFile);
+      srcFiles.forEach(f => fd.append("source_files", f));
+    }
 
     try {
       const resp = await fetch("/api/analyse", { method: "POST", body: fd });
@@ -331,193 +526,49 @@ function initIndexPage() {
       recordsWrap.id = "per-record-wrap"; recordsWrap.className = "per-record-wrap";
       const anchor = progressPanel.querySelector(".progress-section") || progressPanel;
       progressPanel.insertBefore(recordsWrap, anchor);
+    } else {
+      /* Remove only incomplete/stale cards (those without pr-card-done) so their
+         __RID__ placeholders can't cause "Record not found". Completed cards from
+         previous runs are kept so the user can still view their results. */
+      Array.from(recordsWrap.querySelectorAll(".pr-card:not(.pr-card-done)")).forEach(el => el.remove());
     }
     let counterEl = document.getElementById("pr-counter");
     if (!counterEl) {
       counterEl = document.createElement("div"); counterEl.id = "pr-counter"; counterEl.className = "pr-counter";
       counterEl.textContent = "Waiting for records\u2026";
       progressPanel.insertBefore(counterEl, recordsWrap);
+    } else {
+      /* Reset counter text for the new run */
+      counterEl.textContent = "Waiting for records\u2026";
+      counterEl.className = "pr-counter";
     }
+
+    /* Reset the big pipeline bar (Reading file → Looking up rules → … → Report ready)
+       back to "Waiting…" so it reflects the new run's progress, not the previous one's. */
+    ["ph-6a", "ph-6b", "ph-7", "ph-8", "ph-done"].forEach(function (id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.remove("active", "done", "error");
+      const badge = el.querySelector(".phase-badge");
+      if (badge) badge.textContent = id === "ph-6a" ? "1" : id === "ph-6b" ? "2" : id === "ph-7" ? "3" : id === "ph-8" ? "4" : "5";
+      const detail = el.querySelector(".phase-detail");
+      if (detail) detail.textContent = "Waiting\u2026";
+    });
+    /* Reset pipeline status tag back to red "Analysing…" */
+    const _resetTag = document.getElementById("pipeline-status-tag");
+    const _resetDot = document.getElementById("pipeline-status-dot");
+    const _resetLbl = document.getElementById("pipeline-status-label");
+    if (_resetTag) { _resetTag.style.background = "rgba(192,57,43,.07)"; _resetTag.style.color = "var(--red,#c0392b)"; _resetTag.style.borderColor = "rgba(192,57,43,.2)"; }
+    if (_resetDot) { _resetDot.style.background = "var(--red,#c0392b)"; _resetDot.style.animation = "pulse-dot 1.2s infinite"; }
+    if (_resetLbl) _resetLbl.textContent = "Analysing\u2026";
 
     /* Side panel */
-    let sidePanel = document.getElementById("pr-side-panel");
-    if (!sidePanel) {
-      sidePanel = document.createElement("div"); sidePanel.id = "pr-side-panel"; sidePanel.className = "pr-side-panel";
-      sidePanel.innerHTML = `
-        <div class="pr-side-inner">
-          <div class="pr-side-header">
-            <div class="pr-side-title" id="pr-side-title">Result</div>
-            <button class="pr-side-close" onclick="closeSidePanel()" title="Close">&#x2715;</button>
-          </div>
-          <div class="pr-side-body" id="pr-side-body">
-            <div class="pr-side-loading"><div class="ld"></div><div class="ld"></div><div class="ld"></div><span class="ld-text">Loading\u2026</span></div>
-          </div>
-        </div>
-        <div class="pr-side-backdrop" onclick="closeSidePanel()"></div>`;
-      document.body.appendChild(sidePanel);
-    }
-
-    window.closeSidePanel = function () { sidePanel.classList.remove("pr-side-open"); document.body.classList.remove("pr-panel-open"); };
+    _initSidePanel(); // panel created once at module level
 
     function _startElapsedTicker() { }
     function _stopElapsedTicker() { }
-    window.openSidePanel = async function (wid, rid) {
-      sidePanel.classList.add("pr-side-open"); document.body.classList.add("pr-panel-open");
-      document.getElementById("pr-side-title").textContent = "Warning " + wid;
-      const body = document.getElementById("pr-side-body");
-      body.innerHTML = `<div class="pr-side-loading"><div class="ld"></div><div class="ld"></div><div class="ld"></div><span class="ld-text">Loading result\u2026</span></div>`;
-      try {
-        const resp = await fetch("/api/result/" + rid);
-        const data = await resp.json();
-        const warnings = data.warnings || [];
-        const w = warnings.find(x => String(x.warning_id) === String(wid)) || warnings[0];
-        if (!w) { body.innerHTML = `<div class="error-panel">Record not found.</div>`; return; }
-        body.innerHTML = buildSidePanelContent(w, rid);
-      } catch (e) {
-        body.innerHTML = `<div class="error-panel">Failed to load: ${escHtml(e.message)}</div>`;
-      }
-    };
-
-    function buildSidePanelContent(w, rid) {
-      const wid = String(w.warning_id || "");
-      const ruleId = formatRuleId(w.rule_id || w.guideline_id || w.misra_rule || "");
-      const msg = w.message || w.warning_message || "";
-      const fp = w.file_path ? w.file_path.replace(/\\\\/g, "/").split("/").pop() : "";
-      const fixes = w.fix_suggestions || w.ranked_fixes || w.fixes || [];
-      const expl = w.explanation || {};
-      const risk = w.risk_analysis || {};
-      const dev = w.deviation_advice || {};
-
-      const sc = w.source_context || w._source_context || "";
-      const srcTxt = typeof sc === "string" ? sc
-        : (sc && sc.context_text) ? sc.context_text
-          : Array.isArray(sc) ? sc.join("\n") : "";
-
-      window._fixData = window._fixData || {};
-      window._fixData[wid] = { fixes, beforeCode: srcTxt, selectedIdx: 0, rid };
-
-      let html = "";
-
-      html += `<div class="sp-meta-row">
-        ${ruleId ? `<span class="w-rule-pill">Rule ${escHtml(ruleId)}</span>` : ""}
-        ${fp ? `<span class="sp-file-tag">&#128196; ${escHtml(fp)}</span>` : ""}
-        ${w.guideline_title ? `<span class="sp-guideline">${escHtml(w.guideline_title)}</span>` : ""}
-      </div>`;
-      if (msg) html += `<div class="sp-msg">${escHtml(msg)}</div>`;
-
-      if (srcTxt) {
-        const rows = srcTxt.split("\n").map(ln => {
-          const clean = ln.replace(/^\s*>>>/, "   ");
-          const m = clean.match(/^\s*(\d+)\s+(.*)/);
-          if (!m) return clean.trim() ? `<div class="code-row flagged"><span class="ln-num"></span><span class="ln-code">${escHtml(clean.trimEnd())}</span></div>` : null;
-          const isFlagged = ln.includes(">>>");
-          return `<div class="code-row${isFlagged ? " flagged" : ""}"><span class="ln-num">${escHtml(m[1])}</span><span class="ln-code">${escHtml(m[2].trimEnd())}</span></div>`;
-        }).filter(Boolean).join("");
-        if (rows) html += `
-          <div class="sp-section">
-            <div class="sp-section-title">&#128196; Violated Source Code</div>
-            <div class="source-block before-block" style="border-radius:var(--r);border:1px solid rgba(192,57,43,.2);">${rows}</div>
-          </div>`;
-      }
-
-      if (expl.summary || expl.rule_basis || expl.code_evidence) {
-        html += `<div class="sp-section">
-          <div class="sp-section-title">&#128221; Explanation</div>
-          ${expl.summary ? `<div class="sp-field"><span class="sp-label">Summary</span><span class="sp-value">${escHtml(expl.summary)}</span></div>` : ""}
-          ${expl.rule_basis ? `<div class="sp-field"><span class="sp-label">Rule Basis</span><span class="sp-value">${escHtml(expl.rule_basis)}</span></div>` : ""}
-          ${expl.code_evidence ? `<div class="sp-field"><span class="sp-label">Code Evidence</span><span class="sp-value">${escHtml(expl.code_evidence)}</span></div>` : ""}
-        </div>`;
-      }
-
-      const failures = Array.isArray(risk.potential_failures) && risk.potential_failures.length
-        ? risk.potential_failures : [];
-      if (risk.why || failures.length || risk.runtime_risk) {
-        const failList = failures.length
-          ? `<ul class="sp-list">${failures.map(f => `<li>${escHtml(f)}</li>`).join("")}</ul>` : "";
-        html += `<div class="sp-section">
-          <div class="sp-section-title">&#9888;&#65039; Risk if Not Fixed</div>
-          ${risk.why ? `<div class="sp-field"><span class="sp-label">Impact</span><span class="sp-value">${escHtml(risk.why)}</span></div>` : ""}
-          ${failList ? `<div class="sp-field"><span class="sp-label">Potential Failures</span><span class="sp-value">${failList}</span></div>` : ""}
-          ${risk.runtime_risk ? `<div class="sp-field"><span class="sp-label">Runtime Risk</span><span class="sp-value">${escHtml(risk.runtime_risk)}</span></div>` : ""}
-        </div>`;
-      }
-
-      if (dev.deviation_possible || dev.recommended_decision) {
-        const devClass = { Yes: "dev-yes", No: "dev-no", Conditional: "dev-cond" }[dev.deviation_possible] || "dev-unknown";
-        html += `<div class="sp-section">
-          <div class="sp-section-title">&#128260; Deviation Advice</div>
-          <div class="sp-field"><span class="sp-label">Deviation Possible</span><span class="sp-value"><span class="dev-badge ${devClass}">${escHtml(dev.deviation_possible || "Unknown")}</span></span></div>
-          ${dev.recommended_decision ? `<div class="sp-field"><span class="sp-label">Decision</span><span class="sp-value">${escHtml(dev.recommended_decision)}</span></div>` : ""}
-          ${dev.required_justification ? `<div class="sp-field"><span class="sp-label">Justification</span><span class="sp-value">${escHtml(dev.required_justification)}</span></div>` : ""}
-          ${dev.review_notes ? `<div class="sp-field"><span class="sp-label">Review Notes</span><span class="sp-value">${escHtml(dev.review_notes)}</span></div>` : ""}
-        </div>`;
-      }
-
-      if (fixes.length) {
-        const chips = fixes.map((f, i) =>
-          `<button class="fix-chip ${i === 0 ? "fix-chip-active" : ""}" id="fixchip-${escHtml(wid)}-${i}"
-            onclick="selectFixChip('${escHtml(wid)}',${i})"
-          >Fix ${i + 1}</button>`
-        ).join("");
-
-        const firstFix = fixes[0];
-        const afterCode = extractAfterCode(firstFix);
-
-        const beforeRows = srcTxt
-          ? srcTxt.split("\n").map(ln => {
-            const clean = ln.replace(/^\s*>>>/, "   ");
-            const m = clean.match(/^\s*(\d+)\s+(.*)/);
-            const isFlagged = ln.includes(">>>");
-            return m
-              ? `<div class="code-row${isFlagged ? " flagged" : ""}"><span class="ln-num">${escHtml(m[1])}</span><span class="ln-code">${escHtml(m[2].trimEnd())}</span></div>`
-              : (clean.trim() ? `<div class="code-row"><span class="ln-num"></span><span class="ln-code">${escHtml(clean.trimEnd())}</span></div>` : "");
-          }).join("")
-          : '<div class="sp-no-src">Source not available</div>';
-
-        html += `<div class="sp-section sp-fixes-section">
-          <div class="sp-section-title">&#128295; Fix Suggestions <span class="fix-count-tag">${fixes.length} option${fixes.length > 1 ? "s" : ""}</span></div>
-          <div class="fix-chips-row">${chips}</div>
-          <div class="fix-title-row" id="fix-title-${escHtml(wid)}">${escHtml(firstFix.title || "")}</div>
-          <div id="fix-review-warn-${escHtml(wid)}">${firstFix.needs_review ? `<div class="fix-review-warning"><span class="fix-review-warning-icon">&#9888;</span><div><strong>Needs manual review</strong><ul>${(firstFix.validator_warnings || []).map(w => `<li>${escHtml(w)}</li>`).join("")}</ul></div></div>` : ""}</div>
-          <div class="fix-why-row"   id="fix-why-${escHtml(wid)}">${escHtml(firstFix.why || "")}</div>
-
-          <div class="fix-diff-wrap">
-            <div class="fix-diff-col">
-              <div class="fix-diff-header before-header">&#128308; Before (violated code)</div>
-              <div class="source-block before-block" id="before-block-${escHtml(wid)}">${beforeRows}</div>
-            </div>
-            <div class="fix-diff-col">
-              <div class="fix-diff-header after-header">&#128994; After (fix applied)</div>
-              <div class="source-block after-block" id="after-block-${escHtml(wid)}">
-                <div id="after-code-${escHtml(wid)}">${renderAfterCode(afterCode)}</div>
-              </div>
-              <button class="commit-btn-inline" id="commit-btn-${escHtml(wid)}" onclick="commitFix('${escHtml(wid)}')">
-                &#x2B06; Commit Fix to File
-              </button>
-            </div>
-          </div>
-
-          ${firstFix.compliance_notes ? `<div class="fix-notes-row" id="fix-notes-${escHtml(wid)}"><strong>Compliance:</strong> ${escHtml(firstFix.compliance_notes)}</div>` : `<div class="fix-notes-row" id="fix-notes-${escHtml(wid)}"></div>`}
-
-          <div class="patched-file-wrap hidden" id="patched-wrap-${escHtml(wid)}">
-            <div class="patched-file-header">
-              <span class="patched-file-title" id="patched-file-title-${escHtml(wid)}">&#x2713; Patched File</span>
-              <a class="btn-download" id="download-link-${escHtml(wid)}" href="#" download>&#x2B07; Download</a>
-            </div>
-            <div class="source-block patched-full-block" id="patched-code-${escHtml(wid)}"></div>
-          </div>
-        </div>`;
-      } else {
-        html += `<div class="sp-section">
-          <div class="sp-section-title">&#128295; Fix Suggestions</div>
-          <div class="sp-no-fixes">No fix suggestions could be generated for this warning.${w.parse_error ? " <em>(Parse error — try re-running.)</em>" : ""}</div>
-        </div>`;
-      }
-
-      html += `<div class="sp-full-link"><a href="/results/${escHtml(rid)}" class="btn btn-primary btn-sm" target="_blank">View Full Report &#8594;</a></div>`;
-      return html;
-    }
-
+    // openSidePanel is defined at module level below
+    _initSidePanel(); // ensure side panel DOM exists for this run
 
     /* Per-record tracking */
     const recordMeta = {}; let totalWarnings = 0, doneCount = 0;
@@ -652,6 +703,24 @@ function initIndexPage() {
             phEl.classList.add("active");
             const det = phEl.querySelector(".phase-detail");
             if (det) det.textContent = plainDetail(msg.detail);
+            /* Update pipeline status tag colour: red=phases 1-2, yellow=phases 3-4 */
+            const _sdot2 = document.getElementById("pipeline-status-dot");
+            const _stag2 = document.getElementById("pipeline-status-tag");
+            const _slbl2 = document.getElementById("pipeline-status-label");
+            const _ph = msg.phase || "";
+            if (_ph === "6a" || _ph === "6b") {
+              if (_sdot2) { _sdot2.style.background = "var(--red,#c0392b)"; _sdot2.style.animation = "pulse-dot 1.2s infinite"; }
+              if (_stag2) { _stag2.style.background = "rgba(192,57,43,.07)"; _stag2.style.color = "var(--red,#c0392b)"; _stag2.style.borderColor = "rgba(192,57,43,.2)"; }
+              if (_slbl2) _slbl2.textContent = "Reading & Matching…";
+            } else if (_ph === "7") {
+              if (_sdot2) { _sdot2.style.background = "#f59e0b"; _sdot2.style.animation = "pulse-dot 1.2s infinite"; }
+              if (_stag2) { _stag2.style.background = "rgba(245,158,11,.07)"; _stag2.style.color = "#b45309"; _stag2.style.borderColor = "rgba(245,158,11,.25)"; }
+              if (_slbl2) _slbl2.textContent = "Generating Fixes…";
+            } else if (_ph === "8") {
+              if (_sdot2) { _sdot2.style.background = "#f59e0b"; _sdot2.style.animation = "pulse-dot 1.2s infinite"; }
+              if (_stag2) { _stag2.style.background = "rgba(245,158,11,.07)"; _stag2.style.color = "#b45309"; _stag2.style.borderColor = "rgba(245,158,11,.25)"; }
+              if (_slbl2) _slbl2.textContent = "Quality Check…";
+            }
             _stopElapsedTicker();
             if (msg.phase === "7") {
               const _t7start = Date.now();
@@ -714,8 +783,23 @@ function initIndexPage() {
         if (msg.total && msg.total > 0) totalWarnings = msg.total;
 
         const phDone = document.getElementById("ph-done");
-        if (phDone) { phDone.classList.add("active"); setTimeout(() => { phDone.classList.remove("active"); phDone.classList.add("done"); const b = phDone.querySelector(".phase-badge"); if (b) b.textContent = "\u2713"; }, 400); }
+        if (phDone) {
+          phDone.classList.add("active");
+          setTimeout(() => {
+            phDone.classList.remove("active"); phDone.classList.add("done");
+            const b = phDone.querySelector(".phase-badge"); if (b) b.textContent = "\u2713";
+            /* Update the "Waiting…" detail text to show report is ready */
+            const det = phDone.querySelector(".phase-detail"); if (det) det.textContent = "View below \u2193";
+          }, 400);
+        }
         document.querySelectorAll(".phase-item:not(#ph-done)").forEach(el => { el.classList.remove("active"); el.classList.add("done"); const b = el.querySelector(".phase-badge"); if (b) b.textContent = "\u2713"; });
+        /* Update pipeline status tag to green */
+        const _stag = document.getElementById("pipeline-status-tag");
+        const _sdot = document.getElementById("pipeline-status-dot");
+        const _slbl = document.getElementById("pipeline-status-label");
+        if (_stag) { _stag.style.background = "rgba(16,185,129,.08)"; _stag.style.color = "#065f46"; _stag.style.borderColor = "rgba(16,185,129,.25)"; }
+        if (_sdot) { _sdot.style.background = "#10b981"; _sdot.style.animation = "none"; }
+        if (_slbl) _slbl.textContent = "Report Ready";
 
         Object.keys(recordMeta).forEach(wid => {
           const meta = recordMeta[wid];
@@ -732,19 +816,47 @@ function initIndexPage() {
         counterEl.textContent = `All ${finalCount} records complete`;
         counterEl.className = "pr-counter pr-counter-done";
 
-        if (!document.getElementById("back-to-upload-btn")) {
-          const backBtn = document.createElement("button");
-          backBtn.id = "back-to-upload-btn";
-          backBtn.className = "back-to-upload-btn";
-          backBtn.innerHTML = "&#8592; New Analysis";
-          backBtn.onclick = function () {
-            progressPanel.classList.remove("visible");
-            const uploadCard = document.getElementById("upload-card");
-            if (uploadCard) { uploadCard.style.opacity = "1"; uploadCard.style.pointerEvents = "auto"; }
-            document.querySelectorAll(".phase-item").forEach(el => { el.classList.remove("active", "done", "error"); const b = el.querySelector(".phase-badge"); if (b) b.textContent = ""; });
-          };
-          progressPanel.insertBefore(backBtn, progressPanel.firstChild);
+        // Persist to sessionStorage so Back navigation restores cards
+        try {
+          var _sr = JSON.parse(sessionStorage.getItem("misra_completed_runs") || "[]");
+          _sr = _sr.filter(function (r) { return r.runId !== targetId; });
+          _sr.push({ runId: targetId, total: finalCount, wids: Object.keys(recordMeta) });
+          sessionStorage.setItem("misra_completed_runs", JSON.stringify(_sr.slice(-10)));
+        } catch (e) { }
+
+        /* Persist file names and ran state so Back navigation can restore file map */
+        try {
+          var _allNames = cFilesList.map(function (f) { return f.name; });
+          var _ranNames = cFilesList.filter(function (_, i) { return _ranFiles.has(i); }).map(function (f) { return f.name; });
+          sessionStorage.setItem("misra_file_state", JSON.stringify({ allFiles: _allNames, ranFiles: _ranNames }));
+        } catch (e) { }
+
+        /* Mark the completed file(s) as ran — re-enable other file buttons */
+        if (window._currentIsRunAll) {
+          cFilesList.forEach((_, i) => _ranFiles.add(i));
+        } else if (window._currentFileIdx !== null && window._currentFileIdx !== undefined) {
+          _ranFiles.add(window._currentFileIdx);
         }
+        /* Refresh the file map UI so ran files show as done, others stay runnable */
+        cFilesList.forEach(function (_, i) {
+          const card = document.getElementById("fmap-" + i);
+          if (!card) return;
+          const btn = card.querySelector(".fmap-run-btn");
+          if (_ranFiles.has(i)) {
+            /* Mark as completed — static, cannot re-run */
+            card.classList.add("fmap-ran");
+            if (btn) { btn.disabled = true; btn.textContent = "✓ Done"; btn.classList.add("fmap-done-btn"); }
+          } else {
+            /* Pending files get their button re-enabled */
+            if (btn) { btn.disabled = false; btn.textContent = "▶ Run"; btn.classList.remove("fmap-done-btn"); }
+          }
+        });
+
+        /* Re-enable upload card so user can run remaining files */
+        const uploadCard2 = document.getElementById("upload-card");
+        if (uploadCard2) { uploadCard2.style.opacity = "1"; uploadCard2.style.pointerEvents = "auto"; }
+
+        /* No back-to-upload button on progress panel - user can scroll up to upload panel */
       }
 
       if (msg.type === "error") {
@@ -955,6 +1067,257 @@ function updateModalSummary() {
 }
 
 /* ============================================================
+   SIDE PANEL — module-level (works after Back navigation)
+   openSidePanel must live here so restored View Result buttons
+   can call it even when listenProgress has never run.
+   ============================================================ */
+
+var sidePanel = null; // module-level reference, set by _initSidePanel()
+
+function _initSidePanel() {
+  var _existing = document.getElementById("pr-side-panel");
+  if (_existing) { sidePanel = _existing; return; }
+  var _sp = document.createElement("div");
+  _sp.id = "pr-side-panel";
+  _sp.className = "pr-side-panel";
+  _sp.innerHTML = '<div class="pr-side-inner">'
+    + '<div class="pr-side-header">'
+    + '<div class="pr-side-title" id="pr-side-title">Result</div>'
+    + '<button class="pr-side-close" onclick="closeSidePanel()" title="Close">&#x2715;</button>'
+    + '</div>'
+    + '<div class="pr-side-body" id="pr-side-body">'
+    + '<div class="pr-side-loading"><div class="ld"></div><div class="ld"></div><div class="ld"></div>'
+    + '<span class="ld-text">Loading…</span></div>'
+    + '</div></div>'
+    + '<div class="pr-side-backdrop" onclick="closeSidePanel()"></div>';
+  document.body.appendChild(_sp);
+  sidePanel = _sp;
+}
+
+window.closeSidePanel = function () {
+  var _sp = document.getElementById("pr-side-panel");
+  if (_sp) { _sp.classList.remove("pr-side-open"); document.body.classList.remove("pr-panel-open"); }
+};
+
+window.openSidePanel = async function (wid, rid) {
+  /* Safety: ensure side panel DOM exists even if listenProgress never ran */
+  if (!sidePanel) _initSidePanel();
+  sidePanel.classList.add("pr-side-open"); document.body.classList.add("pr-panel-open");
+  document.getElementById("pr-side-title").textContent = "Warning " + wid;
+  const body = document.getElementById("pr-side-body");
+  body.innerHTML = `<div class="pr-side-loading"><div class="ld"></div><div class="ld"></div><div class="ld"></div><span class="ld-text">Loading result\u2026</span></div>`;
+  try {
+    const resp = await fetch("/api/result/" + rid);
+    const data = await resp.json();
+    const warnings = data.warnings || [];
+    const w = warnings.find(x => String(x.warning_id) === String(wid)) || warnings[0];
+    if (!w) { body.innerHTML = `<div class="error-panel">Record not found.</div>`; return; }
+    body.innerHTML = buildSidePanelContent(w, rid);
+  } catch (e) {
+    body.innerHTML = `<div class="error-panel">Failed to load: ${escHtml(e.message)}</div>`;
+  }
+};
+
+function buildSidePanelContent(w, rid) {
+  const wid = String(w.warning_id || "");
+  const ruleId = formatRuleId(w.rule_id || w.guideline_id || w.misra_rule || "");
+  const msg = w.message || w.warning_message || "";
+  const fp = w.file_path ? w.file_path.replace(/\\\\/g, "/").split("/").pop() : "";
+  const fixes = w.fix_suggestions || w.ranked_fixes || w.fixes || [];
+  const expl = w.explanation || {};
+  const risk = w.risk_analysis || {};
+  const dev = w.deviation_advice || {};
+
+  const sc = w.source_context || w._source_context || "";
+  const srcTxt = typeof sc === "string" ? sc
+    : (sc && sc.context_text) ? sc.context_text
+      : Array.isArray(sc) ? sc.join("\n") : "";
+
+  window._fixData = window._fixData || {};
+  window._fixData[wid] = { fixes, beforeCode: srcTxt, selectedIdx: 0, rid };
+
+  let html = "";
+
+  html += `<div class="sp-meta-row">
+    ${ruleId ? `<span class="w-rule-pill">Rule ${escHtml(ruleId)}</span>` : ""}
+    ${fp ? `<span class="sp-file-tag">&#128196; ${escHtml(fp)}</span>` : ""}
+    ${w.guideline_title ? `<span class="sp-guideline">${escHtml(w.guideline_title)}</span>` : ""}
+  </div>`;
+  if (msg) html += `<div class="sp-msg">${escHtml(msg)}</div>`;
+
+  /* ── Determine which line is violated (hoisted so both code blocks can use it) ──
+     Strategy 1: >>> marker on the line
+     Strategy 2: line_start field if populated
+     Strategy 3: fuzzy-match fix's patched_code identifiers against source lines */
+  const _ls = parseInt(w.line_start || 0);
+  const _le = parseInt(w.line_end || _ls);
+  let _fuzzyViolatedLine = 0;
+
+  if (srcTxt) {
+    /* Strategy 3 prep: extract tokens from the first fix suggestion */
+    if (!_ls && fixes.length) {
+      const _pc = (fixes[0].patched_code || fixes[0].corrected_code || fixes[0].fixed_code || "");
+      /* Extract the "after" code if it contains BEFORE:/AFTER: */
+      let _afterCode = _pc;
+      const _afIdx = _pc.toUpperCase().indexOf("AFTER:");
+      if (_afIdx !== -1) _afterCode = _pc.slice(_afIdx + 6).trim();
+      /* Clean prose "replace X with Y" */
+      const _wIdx = _afterCode.search(/\bwith\s/i);
+      if (_wIdx !== -1) _afterCode = _afterCode.slice(_wIdx + 5).trim();
+      /* Extract meaningful identifiers (skip common C keywords) */
+      const _cKw = new Set(["int", "uint8_t", "uint16_t", "uint32_t", "char", "void", "return",
+        "if", "else", "for", "while", "static", "const", "replace", "with", "printf", "fprintf", "NULL"]);
+      const _patchToks = [...new Set((_afterCode.match(/[a-zA-Z_][a-zA-Z0-9_]*/g) || [])
+        .filter(t => !_cKw.has(t)))];
+      /* Score each source line */
+      if (_patchToks.length) {
+        const _srcLines = srcTxt.split("\n");
+        const _DECL = /^\s*[a-zA-Z_]\w*(?:\s*\*)?\s+[a-zA-Z_]\w*\s*(?:=|;)/;
+        const _ASGN = /^\s*[a-zA-Z_]\w*\s*(?:\[.*?\])?\s*=/;
+        const _kind = s => { s = s.trim(); if (_DECL.test(s)) return "d"; if (_ASGN.test(s)) return "a"; return "o"; };
+        const _pKind = _kind(_afterCode);
+        let _bestScore = 0, _bestLine = 0;
+        _srcLines.forEach(ln => {
+          const mc = ln.replace(/^\s*>>>/, "   ").match(/^\s*(\d+)\s+(.*)/);
+          if (!mc) return;
+          const lnum = parseInt(mc[1]);
+          const lcode = mc[2];
+          const lToks = new Set((lcode.match(/[a-zA-Z_][a-zA-Z0-9_]*/g) || []));
+          const score = _patchToks.filter(t => lToks.has(t)).length
+            + (_kind(lcode) === _pKind ? 2 : 0);
+          if (score > _bestScore) { _bestScore = score; _bestLine = lnum; }
+        });
+        if (_bestScore > 0) _fuzzyViolatedLine = _bestLine;
+      }
+    }
+
+    const rows = srcTxt.split("\n").map(ln => {
+      const clean = ln.replace(/^\s*>>>/, "   ");
+      const m = clean.match(/^\s*(\d+)\s+(.*)/);
+      if (!m) return clean.trim() ? `<div class="code-row"><span class="ln-num"></span><span class="ln-code">${escHtml(clean.trimEnd())}</span></div>` : null;
+      const isFlagged = ln.includes(">>>");
+      const lineNum = parseInt(m[1]);
+      const isViolated = isFlagged
+        || (lineNum > 0 && _ls > 0 && lineNum >= _ls && lineNum <= _le)
+        || (lineNum > 0 && _fuzzyViolatedLine > 0 && lineNum === _fuzzyViolatedLine);
+      return `<div class="code-row${isViolated ? " flagged violated-line" : ""}"><span class="ln-num">${escHtml(m[1])}</span><span class="ln-code">${escHtml(m[2].trimEnd())}</span></div>`;
+    }).filter(Boolean).join("");
+    if (rows) html += `
+      <div class="sp-section">
+        <div class="sp-section-title">&#128196; Violated Source Code <span class="violated-legend">&#128308; = violated line</span></div>
+        <div class="source-block before-block" style="border-radius:var(--r);border:1px solid rgba(192,57,43,.2);">${rows}</div>
+      </div>`;
+  }
+
+  if (expl.summary || expl.rule_basis || expl.code_evidence) {
+    html += `<div class="sp-section">
+      <div class="sp-section-title">&#128221; Explanation</div>
+      ${expl.summary ? `<div class="sp-field"><span class="sp-label">Summary</span><span class="sp-value">${escHtml(expl.summary)}</span></div>` : ""}
+      ${expl.rule_basis ? `<div class="sp-field"><span class="sp-label">Rule Basis</span><span class="sp-value">${escHtml(expl.rule_basis)}</span></div>` : ""}
+      ${expl.code_evidence ? `<div class="sp-field"><span class="sp-label">Code Evidence</span><span class="sp-value">${escHtml(expl.code_evidence)}</span></div>` : ""}
+    </div>`;
+  }
+
+  const failures = Array.isArray(risk.potential_failures) && risk.potential_failures.length
+    ? risk.potential_failures : [];
+  if (risk.why || failures.length || risk.runtime_risk) {
+    const failList = failures.length
+      ? `<ul class="sp-list">${failures.map(f => `<li>${escHtml(f)}</li>`).join("")}</ul>` : "";
+    html += `<div class="sp-section">
+      <div class="sp-section-title">&#9888;&#65039; Risk if Not Fixed</div>
+      ${risk.why ? `<div class="sp-field"><span class="sp-label">Impact</span><span class="sp-value">${escHtml(risk.why)}</span></div>` : ""}
+      ${failList ? `<div class="sp-field"><span class="sp-label">Potential Failures</span><span class="sp-value">${failList}</span></div>` : ""}
+      ${risk.runtime_risk ? `<div class="sp-field"><span class="sp-label">Runtime Risk</span><span class="sp-value">${escHtml(risk.runtime_risk)}</span></div>` : ""}
+    </div>`;
+  }
+
+  if (dev.deviation_possible || dev.recommended_decision) {
+    const devClass = { Yes: "dev-yes", No: "dev-no", Conditional: "dev-cond" }[dev.deviation_possible] || "dev-unknown";
+    html += `<div class="sp-section">
+      <div class="sp-section-title">&#128260; Deviation Advice</div>
+      <div class="sp-field"><span class="sp-label">Deviation Possible</span><span class="sp-value"><span class="dev-badge ${devClass}">${escHtml(dev.deviation_possible || "Unknown")}</span></span></div>
+      ${dev.recommended_decision ? `<div class="sp-field"><span class="sp-label">Decision</span><span class="sp-value">${escHtml(dev.recommended_decision)}</span></div>` : ""}
+      ${dev.required_justification ? `<div class="sp-field"><span class="sp-label">Justification</span><span class="sp-value">${escHtml(dev.required_justification)}</span></div>` : ""}
+      ${dev.review_notes ? `<div class="sp-field"><span class="sp-label">Review Notes</span><span class="sp-value">${escHtml(dev.review_notes)}</span></div>` : ""}
+    </div>`;
+  }
+
+  if (fixes.length) {
+    const chips = fixes.map((f, i) =>
+      `<button class="fix-chip ${i === 0 ? "fix-chip-active" : ""}" id="fixchip-${escHtml(wid)}-${i}"
+        onclick="selectFixChip('${escHtml(wid)}',${i})"
+      >Fix ${i + 1}</button>`
+    ).join("");
+
+    const firstFix = fixes[0];
+    const afterCode = extractAfterCode(firstFix);
+
+    /* Fuzzy match fallback for before-block: reuse _ls/_le/_fuzzyViolatedLine hoisted above */
+    const beforeRows = srcTxt
+      ? srcTxt.split("\n").map(ln => {
+        const clean = ln.replace(/^\s*>>>/, "   ");
+        const m = clean.match(/^\s*(\d+)\s+(.*)/);
+        const isFlagged = ln.includes(">>>");
+        const lineNum = m ? parseInt(m[1]) : 0;
+        /* Highlight: >>> marker, line_start..line_end range, OR fuzzy match */
+        const isViolated = isFlagged
+          || (lineNum > 0 && _ls > 0 && lineNum >= _ls && lineNum <= _le)
+          || (lineNum > 0 && _fuzzyViolatedLine > 0 && lineNum === _fuzzyViolatedLine);
+        return m
+          ? `<div class="code-row${isViolated ? " flagged violated-line" : ""}"><span class="ln-num">${escHtml(m[1])}</span><span class="ln-code">${escHtml(m[2].trimEnd())}</span></div>`
+          : (clean.trim() ? `<div class="code-row"><span class="ln-num"></span><span class="ln-code">${escHtml(clean.trimEnd())}</span></div>` : "");
+      }).join("")
+      : '<div class="sp-no-src">Source not available</div>';
+
+    html += `<div class="sp-section sp-fixes-section">
+      <div class="sp-section-title">&#128295; Fix Suggestions <span class="fix-count-tag">${fixes.length} option${fixes.length > 1 ? "s" : ""}</span></div>
+      <div class="fix-chips-row">${chips}</div>
+      <div class="fix-title-row" id="fix-title-${escHtml(wid)}">${escHtml(firstFix.title || "")}</div>
+      <div id="fix-review-warn-${escHtml(wid)}">${firstFix.needs_review ? `<div class="fix-review-warning"><span class="fix-review-warning-icon">&#9888;</span><div><strong>Needs manual review</strong><ul>${(firstFix.validator_warnings || []).map(w => `<li>${escHtml(w)}</li>`).join("")}</ul></div></div>` : ""}</div>
+      <div class="fix-why-row"   id="fix-why-${escHtml(wid)}">${escHtml(firstFix.why || "")}</div>
+
+      <div class="fix-diff-wrap">
+        <div class="fix-diff-col">
+          <div class="fix-diff-header before-header">&#128308; BEFORE (VIOLATED CODE)</div>
+          <div class="source-block before-block" id="before-block-${escHtml(wid)}">${beforeRows}</div>
+        </div>
+        <div class="fix-diff-col">
+          <div class="fix-diff-header after-header">&#128994; AFTER (FIXED CODE)</div>
+          <div class="source-block after-block" id="after-block-${escHtml(wid)}">
+            <div id="after-code-${escHtml(wid)}">${renderAfterCode(afterCode)}</div>
+          </div>
+          <button class="commit-btn-inline" id="commit-btn-${escHtml(wid)}" onclick="commitFix('${escHtml(wid)}')"
+            title="Saves the selected fix into the original source file and logs it to the audit report">
+            &#x2B06; Commit Fix to File
+            <span class="info-tip" title="Saves the selected fix into the original source file and logs it to the audit report">&#9432;</span>
+          </button>
+        </div>
+      </div>
+
+      ${firstFix.compliance_notes ? `<div class="fix-notes-row" id="fix-notes-${escHtml(wid)}"><strong>Compliance:</strong> ${escHtml(firstFix.compliance_notes)}</div>` : `<div class="fix-notes-row" id="fix-notes-${escHtml(wid)}"></div>`}
+
+      <div class="patched-file-wrap hidden" id="patched-wrap-${escHtml(wid)}">
+        <div class="patched-file-header">
+          <span class="patched-file-title" id="patched-file-title-${escHtml(wid)}">&#x2713; Patched File</span>
+          <a class="btn-download" id="download-link-${escHtml(wid)}" href="#" download>&#x2B07; Download</a>
+        </div>
+        <div class="source-block patched-full-block" id="patched-code-${escHtml(wid)}"></div>
+      </div>
+    </div>`;
+  } else {
+    html += `<div class="sp-section">
+      <div class="sp-section-title">&#128295; Fix Suggestions</div>
+      <div class="sp-no-fixes">No fix suggestions could be generated for this warning.${w.parse_error ? " <em>(Parse error — try re-running.)</em>" : ""}</div>
+    </div>`;
+  }
+
+  html += `<div class="sp-full-link"><a href="/results/${escHtml(rid)}" class="btn btn-primary btn-sm">View Full Report &#8594;</a></div>`;
+  return html;
+}
+
+
+
+/* ============================================================
    RESULTS PAGE
    ============================================================ */
 function initResultsPage() {
@@ -979,13 +1342,26 @@ function initResultsPage() {
     } catch (err) { root.innerHTML = `<div class="error-panel">Failed to load: ${escHtml(err.message)}</div>`; }
   }
 
+
   function buildShell(data) {
     const s = data.summary || {};
     const total = s.total ?? (data.warnings || []).length;
     const manual = s.manual ?? 0;
     return `
     <div style="padding:40px 0 28px;border-bottom:1px solid var(--border);margin-bottom:28px;">
-      <div class="hero-eyebrow" style="margin-bottom:12px;"><span class="hero-eyebrow-dot"></span>Run ${escHtml(data.run_id)}</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+        <button class="btn btn-ghost btn-sm results-back-btn"
+           onclick="window.location.href='/'"
+           style="display:inline-flex;align-items:center;gap:6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          ← Back
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="confirmNewAnalysis()"
+          style="display:inline-flex;align-items:center;gap:6px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          Run New Analysis
+        </button>
+      </div>
       <h1 style="font-family:var(--font-display);font-size:clamp(22px,3vw,34px);font-weight:700;letter-spacing:-.015em;margin-bottom:8px;">Review Report</h1>
       <p style="color:var(--text-sub);font-size:14px;">${total} warning${total !== 1 ? "s" : ""} reviewed</p>
     </div>
@@ -1003,6 +1379,21 @@ function initResultsPage() {
     <div class="warning-list" id="warning-list"></div>`;
   }
 
+  /* Back button — just navigate, no confirmation needed (report stays at its URL) */
+  window.confirmLeave = function () {
+    return true;  // no confirmation — report is safely saved on server
+  };
+
+  /* Run New Analysis confirmation */
+  window.confirmNewAnalysis = function () {
+    const ok = confirm(
+      "Start a fresh analysis?\n\n" +
+      "This will take you back to the Upload page to start from scratch. " +
+      "Your current report will remain saved on the server.\n\nContinue?"
+    );
+    if (ok) window.location.href = "/";
+  };
+
   function renderWarnings(ws) {
     const list = document.getElementById("warning-list");
     if (!list) return;
@@ -1017,7 +1408,7 @@ function initResultsPage() {
     function applyFilters() {
       document.querySelectorAll(".warning-card").forEach(card => {
         const misraOk = activeMisra === "all" || card.dataset.misra === activeMisra;
-        card.style.display = misraOk ? "" : "";
+        card.style.display = misraOk ? "" : "none";
       });
     }
 
@@ -1061,12 +1452,38 @@ function buildWarningCard(w, idx) {
 }
 
 function deriveMisraCategory(w) {
+  /* Check rule_type first */
   const rt = (w.rule_type || "").toLowerCase();
-  if (rt === "mandatory") return "mandatory"; if (rt === "required") return "required"; if (rt === "advisory") return "advisory";
-  const cat = (w.rule_category || w.misra_category || "").toLowerCase();
-  if (cat.includes("mandatory")) return "mandatory"; if (cat.includes("required")) return "required"; if (cat.includes("advisory")) return "advisory";
+  if (rt === "mandatory") return "mandatory";
+  if (rt === "required") return "required";
+  if (rt === "advisory") return "advisory";
+
+  /* "category" field from enriched: "MISRA-R (Required)", "MISRA-M (Mandatory)", "MISRA-A (Advisory)" */
+  const cat = (w.category || w.rule_category || w.misra_category || "").toLowerCase();
+  if (cat.includes("mandatory") || cat.includes("misra-m")) return "mandatory";
+  if (cat.includes("required") || cat.includes("misra-r")) return "required";
+  if (cat.includes("advisory") || cat.includes("misra-a")) return "advisory";
+
+  /* Derive from rule_id using MISRA-C 2012 classification */
+  const rid = (w.rule_id || w.guideline_id || "").toLowerCase().replace(/^rule[\s\-_]*/i, "");
+  /* Mandatory rules: 9.1, 12.5, 13.6, 17.3, 17.4, 17.6, 19.1, 21.13, 21.17-21.20, 22.5 */
+  const mandatoryRules = new Set(["9.1", "12.5", "13.6", "17.3", "17.4", "17.6", "19.1", "21.13", "21.17", "21.18", "21.19", "21.20", "22.5"]);
+  /* Advisory rules: 1.2, 2.3, 2.4, 2.5, 2.6, 2.7, 4.2, 5.9, 8.7, 8.9, 8.11, 8.13, 10.5, 11.4, 11.5, 12.1, 12.3, 12.4, 13.3, 13.4, 15.1, 15.4, 15.5, 17.5, 17.8, 18.4, 18.5, 19.2, 20.1, 20.5, 20.10, 21.12 */
+  const advisoryRules = new Set(["1.2", "2.3", "2.4", "2.5", "2.6", "2.7", "4.2", "5.9", "8.7", "8.9", "8.11", "8.13", "10.5", "11.4", "11.5", "12.1", "12.3", "12.4", "13.3", "13.4", "15.1", "15.4", "15.5", "17.5", "17.8", "18.4", "18.5", "19.2", "20.1", "20.5", "20.10", "21.12"]);
+  if (mandatoryRules.has(rid)) return "mandatory";
+  if (advisoryRules.has(rid)) return "advisory";
+  if (rid) return "required";   /* everything else in MISRA-C 2012 is Required */
+
+  /* Fallback: scan misra_context chunks */
   const ctx = w.misra_context || w.retrieved_context || [];
-  if (Array.isArray(ctx)) { for (const chunk of ctx) { const g = (chunk.guidelines || chunk.description || "").toLowerCase(); if (g.includes("(mandatory)")) return "mandatory"; if (g.includes("(required)")) return "required"; if (g.includes("(advisory)")) return "advisory"; } }
+  if (Array.isArray(ctx)) {
+    for (const chunk of ctx) {
+      const g = (chunk.guidelines || chunk.description || chunk.body_text || "").toLowerCase();
+      if (g.includes("(mandatory)") || g.includes("misra-m")) return "mandatory";
+      if (g.includes("(required)") || g.includes("misra-r")) return "required";
+      if (g.includes("(advisory)") || g.includes("misra-a")) return "advisory";
+    }
+  }
   return "";
 }
 
@@ -1085,10 +1502,46 @@ function buildWarningDetail(w, ev, isReview, wId) {
   else if (Array.isArray(srcCtxRaw)) sourceCode = srcCtxRaw.join("\n");
   else if (srcCtxRaw && typeof srcCtxRaw === "object") sourceCode = srcCtxRaw.context_text || srcCtxRaw.code || srcCtxRaw.text || srcCtxRaw.content || srcCtxRaw.source || "";
 
-  if (sourceCode) {
-    const parsed = sourceCode.split("\n").map(ln => { const clean = ln.replace(/^\s*>>>/, "   "); const m = clean.match(/^\s*(\d+)\s+(.*)/); if (!m || !m[2].trim()) return null; return { num: m[1], code: m[2].trimEnd() }; }).filter(Boolean);
-    if (parsed.length) html += `<div class="detail-section"><div class="detail-section-title">Source Code</div><div class="source-block" id="src-${escHtml(wId)}">${parsed.map(({ num, code }) => `<div class="code-row"><span class="ln-num">${escHtml(num)}</span><span class="ln-code">${escHtml(code)}</span></div>`).join("")}</div></div>`;
+  // ── Violated line detection (same 3-strategy as side panel) ──
+  const _rpLs = parseInt(w.line_start || 0), _rpLe = parseInt(w.line_end || (w.line_start || 0));
+  let _rpFuzzy = 0;
+  (function () {
+    const _fx0 = w.ranked_fixes || w.fix_suggestions || w.fixes || [];
+    if (_rpLs || !_fx0.length || !sourceCode) return;
+    let _af = (_fx0[0].patched_code || _fx0[0].corrected_code || _fx0[0].fixed_code || "");
+    const _ai = _af.toUpperCase().indexOf("AFTER:"); if (_ai !== -1) _af = _af.slice(_ai + 6).trim();
+    const _wi = _af.search(/\bwith\s/i); if (_wi !== -1) _af = _af.slice(_wi + 5).trim();
+    const _kw = new Set(["int", "uint8_t", "uint16_t", "uint32_t", "char", "void", "return", "if", "else", "for", "while", "static", "const", "replace", "with", "printf", "fprintf", "NULL"]);
+    const _pt = [...new Set((_af.match(/[a-zA-Z_][a-zA-Z0-9_]*/g) || []).filter(t => !_kw.has(t)))];
+    if (!_pt.length) return;
+    const _D = /^\s*[a-zA-Z_]\w*(?:\s*\*)?\s+[a-zA-Z_]\w*\s*(?:=|;)/, _A = /^\s*[a-zA-Z_]\w*\s*(?:\[.*?\])?\s*=/;
+    const _k = s => { s = s.trim(); if (_D.test(s)) return "d"; if (_A.test(s)) return "a"; return "o"; };
+    const _pk = _k(_af); let _bs = 0, _bl = 0;
+    sourceCode.split("\n").forEach(ln => {
+      const mc = ln.replace(/^\s*>>>/, "   ").match(/^\s*(\d+)\s+(.*)/);
+      if (!mc) return;
+      const lnum = parseInt(mc[1]), lcode = mc[2];
+      const lt = new Set((lcode.match(/[a-zA-Z_][a-zA-Z0-9_]*/g) || []));
+      const sc = _pt.filter(t => lt.has(t)).length + (_k(lcode) === _pk ? 2 : 0);
+      if (sc > _bs) { _bs = sc; _bl = lnum; }
+    });
+    if (_bs > 0) _rpFuzzy = _bl;
+  })();
+
+  // Helper: build BEFORE rows with red violated-line highlight
+  function _rpBefore(src) {
+    if (!src) return '<div style="padding:10px;color:var(--text-muted);font-size:12px;">Source not available</div>';
+    return src.split("\n").map(ln => {
+      const clean = ln.replace(/^\s*>>>/, "   ");
+      const m = clean.match(/^\s*(\d+)\s+(.*)/);
+      if (!m) return clean.trim() ? `<div class="code-row"><span class="ln-num"></span><span class="ln-code">${escHtml(clean.trimEnd())}</span></div>` : null;
+      const flagged = ln.includes(">>>");
+      const lnum = parseInt(m[1]);
+      const viol = flagged || (lnum > 0 && _rpLs > 0 && lnum >= _rpLs && lnum <= _rpLe) || (lnum > 0 && _rpFuzzy > 0 && lnum === _rpFuzzy);
+      return `<div class="code-row${viol ? " flagged violated-line" : ""}"><span class="ln-num">${escHtml(m[1])}</span><span class="ln-code">${escHtml(m[2].trimEnd())}</span></div>`;
+    }).filter(Boolean).join("") || '<div style="padding:10px;color:var(--text-muted);">No lines</div>';
   }
+
 
   const expl = w.explanation || ev.explanation || "";
   if (expl) {
@@ -1122,21 +1575,49 @@ function buildWarningDetail(w, ev, isReview, wId) {
   if (fixes.length) {
     window._fixData = window._fixData || {};
     window._fixData[wId] = { fixes, beforeCode: sourceCode, selectedIdx: 0 };
+
     const firstAfter = extractAfterCode(fixes[0]);
-    const chips = fixes.map((f, i) => { const isDB = f.source === "db_template" || f.db_verified === true; return `<button class="fix-chip ${i === 0 ? "fix-chip-active" : ""}" id="fixchip-${escHtml(wId)}-${i}" onclick="selectFixChip('${escHtml(wId)}',${i})" title="${escHtml(f.title || f.fix_title || "Fix " + (i + 1))}">Fix ${i + 1}${isDB ? '<span class="fix-chip-db">DB</span>' : ""}  </button>`; }).join("");
-    html += `<div class="detail-section"><div class="detail-section-title">Fix Suggestion</div>
-      <div class="fix-chips-row" id="fixchips-${escHtml(wId)}">${chips}<span class="fix-chip-label" id="fix-chip-desc-${escHtml(wId)}">${escHtml(fixes[0].title || fixes[0].fix_title || fixes[0].why || "")}</span></div>
-      <div class="fix-after-wrap">
-        <div class="fix-after-header"><span class="fix-after-label">After (fix applied)</span><span class="fix-active-tag" id="fix-active-tag-${escHtml(wId)}">Fix 1 selected</span></div>
-        <div class="code-diff-panel after" id="after-block-${escHtml(wId)}">
-          <div class="code-diff-label">After
-            <button class="commit-inline-btn" id="commit-btn-${escHtml(wId)}" onclick="commitFix('${escHtml(wId)}')" title="Commit this fix">&#x2B06; Commit Fix</button>
+    const chips = fixes.map((f, i) => {
+      const isDB = f.source === "db_template" || f.db_verified === true;
+      return `<button class="fix-chip ${i === 0 ? "fix-chip-active" : ""}" id="fixchip-${escHtml(wId)}-${i}" onclick="selectFixChip('${escHtml(wId)}',${i})" title="${escHtml(f.title || f.fix_title || "Fix " + (i + 1))}">Fix ${i + 1}${isDB ? '<span class="fix-chip-db">DB</span>' : ""}</button>`;
+    }).join("");
+
+    const _beforeHtml = _rpBefore(sourceCode);
+    const _hasSource = !!sourceCode;
+
+    html += `<div class="detail-section">
+      <div class="detail-section-title">Code Changes</div>
+      <div class="fix-chips-row" id="fixchips-${escHtml(wId)}" style="margin-bottom:12px;">
+        ${chips}
+        <span class="fix-chip-label" id="fix-chip-desc-${escHtml(wId)}">${escHtml(fixes[0].title || fixes[0].fix_title || fixes[0].why || "")}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:${_hasSource ? "1fr 1fr" : "1fr"};gap:12px;">
+        ${_hasSource ? `<div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:.05em;color:#c0392b;margin-bottom:6px;">
+            &#128308; BEFORE (VIOLATED CODE)
+            <span style="font-weight:500;font-size:10px;opacity:.75;"> &#128308; = violated line</span>
           </div>
-          <div id="after-code-${escHtml(wId)}">${renderAfterCode(firstAfter)}</div>
-          <div class="commit-inline-status hidden" id="commit-status-${escHtml(wId)}">&#x2713; Patch applied &nbsp;<a class="download-link" id="download-link-${escHtml(wId)}" href="#" download>&#x2B07; Download patched file</a></div>
+          <div class="source-block" id="src-${escHtml(wId)}" style="border:1px solid rgba(192,57,43,.25);border-radius:8px;max-height:360px;overflow-y:auto;">${_beforeHtml}</div>
+        </div>`: ""}
+        <div>
+          <div id="rr-after-label-${escHtml(wId)}" style="font-size:11px;font-weight:700;letter-spacing:.05em;color:#15803d;margin-bottom:6px;">
+            &#128994; AFTER (FIX SUGGESTION)
+          </div>
+          <div class="source-block" id="rr-after-block-${escHtml(wId)}" style="border:1px solid rgba(21,128,61,.25);border-radius:8px;max-height:360px;overflow-y:auto;">
+            <div id="rr-after-code-${escHtml(wId)}">${renderAfterCode(firstAfter)}</div>
+          </div>
+          <div id="rr-download-${escHtml(wId)}" style="margin-top:6px;"></div>
         </div>
       </div>
+      <div style="margin-top:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <button id="rr-save-audit-${escHtml(wId)}" onclick="rrSaveAudit('${escHtml(wId)}')"
+          style="background:#1e40af;color:#fff;border:none;padding:7px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+          &#128190; Save to Audit Excel
+        </button>
+        <span id="rr-audit-status-${escHtml(wId)}" style="font-size:12px;color:var(--text-muted);"></span>
+      </div>
     </div>`;
+
     const evalNotes = ev.evaluator_notes || ev.notes || ev.summary || "";
     if (evalNotes) html += `<div class="info-box eval-note" style="margin-top:10px;">${escHtml(evalNotes)}</div>`;
   } else {
@@ -1169,6 +1650,9 @@ window.selectFixChip = function (wId, idx) {
   const fix = data.fixes[idx];
   const codeEl = document.getElementById(`after-code-${wId}`);
   if (codeEl) codeEl.innerHTML = renderAfterCode(extractAfterCode(fix));
+  // Sync Review Report after block (only if not yet committed)
+  const rrEl = document.getElementById("rr-after-code-" + wId);
+  if (rrEl && !(window._commitResults || {})[wId]) rrEl.innerHTML = renderAfterCode(extractAfterCode(fix));
   const titleEl = document.getElementById(`fix-title-${wId}`);
   const whyEl = document.getElementById(`fix-why-${wId}`);
   const notesEl = document.getElementById(`fix-notes-${wId}`);
@@ -1226,18 +1710,30 @@ window.commitFix = async function (wId) {
       dlEl.href = result.download_url;
       dlEl.download = result.filename || "patched.c";
     }
-    const auditNote = document.getElementById(`audit-note-${wId}`);
-    if (!auditNote) {
-      const note = document.createElement("div");
-      note.id = `audit-note-${wId}`;
-      note.className = "audit-note";
-      // Use the real resolved path returned by the server so the user knows
-      // exactly where to find the file (no more hardcoded guesses).
-      const auditPath = result.audit_path
-        ? result.audit_path.replace(/\\/g, "\\")   // keep Windows backslashes as-is
-        : "Output_excel_after_run/audit_report.xlsx";
-      note.textContent = `\u2713 Record added to audit report \u2192 ${auditPath}`;
-      patchWrap && patchWrap.parentElement && patchWrap.parentElement.appendChild(note);
+    // Store commit result so Review Report tab can show full patched file
+    window._commitResults = window._commitResults || {};
+    window._commitResults[wId] = {
+      afterCode,
+      runId: data.rid || "",
+      patchedCode: result.patched_code || "",
+      patchLineStart: result.patch_line_start || 0,
+      patchLineCount: result.patch_line_count || 0,
+      originalFile: result.original_file || "",
+      downloadUrl: result.download_url || "",
+      filename: result.filename || "patched.c",
+      isFullFile: result.is_full_file || false
+    };
+    // Live-update Review Report after block if card is already open
+    if (typeof _rrRefreshAfterBlock === "function") _rrRefreshAfterBlock(wId);
+    // Show small inline undo button in side panel (no browser alert)
+    if (btn && !document.getElementById("undo-inline-" + wId)) {
+      var _undoBtn = document.createElement("button");
+      _undoBtn.id = "undo-inline-" + wId;
+      _undoBtn.textContent = "↩ Undo";
+      _undoBtn.title = "Revert this fix and restore original file";
+      _undoBtn.style.cssText = "margin-left:8px;background:#dc2626;color:#fff;border:none;padding:3px 9px;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;vertical-align:middle;";
+      _undoBtn.onclick = function () { undoCommit(wId); };
+      btn.parentElement && btn.parentElement.appendChild(_undoBtn);
     }
     if (patchWrap) patchWrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
   } catch (e) {
@@ -1245,6 +1741,109 @@ window.commitFix = async function (wId) {
     console.error("Commit failed:", e);
   }
 };
+
+/* ============================================================
+   REVIEW REPORT — helpers
+   ============================================================ */
+
+// Save to Audit Excel (only from Review Report tab)
+window.rrSaveAudit = async function (wId) {
+  const committed = (window._commitResults || {})[wId];
+  const fixData = (window._fixData || {})[wId];
+  const statusEl = document.getElementById("rr-audit-status-" + wId);
+  const btn = document.getElementById("rr-save-audit-" + wId);
+  const afterCode = committed ? committed.afterCode
+    : (fixData ? extractAfterCode(fixData.fixes[fixData.selectedIdx || 0]) : "");
+  const runId = committed ? committed.runId : (fixData ? (fixData.rid || "") : "");
+  if (!afterCode || afterCode === "[fix code not available]") {
+    if (statusEl) { statusEl.style.color = "#dc2626"; statusEl.textContent = "⚠ Commit a fix first from View Results."; }
+    return;
+  }
+  if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
+  try {
+    const r = await fetch("/api/save_audit", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ warning_id: wId, patched_code: afterCode, run_id: runId })
+    });
+    const res = await r.json();
+    if (res.status === "ok") {
+      if (statusEl) { statusEl.style.color = "#065f46"; statusEl.textContent = "✓ Saved → " + (res.audit_path || "Output_excel_after_run/audit_report.xlsx"); }
+      if (btn) { btn.textContent = "✓ Saved"; btn.style.background = "#15803d"; }
+    } else {
+      if (statusEl) { statusEl.style.color = "#dc2626"; statusEl.textContent = "⚠ " + (res.message || "Save failed"); }
+      if (btn) { btn.disabled = false; btn.textContent = "💾 Save to Audit Excel"; }
+    }
+  } catch (e) {
+    if (statusEl) { statusEl.style.color = "#dc2626"; statusEl.textContent = "⚠ " + e.message; }
+    if (btn) { btn.disabled = false; btn.textContent = "💾 Save to Audit Excel"; }
+  }
+};
+
+// Undo committed fix (side panel only) — no alert(), inline feedback only
+window.undoCommit = async function (wId) {
+  const committed = (window._commitResults || {})[wId];
+  const fixData = (window._fixData || {})[wId];
+  const runId = committed ? committed.runId : (fixData ? (fixData.rid || "") : "");
+  const undoBtn = document.getElementById("undo-inline-" + wId);
+  if (undoBtn) { undoBtn.disabled = true; undoBtn.textContent = "Reverting…"; }
+  try {
+    const r = await fetch("/api/revert", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ warning_id: wId, run_id: runId })
+    });
+    const res = await r.json();
+    if (res.status === "ok") {
+      if (window._commitResults) delete window._commitResults[wId];
+      const cb = document.getElementById("commit-btn-" + wId);
+      if (cb) { cb.disabled = false; cb.textContent = "⬆ Commit Fix to File"; cb.classList.remove("committed"); }
+      const pw = document.getElementById("patched-wrap-" + wId);
+      if (pw) pw.classList.add("hidden");
+      if (undoBtn) undoBtn.remove();
+      // Small inline success text
+      const ok = document.createElement("span");
+      ok.style.cssText = "font-size:11px;color:#15803d;margin-left:8px;vertical-align:middle;";
+      ok.textContent = "✓ Reverted";
+      cb && cb.parentElement && cb.parentElement.appendChild(ok);
+      setTimeout(function () { if (ok.parentElement) ok.remove(); }, 3000);
+    } else {
+      if (undoBtn) { undoBtn.disabled = false; undoBtn.textContent = "↩ Undo"; }
+      const err = document.createElement("span");
+      err.style.cssText = "font-size:11px;color:#dc2626;margin-left:8px;vertical-align:middle;";
+      err.textContent = "⚠ " + (res.error || "Revert failed");
+      undoBtn && undoBtn.parentElement && undoBtn.parentElement.appendChild(err);
+      setTimeout(function () { if (err.parentElement) err.remove(); }, 4000);
+    }
+  } catch (e) {
+    if (undoBtn) { undoBtn.disabled = false; undoBtn.textContent = "↩ Undo"; }
+    const err = document.createElement("span");
+    err.style.cssText = "font-size:11px;color:#dc2626;margin-left:8px;vertical-align:middle;";
+    err.textContent = "⚠ " + e.message;
+    undoBtn && undoBtn.parentElement && undoBtn.parentElement.appendChild(err);
+    setTimeout(function () { if (err.parentElement) err.remove(); }, 4000);
+  }
+};
+
+// Live-update Review Report AFTER block when commit happens from side panel
+function _rrRefreshAfterBlock(wId) {
+  const committed = (window._commitResults || {})[wId];
+  if (!committed || !committed.patchedCode) return;
+  const labelEl = document.getElementById("rr-after-label-" + wId);
+  const codeEl = document.getElementById("rr-after-code-" + wId);
+  const dlEl = document.getElementById("rr-download-" + wId);
+  if (!codeEl) return; // card not open yet — will render correctly on next open
+  const pStart = committed.patchLineStart || 0;
+  const pEnd = pStart ? pStart + (committed.patchLineCount || 0) - 1 : 0;
+  codeEl.innerHTML = committed.patchedCode.split("\n").map(function (ln, i) {
+    const num = i + 1, isChg = pStart > 0 && num >= pStart && num <= pEnd;
+    return `<div class="code-row${isChg ? " patch-highlight" : ""}"><span class="ln-num">${num}</span><span class="ln-code">${escHtml(ln)}</span></div>`;
+  }).join("");
+  if (labelEl) {
+    const fn = committed.originalFile ? ` — <span style="font-weight:500;opacity:.8;">${escHtml(committed.originalFile)}</span>` : "";
+    labelEl.innerHTML = `&#128994; AFTER (COMMITTED FIX)${fn} <span style="font-size:10px;font-weight:600;background:rgba(16,185,129,.12);color:#065f46;padding:1px 8px;border-radius:10px;margin-left:4px;">&#x2713; Committed</span>`;
+  }
+  if (dlEl && committed.downloadUrl)
+    dlEl.innerHTML = `<a href="${escHtml(committed.downloadUrl)}" download="${escHtml(committed.filename || "patched.c")}" style="font-size:12px;color:var(--primary,#2563eb);text-decoration:none;display:inline-flex;align-items:center;gap:4px;">&#x2B07; Download patched file</a>`;
+}
 
 /* ============================================================
    SHARED HELPERS
