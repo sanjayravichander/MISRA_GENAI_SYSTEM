@@ -205,3 +205,38 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# --- MISRA GenAI System Custom Ignores ---
+# Application specific output & temp folders
+.autofix_backup*/
+Output_excel_after_run/
+data/_config_tmp/
+data/_upload_tmp/
+data/audit/
+data/cache/
+data/commits/
+data/output/
+data/knowledge/qdrant_index/
+data/knowledge/processed_*/
+data/knowledge/output_processed_*/
+tests/output/
+tests/processed/
+
+# System specific Virtual Env and Cache
+venv310/
+.venv/
+__pycache__/
+
+# Large Media / Binary files
+*.gguf
+*.bin
+*.pt
+*.safetensors
+C:/models/
+
+# Temp / Shortcut files
+*.lnk
+~$*.xlsx
+*.bak
+*.bak2
+# --------------------------------

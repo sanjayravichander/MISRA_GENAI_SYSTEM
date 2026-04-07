@@ -237,6 +237,107 @@ def results(run_id):
     return render_template("results.html", run_id=run_id)
 
 
+@app.route("/results/merged/<path:run_ids>")
+def results_merged(run_ids):
+    """Show a combined results page for multiple run IDs (comma-separated)."""
+    # Prepend "merged/" so MISRA_RUN_ID in JS is "merged/runA,runB"
+    # and fetch(`/api/result/${runId}`) correctly hits /api/result/merged/...
+    return render_template("results.html", run_id="merged/" + run_ids)
+
+
+# ---------------------------------------------------------------------------
+# Route — get MERGED result for multiple run IDs (comma-separated)
+# Used by View Full Report when multiple files have been analysed per-file.
+# ---------------------------------------------------------------------------
+@app.route("/api/result/merged/<path:run_ids>")
+def get_merged_result(run_ids):
+    """Merge results from multiple run_ids into one response."""
+    # Validate each run ID safely — only allow alphanumeric, underscores, hyphens.
+    # Do NOT use secure_filename() here — it strips commas and merges IDs together.
+    ids = [r.strip() for r in run_ids.split(",")
+           if r.strip() and _re.match(r'^[A-Za-z0-9_-]+$', r.strip())]
+    if not ids:
+        return jsonify(error="No run IDs provided"), 400
+
+    all_warnings = []
+    seen_wids = set()
+    total_manual = total_high = total_medium = total_low = total_cached = 0
+
+    for run_id in ids:
+        run_dir = OUTPUT_DIR / run_id
+        if not run_dir.exists():
+            continue
+
+        result_file = run_dir / "evaluated_fixes.json"
+        if not result_file.exists():
+            result_file = run_dir / "fix_suggestions.json"
+        if not result_file.exists():
+            continue
+
+        try:
+            data = json.loads(result_file.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+
+        results_list = data.get("results", [])
+
+        # Merge source_context from enriched_warnings
+        enriched_path = run_dir / "enriched_warnings.json"
+        if enriched_path.exists():
+            try:
+                enriched_data = json.loads(enriched_path.read_text(encoding="utf-8"))
+                enriched_by_id = {str(w.get("warning_id")): w for w in enriched_data.get("warnings", [])}
+                for r in results_list:
+                    wid = str(r.get("warning_id", ""))
+                    ew = enriched_by_id.get(wid)
+                    if ew:
+                        r["source_context"] = ew.get("source_context", {})
+                        for field in ("file_path", "line_start", "line_end", "message",
+                                      "severity", "rule_id", "function_name",
+                                      "checker_name", "category"):
+                            if field not in r and ew.get(field):
+                                r[field] = ew[field]
+            except Exception:
+                pass
+
+        for r in results_list:
+            wid = str(r.get("warning_id", ""))
+            if wid in seen_wids:
+                continue
+            seen_wids.add(wid)
+            # Tag each warning with its originating run_id for commit/audit actions
+            r["_run_id"] = run_id
+            all_warnings.append(r)
+
+            ev = r.get("evaluation") or r.get("evaluator_result") or {}
+            conf = str(ev.get("overall_confidence", r.get("overall_confidence", ""))).lower()
+            if conf == "high":     total_high   += 1
+            elif conf == "medium": total_medium += 1
+            else:                  total_low    += 1
+            if ev.get("needs_manual_review") or ev.get("manual_review_required"):
+                total_manual += 1
+            if r.get("_from_cache"):
+                total_cached += 1
+
+    summary = {
+        "total":  len(all_warnings),
+        "high":   total_high,
+        "medium": total_medium,
+        "low":    total_low,
+        "manual": total_manual,
+        "cached": total_cached,
+    }
+
+    return jsonify({
+        "run_id":   run_ids,
+        "status":   "done",
+        "summary":  summary,
+        "warnings": all_warnings,
+        "merged":   True,
+        "run_ids":  ids,
+    })
+
+
 # ---------------------------------------------------------------------------
 # Route — list all completed runs
 # ---------------------------------------------------------------------------
@@ -616,17 +717,70 @@ def download_file(filename):
 
 
 # ---------------------------------------------------------------------------
+# Route — Get committed patch for a warning (so Results page can show full
+#         patched file even after navigation from homepage side panel)
+# ---------------------------------------------------------------------------
+@app.route("/api/committed/<warning_id>")
+def get_committed(warning_id):
+    """Return the most recently committed patched file for a given warning_id."""
+    safe_wid   = secure_filename(str(warning_id))
+    commit_dir = PROJECT_ROOT / "data" / "commits"
+    if not commit_dir.exists():
+        return jsonify(committed=False), 200
+
+    # Find all patched_*.c files whose stem ends with the warning_id (fragile but
+    # the only link we have — filenames are patched_<stem>_<hex>.c and the warning
+    # id is stored only in the backup name orig_<wid>_<stem>.bak).
+    # Use backup file to identify which patched file belongs to this wid.
+    backups = list(commit_dir.glob(f"orig_{safe_wid}_*.bak"))
+    if not backups:
+        return jsonify(committed=False), 200
+
+    # Find the most recent patched file that was written after the latest backup
+    latest_backup = max(backups, key=lambda p: p.stat().st_mtime)
+    backup_stem   = latest_backup.stem[len(f"orig_{safe_wid}_"):]  # e.g. "main"
+    # patched files matching this source stem
+    candidates = list(commit_dir.glob(f"patched_{backup_stem}_*.c"))
+    if not candidates:
+        # Try broader match
+        candidates = list(commit_dir.glob("patched_*.c"))
+    if not candidates:
+        return jsonify(committed=False), 200
+
+    latest_patch = max(candidates, key=lambda p: p.stat().st_mtime)
+    try:
+        patched_code = latest_patch.read_text(encoding="utf-8", errors="replace")
+    except Exception:
+        return jsonify(committed=False), 200
+
+    return jsonify({
+        "committed":      True,
+        "patched_code":   patched_code,
+        "filename":       latest_patch.name,
+        "download_url":   f"/api/download/{latest_patch.name}",
+        "original_file":  backup_stem + ".c",
+    })
+
+
+# ---------------------------------------------------------------------------
 # Route — Save audit Excel (manually triggered from Review Report tab)
 # ---------------------------------------------------------------------------
 @app.route("/api/save_audit", methods=["POST"])
 def save_audit():
-    body       = request.get_json(force=True) or {}
-    warning_id = str(body.get("warning_id", "unknown"))
-    run_id     = str(body.get("run_id", ""))
-    patched    = body.get("patched_code", "")
+    body             = request.get_json(force=True) or {}
+    warning_id       = str(body.get("warning_id", "unknown"))
+    run_id           = str(body.get("run_id", ""))
+    all_fixes        = body.get("all_fixes", [])
+    chosen_fix_index = body.get("chosen_fix_index")
+    chosen_fix_code  = body.get("chosen_fix_code", "")
+    fixed_code_full  = body.get("fixed_code_full", "")
+    user_edited_code = body.get("user_edited_code", "")
+    is_no_change     = bool(body.get("is_no_change", False))
+    was_user_edited  = bool(body.get("was_user_edited", False))
 
     # Build violated_code from enriched warnings
     violated_code = ""
+    file_name     = ""
     if run_id:
         try:
             rdir = OUTPUT_DIR / secure_filename(run_id)
@@ -638,166 +792,464 @@ def save_audit():
                     if str(wx.get("warning_id")) == str(warning_id):
                         sc = wx.get("source_context", {})
                         violated_code = sc.get("context_text", "") if isinstance(sc, dict) else str(sc)
+                        fp = wx.get("file_path", "")
+                        file_name = Path(fp).name if fp else ""
                         break
         except Exception:
             pass
 
-    ok = _update_audit_excel(warning_id, run_id, violated_code, patched)
+    ok = _update_audit_excel(
+        warning_id=warning_id,
+        run_id=run_id,
+        file_name=file_name,
+        violated_code=violated_code,
+        all_fixes=all_fixes,
+        chosen_fix_index=chosen_fix_index,
+        chosen_fix_code=chosen_fix_code,
+        fixed_code_full=fixed_code_full,
+        user_edited_code=user_edited_code,
+        is_no_change=is_no_change,
+        was_user_edited=was_user_edited,
+    )
     if ok:
         return jsonify({"status": "ok", "audit_path": str(AUDIT_EXCEL)})
     return jsonify({"status": "error", "message": "Failed to update audit Excel"}), 500
 
 
 # ---------------------------------------------------------------------------
-# Route — Revert committed fix (restore original source from backup)
+# Audit Excel — two-sheet design:
+#   Sheet 1 "Warning Details"  : one row per warning number
+#   Sheet 2 "File Summary"     : one row per source file, aggregating all warnings
 # ---------------------------------------------------------------------------
-@app.route("/api/revert", methods=["POST"])
-def revert_fix():
-    body       = request.get_json(force=True) or {}
-    warning_id = str(body.get("warning_id", ""))
-    run_id     = str(body.get("run_id", ""))
+SOURCE_EXCEL = (PROJECT_ROOT / "data" / "input" / "warning_reports" / "mock_warning_report.xlsx")
 
-    if not warning_id:
-        return jsonify(error="No warning_id provided"), 400
+# Columns appended after the dynamic Fix N columns on Sheet 1
+_DETAIL_EXTRA = [
+    "Chosen Fix",
+    "Chosen Fix Code",
+    "Violated Source Code",
+    "Fixed Code (Full File)",
+    "User Edited & Committed",
+    "Audit Status",
+    "Run ID",
+    "Timestamp",
+]
 
-    safe_wid   = secure_filename(warning_id)
-    commit_dir = PROJECT_ROOT / "data" / "commits"
+# Fixed columns on Sheet 2 (File Summary)
+_SUMMARY_COLS = [
+    "Source File",
+    "Total Warnings",
+    "Warning Numbers",
+    "Rules Violated",
+    "Warnings Detail",
+    "Full Fixed Source File",
+    "Fix Summary",
+    "Last Updated",
+]
 
-    # Find backup files for this warning
-    backups = list(commit_dir.glob(f"orig_{safe_wid}_*.bak"))
-    if not backups:
-        return jsonify(error="No backup found for this warning — cannot revert"), 404
-
-    backup_path = backups[0]
-    # Derive original stem from backup filename: orig_<wid>_<stem>.bak
-    stem = backup_path.stem[len(f"orig_{safe_wid}_"):]
-
-    # Search upload dirs for the live source file
-    exact_job_id = run_id.split("_")[-1] if run_id else ""
-    search_roots = []
-    if exact_job_id and UPLOAD_DIR.exists():
-        d = UPLOAD_DIR / exact_job_id
-        if d.exists(): search_roots += [d / "source_code", d]
-    if UPLOAD_DIR.exists():
-        for d in sorted(UPLOAD_DIR.iterdir(), reverse=True):
-            if d.is_dir() and d.name != exact_job_id:
-                search_roots += [d / "source_code", d]
-    _tmp = PROJECT_ROOT / "data" / "_upload_tmp"
-    if _tmp.exists():
-        for d in sorted(_tmp.iterdir(), reverse=True):
-            if d.is_dir(): search_roots += [d / "source", d]
-
-    restored = False
-    for root in search_roots:
-        for ext in [".c", ".h"]:
-            candidate = root / (stem + ext)
-            if candidate.exists():
-                shutil.copy2(str(backup_path), str(candidate))
-                restored = True
-                break
-        if restored: break
-
-    if not restored:
-        return jsonify(error="Could not find original source file to restore"), 404
-
-    return jsonify({"status": "ok", "message": "File reverted to original"})
+# Stale column names from the old schema — if present, we rebuild the workbook
+_STALE_COLS = {"Violated Code", "Fixed Code", "Status"}
 
 
-# ---------------------------------------------------------------------------
-# Audit Excel log
-# ---------------------------------------------------------------------------
-def _update_audit_excel(warning_id: str, run_id: str,
-                         violated_code: str, fixed_code: str) -> bool:
-    """Upsert a row for warning_id in the audit Excel report.
-    Returns True on success, False on failure (failure is also logged).
-    The AUDIT_EXCEL folder is guaranteed to exist (created at server startup).
+def _load_or_init_workbook():
+    """
+    Load the audit workbook, rebuilding from scratch if it has the old stale schema.
+    Always returns (wb, ws_detail, ws_summary).
     """
     import openpyxl
-    from openpyxl import Workbook
+    from openpyxl import load_workbook, Workbook
+    import shutil as _shutil
 
-    COLS = ["Warning Number", "Category", "Rule", "Message",
-            "File", "Function", "Violated Code", "Fixed Code",
-            "Run ID", "Status", "Timestamp"]
+    def _fresh_wb():
+        """Create a brand-new workbook seeded from source Excel."""
+        wb = Workbook()
+        ws1 = wb.active
+        ws1.title = "Warning Details"
+        ws2 = wb.create_sheet("File Summary")
+
+        # Seed Warning Details headers from source Excel columns
+        base_headers = ["Warning Number", "Category", "Rule", "Message", "File", "Function"]
+        if SOURCE_EXCEL.exists():
+            try:
+                src_wb = load_workbook(str(SOURCE_EXCEL), read_only=True)
+                src_ws = src_wb.active
+                src_headers = [str(c.value).strip() for c in src_ws[1] if c.value]
+                if src_headers:
+                    base_headers = src_headers
+                src_wb.close()
+            except Exception:
+                pass
+
+        for i, h in enumerate(base_headers, 1):
+            ws1.cell(row=1, column=i, value=h)
+
+        # Seed Warning Details rows from source Excel data
+        if SOURCE_EXCEL.exists():
+            try:
+                src_wb2 = load_workbook(str(SOURCE_EXCEL), read_only=True)
+                src_ws2 = src_wb2.active
+                for row in src_ws2.iter_rows(min_row=2, values_only=True):
+                    if any(v is not None for v in row):
+                        ws1.append(list(row))
+                src_wb2.close()
+            except Exception:
+                pass
+
+        # File Summary headers
+        for i, h in enumerate(_SUMMARY_COLS, 1):
+            ws2.cell(row=1, column=i, value=h)
+
+        return wb, ws1, ws2
+
+    if AUDIT_EXCEL.exists():
+        try:
+            wb = load_workbook(str(AUDIT_EXCEL))
+            ws1 = wb["Warning Details"] if "Warning Details" in wb.sheetnames else wb.active
+            # Check for stale schema
+            existing_headers = {str(c.value).strip() for c in ws1[1] if c.value}
+            if existing_headers & _STALE_COLS:
+                app.logger.info("Audit Excel has stale schema — rebuilding from source")
+                wb.close()
+                AUDIT_EXCEL.unlink()
+                wb, ws1, ws2 = _fresh_wb()
+            else:
+                ws2 = wb["File Summary"] if "File Summary" in wb.sheetnames else wb.create_sheet("File Summary")
+                if ws2.max_row < 1 or ws2.cell(1, 1).value != "Source File":
+                    for i, h in enumerate(_SUMMARY_COLS, 1):
+                        ws2.cell(row=1, column=i, value=h)
+        except Exception:
+            wb, ws1, ws2 = _fresh_wb()
+    else:
+        wb, ws1, ws2 = _fresh_wb()
+
+    return wb, ws1, ws2
+
+
+def _update_audit_excel(
+    warning_id: str,
+    run_id: str,
+    file_name: str,
+    violated_code: str,
+    all_fixes: list,
+    chosen_fix_index,
+    chosen_fix_code: str,
+    fixed_code_full: str,
+    user_edited_code: str,
+    is_no_change: bool,
+    was_user_edited: bool,
+) -> bool:
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from openpyxl.utils import get_column_letter
+    import json as _json
+    import datetime
+
+    HDR_FONT  = Font(bold=True, color="FFFFFF", name="Arial", size=10)
+    HDR_FILL  = PatternFill("solid", start_color="1E3A5F")
+    HDR_ALIGN = Alignment(wrap_text=True, vertical="center", horizontal="center")
+    CELL_FONT = Font(name="Arial", size=9)
+    MONO_FONT = Font(name="Courier New", size=8)
+
+    def _sh(cell):
+        cell.font = HDR_FONT; cell.fill = HDR_FILL; cell.alignment = HDR_ALIGN
 
     try:
-        # Load or create workbook
-        if AUDIT_EXCEL.exists():
-            wb = openpyxl.load_workbook(str(AUDIT_EXCEL))
-            ws = wb.active
-            headers = [c.value for c in ws[1]]
-            # Add any missing columns to the right
-            for col in COLS:
-                if col not in headers:
-                    ws.cell(row=1, column=len(headers) + 1, value=col)
-                    headers.append(col)
-        else:
-            wb = Workbook()
-            ws = wb.active
-            ws.title = "MISRA Audit"
-            for i, h in enumerate(COLS, 1):
-                ws.cell(row=1, column=i, value=h)
-            headers = list(COLS)
+        wb, ws1, ws2 = _load_or_init_workbook()
+
+        # ── SHEET 1: Warning Details ──────────────────────────────────────────
+
+        # Read current headers
+        headers = [str(c.value).strip() if c.value is not None else "" for c in ws1[1]]
 
         def col_idx(name):
-            try:
-                return headers.index(name) + 1
-            except ValueError:
-                return None
+            try:    return headers.index(name) + 1
+            except: return None
 
-        wid_col = col_idx("Warning Number")
+        def ensure_col(name, before_idx=None):
+            if name in headers:
+                return headers.index(name) + 1
+            if before_idx and 1 <= before_idx <= len(headers) + 1:
+                ws1.insert_cols(before_idx)
+                cell = ws1.cell(row=1, column=before_idx, value=name)
+                _sh(cell)
+                headers.insert(before_idx - 1, name)
+                return before_idx
+            new_col = len(headers) + 1
+            cell = ws1.cell(row=1, column=new_col, value=name)
+            _sh(cell)
+            headers.append(name)
+            return new_col
+
+        # Style existing header cells (idempotent)
+        for col_num in range(1, len(headers) + 1):
+            c = ws1.cell(row=1, column=col_num)
+            if not c.font or not c.font.bold:
+                _sh(c)
+
+        # Determine max fix count needed (across new payload + existing headers)
+        max_fix_new = max((f.get("index", 0) for f in all_fixes), default=0)
+        existing_max = max(
+            (int(h[4:].strip()) for h in headers if h.startswith("Fix ") and h[4:].strip().isdigit()),
+            default=0,
+        )
+        max_fix = max(max_fix_new, existing_max)
+
+        # Ensure Fix N columns, inserted BEFORE the first fixed-extra column
+        for fix_num in range(1, max_fix + 1):
+            col_name = f"Fix {fix_num}"
+            if col_name not in headers:
+                fp = next((headers.index(fe) + 1 for fe in _DETAIL_EXTRA if fe in headers), None)
+                ensure_col(col_name, before_idx=fp)
+
+        # Ensure fixed extra columns at far right
+        for fe in _DETAIL_EXTRA:
+            ensure_col(fe)
+
+        # Find existing row for this warning_id (upsert)
+        wid_col    = col_idx("Warning Number")
         target_row = None
         if wid_col:
-            for row in ws.iter_rows(min_row=2):
-                if str(row[wid_col - 1].value) == str(warning_id):
+            for row in ws1.iter_rows(min_row=2):
+                cv = row[wid_col - 1].value
+                if cv is not None and str(cv).strip() == str(warning_id).strip():
                     target_row = row[0].row
                     break
+        if target_row is None:
+            target_row = ws1.max_row + 1
 
-        # Pull extra fields from enriched_warnings if available
-        run_dir       = OUTPUT_DIR / run_id
-        enriched_path = run_dir / "enriched_warnings.json"
+        # Pull enriched metadata
         ew = {}
-        if enriched_path.exists():
-            import json as _json
-            edata = _json.loads(enriched_path.read_text(encoding="utf-8"))
-            for w in edata.get("warnings", []):
-                if str(w.get("warning_id")) == str(warning_id):
-                    ew = w
-                    break
+        try:
+            if run_id:
+                ep = OUTPUT_DIR / secure_filename(run_id) / "enriched_warnings.json"
+                if ep.exists():
+                    ed = _json.loads(ep.read_text(encoding="utf-8"))
+                    for w in ed.get("warnings", []):
+                        if str(w.get("warning_id")) == str(warning_id):
+                            ew = w
+                            break
+        except Exception:
+            pass
 
-        import datetime
-        row_data = {
+        def wc1(col_name, value, mono=False, bg=None, bold=False):
+            ci = col_idx(col_name)
+            if not ci:
+                return
+            cell = ws1.cell(row=target_row, column=ci, value=value)
+            cell.alignment = Alignment(wrap_text=True, vertical="top")
+            cell.font = Font(name="Courier New" if mono else "Arial",
+                             size=8 if mono else 9, bold=bold)
+            if bg:
+                cell.fill = PatternFill("solid", start_color=bg)
+
+        # Write base columns (only if blank or we have enriched data)
+        base = {
             "Warning Number": warning_id,
-            "Category":       ew.get("severity", ""),
-            "Rule":           ew.get("rule_id", ""),
-            "Message":        ew.get("message", ""),
-            "File":           ew.get("file_path", ""),
-            "Function":       ew.get("function_name", ""),
-            "Violated Code":  violated_code,
-            "Fixed Code":     fixed_code,
-            "Run ID":         run_id,
-            "Status":         "Fixed",
-            "Timestamp":      datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "Category":       ew.get("category") or ew.get("severity") or "",
+            "Rule":           ew.get("rule_id") or "",
+            "Message":        ew.get("message") or "",
+            "File":           ew.get("file_path") or file_name or "",
+            "Function":       ew.get("function_name") or "",
         }
+        for col_name, value in base.items():
+            ci = col_idx(col_name)
+            if not ci:
+                continue
+            existing = ws1.cell(row=target_row, column=ci).value
+            if not existing or (value and str(value) != str(existing)):
+                wc1(col_name, value)
 
-        if target_row:
-            for col_name, value in row_data.items():
-                ci = col_idx(col_name)
+        # Write dynamic Fix columns
+        fix_by_index = {f.get("index"): f for f in all_fixes}
+        for fix_num in range(1, max_fix + 1):
+            fix = fix_by_index.get(fix_num)
+            if fix:
+                fix_text = f"[{fix.get('title', 'Fix ' + str(fix_num))}]\n{fix.get('code', '')}"
+                ci = col_idx(f"Fix {fix_num}")
                 if ci:
-                    ws.cell(row=target_row, column=ci, value=value)
-        else:
-            new_row = [row_data.get(h, "") for h in headers]
-            ws.append(new_row)
+                    cell = ws1.cell(row=target_row, column=ci, value=fix_text)
+                    cell.alignment = Alignment(wrap_text=True, vertical="top")
+                    cell.font = MONO_FONT
+                    cell.fill = PatternFill("solid", start_color="EFF6FF")
 
+        # Audit status
+        if is_no_change:
+            audit_status = "No Change Applied"; chosen_lbl = "No Change Applied"; sbg = "FFF9C4"
+        elif was_user_edited:
+            audit_status = "User Edited & Committed"; chosen_lbl = "User Edited"; sbg = "FFF3E0"
+        elif chosen_fix_index:
+            audit_status = f"Fix {chosen_fix_index} Committed"; chosen_lbl = f"Fix {chosen_fix_index}"; sbg = "E8F5E9"
+        else:
+            audit_status = "Pending"; chosen_lbl = "Pending"; sbg = "F3F4F6"
+
+        wc1("Chosen Fix",              chosen_lbl)
+        wc1("Chosen Fix Code",         chosen_fix_code,   mono=True)
+        wc1("Violated Source Code",    violated_code,     mono=True, bg="FFF5F5")
+        wc1("Fixed Code (Full File)",  fixed_code_full,   mono=True, bg="F0FDF4")
+        wc1("User Edited & Committed", user_edited_code,  mono=True,
+            bg="FFF3E0" if user_edited_code else None)
+        wc1("Audit Status",            audit_status,      bg=sbg, bold=True)
+        wc1("Run ID",                  run_id)
+        wc1("Timestamp",               datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+
+        ws1.row_dimensions[target_row].height = 100
+        ws1.row_dimensions[1].height = 32
+
+        for col_num in range(1, len(headers) + 1):
+            letter = get_column_letter(col_num)
+            hdr    = headers[col_num - 1]
+            if any(k in hdr for k in ["Fix", "Code", "Violated", "Edited", "Full"]):
+                ws1.column_dimensions[letter].width = 55
+            else:
+                ws1.column_dimensions[letter].width = max(len(hdr) + 4, 16)
+
+        ws1.freeze_panes = "A2"
+
+        # ── SHEET 2: File Summary ─────────────────────────────────────────────
+        # Collect all data from Sheet 1 grouped by source file
+
+        # Resolve column indices on Sheet 1
+        h1 = [str(c.value).strip() if c.value else "" for c in ws1[1]]
+
+        def ci1(name):
+            try: return h1.index(name) + 1
+            except: return None
+
+        file_col   = ci1("File")
+        wnum_col   = ci1("Warning Number")
+        rule_col   = ci1("Rule")
+        msg_col    = ci1("Message")
+        viol_col   = ci1("Violated Source Code")
+        fixed_col  = ci1("Fixed Code (Full File)")
+        status_col = ci1("Audit Status")
+        chosen_col = ci1("Chosen Fix")
+        func_col   = ci1("Function")
+
+        # Group rows by source file
+        from collections import defaultdict
+        file_groups = defaultdict(list)
+        for row_num in range(2, ws1.max_row + 1):
+            fn_raw = ws1.cell(row_num, file_col).value if file_col else None
+            if fn_raw is None:
+                continue
+            fn = Path(str(fn_raw)).name
+            file_groups[fn].append(row_num)
+
+        # Read File Summary sheet headers
+        h2 = [str(c.value).strip() if c.value else "" for c in ws2[1]]
+
+        def ensure_sum_col(name):
+            if name not in h2:
+                nc = len(h2) + 1
+                cell = ws2.cell(row=1, column=nc, value=name)
+                _sh(cell)
+                h2.append(name)
+            return h2.index(name) + 1
+
+        for sc_name in _SUMMARY_COLS:
+            ensure_sum_col(sc_name)
+
+        # Style File Summary headers
+        for col_num in range(1, len(h2) + 1):
+            c = ws2.cell(row=1, column=col_num)
+            if not c.font or not c.font.bold:
+                _sh(c)
+
+        def ci2(name):
+            try: return h2.index(name) + 1
+            except: return None
+
+        # Find or create File Summary row for each source file
+        sf_col = ci2("Source File")
+        for fn, row_nums in file_groups.items():
+            # Find existing summary row for this file
+            sum_row = None
+            if sf_col:
+                for r in range(2, ws2.max_row + 1):
+                    if str(ws2.cell(r, sf_col).value or "").strip() == fn:
+                        sum_row = r
+                        break
+            if sum_row is None:
+                sum_row = ws2.max_row + 1
+
+            # Gather data from all warning rows for this file
+            warn_nums   = []
+            rules       = []
+            warn_detail = []
+            full_fixed  = ""  # latest non-empty full-file patch for this file
+            fix_summary = []
+
+            for rn in row_nums:
+                wn = ws1.cell(rn, wnum_col).value if wnum_col else ""
+                rl = ws1.cell(rn, rule_col).value if rule_col else ""
+                mg = ws1.cell(rn, msg_col).value if msg_col else ""
+                fn2 = ws1.cell(rn, func_col).value if func_col else ""
+                ff = ws1.cell(rn, fixed_col).value if fixed_col else ""
+                st = ws1.cell(rn, status_col).value if status_col else ""
+                ch = ws1.cell(rn, chosen_col).value if chosen_col else ""
+
+                if wn is not None:
+                    warn_nums.append(str(wn))
+                if rl:
+                    rules.append(str(rl))
+                # Prefer the most recent non-empty full file content
+                if ff and str(ff).strip():
+                    full_fixed = str(ff)
+                detail_line = f"#{wn} [{rl}] {mg}"
+                if fn2:
+                    detail_line += f" (in {fn2})"
+                warn_detail.append(detail_line)
+                if st and st != "Pending":
+                    fix_summary.append(f"#{wn}: {ch} — {st}")
+
+            def wc2(col_name, value, mono=False, bg=None, bold=False):
+                ci = ci2(col_name)
+                if not ci: return
+                cell = ws2.cell(row=sum_row, column=ci, value=value)
+                cell.alignment = Alignment(wrap_text=True, vertical="top")
+                cell.font = Font(name="Courier New" if mono else "Arial",
+                                 size=8 if mono else 9, bold=bold)
+                if bg:
+                    cell.fill = PatternFill("solid", start_color=bg)
+
+            wc2("Source File",            fn, bold=True)
+            wc2("Total Warnings",         len(warn_nums))
+            wc2("Warning Numbers",        ", ".join(warn_nums))
+            wc2("Rules Violated",         "\n".join(sorted(set(rules))))
+            wc2("Warnings Detail",        "\n".join(warn_detail))
+            wc2("Full Fixed Source File", full_fixed, mono=True, bg="F0FDF4")
+            wc2("Fix Summary",            "\n".join(fix_summary) if fix_summary else "Pending")
+            wc2("Last Updated",
+                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+
+            ws2.row_dimensions[sum_row].height = max(80, len(row_nums) * 30)
+
+        ws2.row_dimensions[1].height = 32
+        ws2.freeze_panes = "A2"
+
+        # Auto-size File Summary columns
+        for col_num in range(1, len(h2) + 1):
+            letter = get_column_letter(col_num)
+            hdr    = h2[col_num - 1]
+            if any(k in hdr for k in ["Fixed", "Detail", "Summary"]):
+                ws2.column_dimensions[letter].width = 70
+            elif "File" in hdr:
+                ws2.column_dimensions[letter].width = 25
+            else:
+                ws2.column_dimensions[letter].width = max(len(hdr) + 4, 18)
+
+        # ── Save ─────────────────────────────────────────────────────────────
         wb.save(str(AUDIT_EXCEL))
-        app.logger.info(f"Audit Excel updated → {AUDIT_EXCEL}")
+        app.logger.info(f"Audit Excel saved -> {AUDIT_EXCEL} (warning {warning_id})")
         return True
 
     except Exception as exc:
-        app.logger.error(f"Audit Excel update FAILED for warning {warning_id}: {exc}")
+        import traceback
+        app.logger.error(
+            f"Audit Excel FAILED for warning {warning_id}: {exc}\n{traceback.format_exc()}"
+        )
         return False
 
 
-# ---------------------------------------------------------------------------
 # Helper — apply rule config filter to uploaded Excel before analysis
 # ---------------------------------------------------------------------------
 def _filter_excel_by_rules(src_excel: Path, rule_selected: list,
@@ -869,6 +1321,62 @@ def _filter_excel_by_rules(src_excel: Path, rule_selected: list,
 
     filtered_path = src_excel.parent / ("filtered_" + src_excel.name)
     wb2.save(str(filtered_path))
+    return filtered_path
+
+
+# ---------------------------------------------------------------------------
+# Helper — filter Excel rows to only those referencing the requested source files
+# ---------------------------------------------------------------------------
+def _filter_excel_by_filenames(excel_path: Path, run_filenames: list) -> Path:
+    """Keep only Excel rows whose File column (basename) matches one of the
+    requested filenames.  Returns the original path if filtering is impossible
+    or produces an empty result (fail-safe pass-through)."""
+    if not run_filenames:
+        return excel_path
+
+    import openpyxl
+    wb = openpyxl.load_workbook(str(excel_path))
+    ws = wb.active
+    headers = [str(c.value).strip().lower() if c.value else "" for c in ws[1]]
+
+    # Find the File column
+    file_col = next((i for i, h in enumerate(headers) if "file" in h), None)
+    if file_col is None:
+        return excel_path  # can't filter — pass through
+
+    # Normalise requested names to basenames (case-insensitive)
+    from pathlib import Path as _Path
+    requested = set(_Path(f).name.lower() for f in run_filenames)
+
+    keep_rows = []
+    for row in ws.iter_rows(min_row=2, values_only=True):
+        cell_val = str(row[file_col] or "").strip()
+        # Compare basename only, case-insensitive
+        cell_base = _Path(cell_val).name.lower() if cell_val else ""
+        if cell_base in requested:
+            keep_rows.append(row)
+
+    if not keep_rows:
+        # No rows match — pass through unfiltered so the pipeline doesn't see 0 records
+        app.logger.warning(
+            f"[filter_files] No Excel rows matched filenames {run_filenames} — running unfiltered"
+        )
+        return excel_path
+
+    # Build filtered workbook
+    from openpyxl import Workbook
+    wb2 = Workbook()
+    ws2 = wb2.active
+    ws2.title = ws.title or "Filtered"
+    ws2.append([c.value for c in ws[1]])   # header
+    for row in keep_rows:
+        ws2.append(list(row))
+
+    filtered_path = excel_path.parent / ("byfile_" + excel_path.name)
+    wb2.save(str(filtered_path))
+    app.logger.info(
+        f"[filter_files] Kept {len(keep_rows)} rows for {run_filenames} → {filtered_path.name}"
+    )
     return filtered_path
 
 
@@ -1060,12 +1568,21 @@ def start_analysis():
         if not session_dir.exists():
             return jsonify(error="Upload session not found — please re-upload your files"), 400
 
-        # Find the excel file in the session dir
-        excel_candidates = [p for p in session_dir.iterdir()
-                            if p.suffix.lower() in ALLOWED_EXCEL]
-        if not excel_candidates:
+        # Find the excel file in the session dir.
+        # IMPORTANT: always prefer the ORIGINAL uploaded file (no byfile_/filtered_ prefix).
+        # On Windows, iterdir() may return byfile_mock_warning_report.xlsx before
+        # mock_warning_report.xlsx — using a stale byfile_ as excel_path causes
+        # _filter_excel_by_filenames to produce byfile_byfile_... and the orchestrator
+        # gets served 0 rows from the stale file (root cause of the uninit_read.c bug).
+        all_excels = [p for p in session_dir.iterdir()
+                      if p.suffix.lower() in ALLOWED_EXCEL]
+        if not all_excels:
             return jsonify(error="Warning report not found in upload session"), 400
-        excel_path = excel_candidates[0]
+        # Prefer originals: files NOT starting with byfile_ or filtered_
+        original_excels = [p for p in all_excels
+                           if not p.name.startswith("byfile_")
+                           and not p.name.startswith("filtered_")]
+        excel_path = original_excels[0] if original_excels else all_excels[0]
 
         # Determine which .c files to run (subset or all)
         run_files = request.form.getlist("run_filenames")
@@ -1079,9 +1596,21 @@ def start_analysis():
         if not saved_c:
             return jsonify(error="No matching source files found in upload session"), 400
 
-        # Create a new job_id/run_id but reuse the same src_dir
+        # Create a new job_id/run_id
+        # Bug 1 fix: if only specific files were requested, copy them to a temp dir
+        # so the orchestrator only processes those files and not the entire src_dir
         job_id = str(uuid.uuid4())[:8]
         run_id = time.strftime("%Y%m%d_%H%M%S") + "_" + job_id
+        if run_files and len(saved_c) < len([p for p in src_dir.iterdir() if p.suffix.lower() in ALLOWED_C]):
+            # Create a temp source dir containing only the requested files
+            import tempfile as _tmpmod
+            tmp_src_dir = Path(_tmpmod.mkdtemp(prefix="misra_run_"))
+            for _fn in saved_c:
+                _src_file = src_dir / _fn
+                if _src_file.exists():
+                    import shutil as _shutil
+                    _shutil.copy2(str(_src_file), str(tmp_src_dir / _fn))
+            src_dir = tmp_src_dir
 
     else:
         # ── Standard path: fresh file upload ──
@@ -1114,7 +1643,7 @@ def start_analysis():
         if not saved_c:
             return jsonify(error="No valid .c / .h files received"), 400
 
-    # Apply rule config filter — keep only selected rules, apply overrides
+        run_files = []  # fresh upload always runs all files
     import json as _json
     try:
         rule_selected  = _json.loads(request.form.get("rule_selected", "[]"))
@@ -1123,10 +1652,23 @@ def start_analysis():
         rule_selected  = []
         rule_overrides = {}
 
-    # Optional: resume from a previous run so Phase 7 cache hits skip re-generation
-    resume_run_id = request.form.get("resume_run_id", "").strip()
+    # Optional: resume from a previous run so Phase 7 cache hits skip re-generation.
+    # SAFETY: only honour resume when NOT running a specific-file subset — using it
+    # for a different file causes the orchestrator to re-emit cached wids from the
+    # previous run, which then get mapped to the new run_id → "Record not found".
+    resume_run_id = ""  # disabled per-file-run; kept as empty to preserve CLI compat
 
-    filtered_excel = _filter_excel_by_rules(excel_path, rule_selected, rule_overrides)
+    # Filter rows to only those referencing the requested source files FIRST
+    # (applied to the original excel_path to avoid double-prefix "byfile_byfile_" bug).
+    # If we applied rule filter first and then filename filter, the filename filter
+    # would create "byfile_filtered_..." while the orchestrator path still pointed to
+    # the old stale "byfile_mock_warning_report.xlsx" from a previous run.
+    if run_files:
+        byfile_excel = _filter_excel_by_filenames(excel_path, run_files)
+    else:
+        byfile_excel = excel_path
+    # Then apply rule config filter on top of the filename-filtered result
+    filtered_excel = _filter_excel_by_rules(byfile_excel, rule_selected, rule_overrides)
     warnings_filtered = len(rule_selected) > 0
     filtered_count = 0
     if warnings_filtered and filtered_excel != excel_path:
