@@ -2834,8 +2834,6 @@ a:hover {
     flex-direction: column;
     gap: 6px;
     margin: 8px 0 0;
-    max-height: 520px;
-    overflow-y: auto;
     padding-right: 2px;
     scroll-behavior: smooth;
 }
@@ -4712,13 +4710,13 @@ body.pr-panel-open {
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-    border: none;
+    background: #f1f5f9;
+    border: 1.5px solid #cbd5e1;
     border-radius: 10px;
     padding: 10px 14px;
     margin: 16px 0 5px;
-    box-shadow: 0 2px 8px rgba(15, 23, 42, .18);
-    color: #fff;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, .06);
+    color: #1e293b;
 }
 
 .pr-fhdr-left {
@@ -4730,7 +4728,7 @@ body.pr-panel-open {
 
 .pr-fhdr-left>svg {
     flex-shrink: 0;
-    color: #94a3b8;
+    color: #475569;
 }
 
 .pr-fhdr-name {
@@ -4738,7 +4736,7 @@ body.pr-panel-open {
     font-weight: 700;
     letter-spacing: .04em;
     text-transform: uppercase;
-    color: #f1f5f9;
+    color: #1e293b;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -4747,11 +4745,11 @@ body.pr-panel-open {
 .pr-fhdr-badge {
     font-size: 10px;
     font-weight: 600;
-    background: rgba(255, 255, 255, .1);
-    color: #94a3b8;
+    background: rgba(30, 41, 59, .08);
+    color: #475569;
     padding: 1px 8px;
     border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, .1);
+    border: 1px solid rgba(30, 41, 59, .15);
     white-space: nowrap;
     flex-shrink: 0;
 }
@@ -4766,13 +4764,13 @@ body.pr-panel-open {
 .pr-fhdr-status {
     font-size: 10px;
     font-weight: 700;
-    color: #10b981;
+    color: #059669;
     letter-spacing: .02em;
     white-space: nowrap;
 }
 
 .pr-fhdr-running {
-    color: #f59e0b;
+    color: #b45309;
     animation: fhdr-pulse-text 1.5s ease-in-out infinite;
 }
 
@@ -4794,12 +4792,12 @@ body.pr-panel-open {
 .pr-file-group-hdr-collapsible {
     cursor: pointer;
     user-select: none;
-    transition: box-shadow .15s, transform .12s;
+    transition: box-shadow .15s, background .15s;
 }
 
 .pr-file-group-hdr-collapsible:hover {
-    box-shadow: 0 4px 14px rgba(15, 23, 42, .28);
-    transform: translateY(-1px);
+    background: #e2e8f0;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, .1);
 }
 
 .pr-file-group-hdr-collapsible:active {
@@ -4809,7 +4807,7 @@ body.pr-panel-open {
 .pr-file-grp-chevron {
     flex-shrink: 0;
     transition: transform 0.22s cubic-bezier(.4, 0, .2, 1);
-    color: #64748b;
+    color: #475569;
 }
 
 .sp-edit-btn {

@@ -191,10 +191,25 @@ def phase_7_generate(
 
         t0 = time.time()
         try:
+            # Build code snippet — synthesize a minimal stub if source unavailable
+            _raw_snippet = w.get("source_context", {}).get("context_text", "")
+            if not _raw_snippet or _raw_snippet.startswith("[Source file not found"):
+                _fn   = w.get("function_name", "func")
+                _fp   = w.get("file_path", "source.c")
+                _msg  = w.get("message", "")
+                _rule = w.get("rule_id", "")
+                _raw_snippet = (
+                    f"/* Warning: {_msg} */\n"
+                    f"/* Rule: {_rule} in function '{_fn}' of {_fp} */\n"
+                    f"/* Source file not uploaded — fix the flagged construct below */\n"
+                    f"void {_fn}(/* params */) {{\n"
+                    f"    /* TODO: apply {_rule} fix here */\n"
+                    f"}}"
+                )
             bundle = generate_misra_response(
                 rule_id=w.get("rule_id", ""),
                 warning_message=w.get("message", ""),
-                code_snippet=w.get("source_context", {}).get("context_text", ""),
+                code_snippet=_raw_snippet,
                 checker_name=w.get("checker_name", ""),
                 config=config,
                 top_k=5,

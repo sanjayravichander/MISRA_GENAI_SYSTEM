@@ -681,10 +681,15 @@ function initIndexPage() {
 
     const fd = new FormData();
 
-    // Send rule config — selected rules + overrides as filter
-    const ruleSelected = [..._ruleState.selected];
+    // Send rule config — deselected rules are excluded from the run
+    // All rules start selected; user unchecks rules they want to skip
+    const allRuleIds = RULES_DATA.filter(r => !r.is_dir).map(r => r.id);
+    const selectedRules = [..._ruleState.selected];
+    // If all rules selected (or none deselected) → no filter needed
+    const deselectedRules = allRuleIds.filter(id => !_ruleState.selected.has(id));
+    // Send selected rules as the RUN list (server keeps only these)
+    fd.append("rule_selected", JSON.stringify(selectedRules));
     const ruleOverrides = _ruleState.overrides;
-    fd.append("rule_selected", JSON.stringify(ruleSelected));
     fd.append("rule_overrides", JSON.stringify(ruleOverrides));
 
     if (uploadSessionId) {
@@ -1284,7 +1289,15 @@ function initIndexPage() {
         if (_sdot) { _sdot.style.background = "#10b981"; _sdot.style.animation = "none"; }
         if (_slbl) _slbl.textContent = "Report Ready";
 
-        /* Update live file-group header status badge to ✓ Done */
+        /* Update ALL file-group headers still showing "Analysing" → Done with per-file counts */
+        document.querySelectorAll('.pr-fhdr-status.pr-fhdr-running').forEach(function (_sel) {
+          var _phdr = _sel.closest('.pr-file-group-hdr');
+          var _pfname = _phdr ? _phdr.getAttribute('data-file-group') : null;
+          var _pcnt = _pfname ? document.querySelectorAll('.pr-card[data-file-group="' + _pfname + '"]').length : 0;
+          _sel.className = 'pr-fhdr-status pr-fhdr-done-status';
+          _sel.innerHTML = '&#10003; Done' + (_pcnt ? ' &middot; ' + _pcnt + ' warning' + (_pcnt !== 1 ? 's' : '') : '');
+        });
+        /* Also specifically update current run file header with accurate count */
         if (window._currentRunFileName) {
           var _liveHdr = document.getElementById('pr-file-hdr-' + window._currentRunFileName.replace(/[^a-zA-Z0-9]/g, '_'));
           if (_liveHdr) {
@@ -1506,7 +1519,15 @@ window.openSettingsModal = function () {
   const modal = document.getElementById("settings-modal");
   if (!modal) return;
   modal.classList.remove("hidden");
-  if (!_ruleState.built) { buildModalRuleList(); _ruleState.built = true; }
+  if (!_ruleState.built) {
+    /* Pre-select ALL rules on first open — user unchecks to exclude */
+    RULES_DATA.filter(r => !r.is_dir).forEach(r => {
+      _ruleState.selected.add(r.id);
+      if (!_ruleState.overrides[r.id]) _ruleState.overrides[r.id] = r.sev || "R";
+    });
+    buildModalRuleList();
+    _ruleState.built = true;
+  }
   document.body.style.overflow = "hidden";
 };
 
@@ -1744,39 +1765,23 @@ function _spRestoreActionState(wid) {
         }).join("");
       }
       /* Show undo button */
-      if (commitBtn && !document.getElementById("undo-inline-" + wid)) {
+      if (!document.getElementById("undo-inline-" + wid)) {
+        var _undoWrap = document.getElementById("undo-wrap-" + wid);
         var _undoBtn = document.createElement("button");
         _undoBtn.id = "undo-inline-" + wid;
         _undoBtn.textContent = "\u21A9 Undo";
         _undoBtn.title = "Revert this fix and restore original file";
-        _undoBtn.style.cssText = "margin-left:8px;background:#dc2626;color:#fff;border:none;padding:3px 9px;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;vertical-align:middle;";
+        _undoBtn.style.cssText = "background:#dc2626;color:#fff;border:none;padding:3px 9px;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;vertical-align:middle;";
         _undoBtn.onclick = function () { undoCommit(wid); };
-        commitBtn.parentElement && commitBtn.parentElement.appendChild(_undoBtn);
+        if (_undoWrap) _undoWrap.appendChild(_undoBtn);
+        else if (commitBtn && commitBtn.parentElement) commitBtn.parentElement.appendChild(_undoBtn);
       }
-      /* Restore download button */
+      /* Show auto-save status — file was saved to warning_reports/ at commit time */
       var _dlEl2 = document.getElementById("download-link-" + wid);
-      if (_dlEl2 && committed.downloadUrl) {
-        var _df2 = committed.filename || "patched.c";
-        var _sf2 = committed.originalFile || _df2;
-        _dlEl2.href = "#";
-        _dlEl2.onclick = function (e) {
-          e.preventDefault();
-          _dlEl2.textContent = "Saving\u2026";
-          _dlEl2.style.pointerEvents = "none";
-          fetch("/api/save_patched_c", {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ filename: _df2, src_filename: _sf2 })
-          }).then(function (r) { return r.json(); }).then(function (res) {
-            if (res.status === "ok") {
-              _dlEl2.innerHTML = "&#10003; Saved as <em>" + escHtml(res.filename) + "</em>";
-              _dlEl2.style.color = "#15803d";
-            } else {
-              _dlEl2.textContent = "\u26a0 Save failed"; _dlEl2.style.color = "#dc2626";
-            }
-            _dlEl2.style.pointerEvents = "auto";
-          }).catch(function () { _dlEl2.textContent = "\u26a0 Error"; _dlEl2.style.pointerEvents = "auto"; });
-          return false;
-        };
+      if (_dlEl2 && committed.originalFile) {
+        _dlEl2.style.display = "inline";
+        _dlEl2.textContent = "\u2713 Saved to warning_reports/" + committed.originalFile;
+        _dlEl2.style.color = "#059669";
       }
     }
   }
@@ -2112,6 +2117,7 @@ function buildSidePanelContent(w, rid, isLastInGroup) {
               &#x2B06; Commit Fix to File
               <span class="info-tip" title="Saves the selected fix into the original source file and logs it to the audit report">&#9432;</span>
             </button>
+            <span id="undo-wrap-${escHtml(wid)}"></span>
             <button class="go-without-btn" id="go-without-btn-${escHtml(wid)}" onclick="goWithoutChange('${escHtml(wid)}')"
               title="Mark this warning as reviewed but keep the original code unchanged">
               &#128683; Go Without Change
@@ -2125,7 +2131,7 @@ function buildSidePanelContent(w, rid, isLastInGroup) {
       <div class="patched-file-wrap hidden" id="patched-wrap-${escHtml(wid)}">
         <div class="patched-file-header">
           <span class="patched-file-title" id="patched-file-title-${escHtml(wid)}">&#x2713; Patched File</span>
-          <a class="btn-download" id="download-link-${escHtml(wid)}" href="#" download>&#x2B07; Download</a>
+          <span class="btn-download" id="download-link-${escHtml(wid)}" style="font-size:11px;color:#64748b;font-style:italic;display:none;"></span>
         </div>
         <div class="source-block patched-full-block" id="patched-code-${escHtml(wid)}"></div>
       </div>
@@ -2404,41 +2410,38 @@ function initResultsPage() {
   window.rrExportHtml = async function () {
     var btn = document.getElementById("rr-html-btn");
     var statusEl = document.getElementById("rr-save-all-status");
-    if (btn) { btn.disabled = true; btn.textContent = "Generating\u2026"; }
-    /* Collect all run IDs */
+    if (btn) { btn.disabled = true; btn.innerHTML = "Generating…"; }
     var runIds = [];
     try {
       var _crs = JSON.parse(sessionStorage.getItem("misra_completed_runs") || "[]");
       _crs.forEach(function (r) { if (r.runId && runIds.indexOf(r.runId) === -1) runIds.push(r.runId); });
     } catch (_e) { }
-    /* Also include current runId from URL if on results page */
-    if (window.MISRA_RUN_ID && runIds.indexOf(window.MISRA_RUN_ID) === -1) {
-      /* Handle merged run IDs like "merged/runA,runB" */
+    if (window.MISRA_RUN_ID) {
       var _rid = String(window.MISRA_RUN_ID).replace(/^merged\//, "");
       _rid.split(",").forEach(function (r) { r = r.trim(); if (r && runIds.indexOf(r) === -1) runIds.push(r); });
     }
     if (!runIds.length) {
       if (statusEl) { statusEl.style.color = "#dc2626"; statusEl.textContent = "\u26a0 No runs found. Run analysis first."; }
-      if (btn) { btn.disabled = false; btn.textContent = "&#127760; View HTML Report"; }
+      if (btn) { btn.disabled = false; btn.innerHTML = "&#127760; View HTML Report"; }
       return;
     }
     try {
-      var r = await fetch("/api/export_html", {
+      var resp = await fetch("/api/export_html", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ run_ids: runIds })
       });
-      var res = await r.json();
+      var res = await resp.json();
       if (res.status === "ok") {
         window.open(res.url || "/view_html_report", "_blank");
         if (statusEl) { statusEl.style.color = "#065f46"; statusEl.textContent = "\u2713 HTML report opened in new tab"; }
-        if (btn) { btn.textContent = "&#127760; View HTML Report"; btn.disabled = false; }
+        if (btn) { btn.innerHTML = "&#127760; View HTML Report"; btn.disabled = false; }
       } else {
         if (statusEl) { statusEl.style.color = "#dc2626"; statusEl.textContent = "\u26a0 " + (res.error || "Failed"); }
-        if (btn) { btn.disabled = false; btn.textContent = "&#127760; View HTML Report"; }
+        if (btn) { btn.disabled = false; btn.innerHTML = "&#127760; View HTML Report"; }
       }
     } catch (e) {
       if (statusEl) { statusEl.style.color = "#dc2626"; statusEl.textContent = "\u26a0 " + e.message; }
-      if (btn) { btn.disabled = false; btn.textContent = "&#127760; View HTML Report"; }
+      if (btn) { btn.disabled = false; btn.innerHTML = "&#127760; View HTML Report"; }
     }
   };
 
@@ -2853,33 +2856,12 @@ window.commitFix = async function (wId) {
           `<span class="ln-code">${escHtml(ln)}</span></div>`;
       }).join("");
     }
-    if (dlEl && result.download_url) {
-      /* Save to Output_excel_after_run/patched_files/ on server AND give browser feedback */
-      var _dlFilename = result.filename || "patched.c";
-      var _srcFilename = result.original_file || _dlFilename;
-      dlEl.href = "#";
-      dlEl.onclick = function (e) {
-        e.preventDefault();
-        dlEl.textContent = "Saving\u2026";
-        dlEl.style.pointerEvents = "none";
-        fetch("/api/save_patched_c", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ filename: _dlFilename, src_filename: _srcFilename })
-        }).then(function (r) { return r.json(); }).then(function (res) {
-          if (res.status === "ok") {
-            dlEl.innerHTML = "&#10003; Saved as <em>" + escHtml(res.filename) + "</em>";
-            dlEl.style.color = "#15803d";
-          } else {
-            dlEl.textContent = "\u26a0 Save failed";
-            dlEl.style.color = "#dc2626";
-          }
-          dlEl.style.pointerEvents = "auto";
-        }).catch(function () {
-          dlEl.textContent = "\u26a0 Error";
-          dlEl.style.pointerEvents = "auto";
-        });
-        return false;
-      };
+    /* Show auto-save confirmation — file was already saved to warning_reports/ on server at commit time */
+    if (dlEl) {
+      var _savedName = result.original_file || result.filename || "patched.c";
+      dlEl.style.display = "inline";
+      dlEl.textContent = "\u2713 Saved to warning_reports/" + _savedName;
+      dlEl.style.color = "#059669";
     }
     // Store commit result so Review Report tab can show full patched file
     window._commitResults = window._commitResults || {};
@@ -2919,14 +2901,16 @@ window.commitFix = async function (wId) {
       setTimeout(function () { window.closeSidePanel(); }, 500);
     }
     // Show small inline undo button in side panel (no browser alert)
-    if (btn && !document.getElementById("undo-inline-" + wId)) {
+    if (!document.getElementById("undo-inline-" + wId)) {
+      var _undoWrap2 = document.getElementById("undo-wrap-" + wId);
       var _undoBtn = document.createElement("button");
       _undoBtn.id = "undo-inline-" + wId;
       _undoBtn.textContent = "↩ Undo";
       _undoBtn.title = "Revert this fix and restore original file";
-      _undoBtn.style.cssText = "margin-left:8px;background:#dc2626;color:#fff;border:none;padding:3px 9px;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;vertical-align:middle;";
+      _undoBtn.style.cssText = "background:#dc2626;color:#fff;border:none;padding:3px 9px;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;vertical-align:middle;";
       _undoBtn.onclick = function () { undoCommit(wId); };
-      btn.parentElement && btn.parentElement.appendChild(_undoBtn);
+      if (_undoWrap2) _undoWrap2.appendChild(_undoBtn);
+      else if (btn && btn.parentElement) btn.parentElement.appendChild(_undoBtn);
     }
     if (patchWrap) patchWrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
   } catch (e) {
@@ -3065,8 +3049,8 @@ function _rrRefreshAfterBlock(wId) {
     labelEl.style.color = "#15803d";
     labelEl.innerHTML = `&#128994; AFTER (FULL PATCHED FILE)${fn} ${fixLabel}`;
   }
-  if (dlEl && committed.downloadUrl)
-    dlEl.innerHTML = `<a href="${escHtml(committed.downloadUrl)}" download="${escHtml(committed.filename || "patched.c")}" style="font-size:12px;color:var(--primary,#2563eb);text-decoration:none;display:inline-flex;align-items:center;gap:4px;">&#x2B07; Download patched file</a>`;
+  if (dlEl && committed.originalFile)
+    dlEl.innerHTML = `<span style="font-size:11px;color:#059669;">\u2713 Saved to warning_reports/${escHtml(committed.originalFile)}</span>`;
 }
 
 /* ============================================================
