@@ -147,6 +147,114 @@ function initIndexPage() {
         }
       }
     } catch (e) { console.error("restore file state error:", e); }
+
+    /* ── Reconnect to in-progress run BEFORE the early-return check below ──
+       This MUST come before `if (!saved.length) return` because when the user
+       navigates away while the FIRST file is still running, misra_completed_runs
+       is empty (no run has finished yet), causing the early return to fire and
+       the reconnect code to never execute. */
+    try {
+      var _activeRun = JSON.parse(sessionStorage.getItem("misra_active_run") || "null");
+      if (_activeRun && _activeRun.jobId && _activeRun.runId) {
+        /* Show progress panel and disable upload card */
+        var pp2 = document.getElementById("progress-panel");
+        if (pp2) pp2.classList.add("visible");
+        var uploadCard3 = document.getElementById("upload-card");
+        if (uploadCard3) { uploadCard3.style.opacity = "0.4"; uploadCard3.style.pointerEvents = "none"; }
+
+        /* Ensure per-record-wrap exists so listenProgress can insert cards */
+        var rw2 = document.getElementById("per-record-wrap");
+        if (!rw2) {
+          rw2 = document.createElement("div");
+          rw2.id = "per-record-wrap"; rw2.className = "per-record-wrap";
+          var anc2 = pp2 ? (pp2.querySelector(".progress-section") || pp2) : document.body;
+          if (pp2) pp2.insertBefore(rw2, anc2.nextSibling || null);
+        }
+
+        /* Show counter */
+        var ce2 = document.getElementById("pr-counter");
+        if (!ce2) {
+          ce2 = document.createElement("div"); ce2.id = "pr-counter"; ce2.className = "pr-counter";
+          ce2.textContent = "Reconnecting to running analysis\u2026";
+          if (pp2) pp2.insertBefore(ce2, rw2);
+        } else {
+          ce2.textContent = "Reconnecting to running analysis\u2026";
+        }
+
+        /* Mark the running file's button as "Running..." */
+        var _activeIdx = _activeRun.fileIdx;
+        if (_activeIdx !== null && _activeIdx !== undefined) {
+          var _runBtn = document.querySelector("#fmap-" + _activeIdx + " .fmap-run-btn");
+          if (_runBtn) { _runBtn.disabled = true; _runBtn.textContent = "Running\u2026"; }
+        }
+
+        /* Restore file run state so done-event marks the file correctly */
+        window._currentFileIdx = _activeRun.fileIdx;
+        window._currentIsRunAll = !!_activeRun.isRunAll;
+
+        /* Rebuild srcFiles array from saved names */
+        var _reconnectFiles = (_activeRun.srcFileNames || []).map(function (n) {
+          return { name: n, _serverOnly: true };
+        });
+
+        /* Show reconnecting status */
+        var _sl3 = document.getElementById("status-line");
+        if (_sl3) _sl3.textContent = "Reconnecting to running analysis\u2026";
+
+        /* Reconnect SSE — pipeline may still be running on server */
+        listenProgress(_activeRun.jobId, _activeRun.runId, _reconnectFiles);
+
+        /* Also check immediately if the run already completed while we were away */
+        fetch("/api/result/" + _activeRun.runId).then(function (r) {
+          return r.ok ? r.json() : null;
+        }).then(function (data) {
+          if (!data || !data.warnings || !data.warnings.length) return;
+          /* Run already completed — check if misra_active_run is still set
+             (SSE done event may have already handled it) */
+          var _ar2 = JSON.parse(sessionStorage.getItem("misra_active_run") || "null");
+          if (!_ar2) return; /* SSE done event already handled it */
+          /* Completed but done event was missed — handle now */
+          sessionStorage.removeItem("misra_active_run");
+          /* Save to completed runs so Back navigation restores correctly */
+          try {
+            var _wids = data.warnings.map(function (w) { return String(w.warning_id); });
+            var _sr2 = JSON.parse(sessionStorage.getItem("misra_completed_runs") || "[]");
+            _sr2 = _sr2.filter(function (r) { return r.runId !== _activeRun.runId; });
+            var _wf2 = {};
+            _wids.forEach(function (wid) {
+              _wf2[wid] = (_activeRun.srcFileNames && _activeRun.srcFileNames[0]) || "";
+            });
+            _sr2.push({ runId: _activeRun.runId, total: _wids.length, wids: _wids, widFiles: _wf2 });
+            sessionStorage.setItem("misra_completed_runs", JSON.stringify(_sr2.slice(-10)));
+            /* Also save to file state */
+            var _fstate2 = JSON.parse(sessionStorage.getItem("misra_file_state") || "null");
+            if (_fstate2 && _activeRun.srcFileNames) {
+              _activeRun.srcFileNames.forEach(function (fn) {
+                if (_fstate2.ranFiles && _fstate2.ranFiles.indexOf(fn) === -1) {
+                  _fstate2.ranFiles.push(fn);
+                }
+              });
+              sessionStorage.setItem("misra_file_state", JSON.stringify(_fstate2));
+            }
+          } catch (_se) { }
+          /* Mark file as done in UI */
+          if (_activeRun.fileIdx !== null && _activeRun.fileIdx !== undefined) {
+            var _fb = document.querySelector("#fmap-" + _activeRun.fileIdx + " .fmap-run-btn");
+            if (_fb) { _fb.disabled = true; _fb.textContent = "\u2713 Done"; _fb.classList.add("fmap-done-btn"); }
+            var _fc = document.getElementById("fmap-" + _activeRun.fileIdx);
+            if (_fc) _fc.classList.add("fmap-ran");
+          }
+          /* Re-enable upload card */
+          var _uc2 = document.getElementById("upload-card");
+          if (_uc2) { _uc2.style.opacity = "1"; _uc2.style.pointerEvents = "auto"; }
+          /* Update status */
+          var _sl4 = document.getElementById("status-line");
+          if (_sl4) _sl4.textContent = "Analysis complete — click View Result to see results.";
+        }).catch(function () { });
+        return;
+      }
+    } catch (e) { console.error("reconnect active run error:", e); }
+
     try {
       var saved = JSON.parse(sessionStorage.getItem("misra_completed_runs") || "[]");
       if (!saved.length) return;
@@ -621,6 +729,16 @@ function initIndexPage() {
         if (statusLn) statusLn.textContent =
           `Rule filter applied — ${data.filtered_count} warning${data.filtered_count === 1 ? "" : "s"} queued for analysis`;
       }
+      /* Persist active job so Back navigation from Review Report can reconnect */
+      try {
+        sessionStorage.setItem("misra_active_run", JSON.stringify({
+          jobId: data.job_id,
+          runId: data.run_id,
+          fileIdx: window._currentFileIdx,
+          isRunAll: !!window._currentIsRunAll,
+          srcFileNames: srcFiles.map(function (f) { return f.name; })
+        }));
+      } catch (_e) { }
       listenProgress(data.job_id, data.run_id, srcFiles);
     } catch (err) {
       showError("Connection error: " + err.message);
@@ -755,7 +873,20 @@ function initIndexPage() {
         var baseWid = wid.replace(/_[a-zA-Z0-9_]+$/, '');
         fname = _widFileMap[baseWid] || null;
       }
-      if (!fname || fname === _lastGroupFile) return;
+      if (!fname) return;
+      /* Skip if this file already has a header in the DOM (cross-run dedup) */
+      var existingHdr = document.getElementById('pr-file-hdr-' + fname.replace(/[^a-zA-Z0-9]/g, '_'));
+      if (existingHdr) {
+        /* Header exists — update status to Analysing if not already Done */
+        var statusEl = existingHdr.querySelector('.pr-fhdr-status');
+        if (statusEl && !statusEl.classList.contains('pr-fhdr-done-status')) {
+          statusEl.className = 'pr-fhdr-status pr-fhdr-running';
+          statusEl.innerHTML = '&#9679; Analysing';
+        }
+        _lastGroupFile = fname;
+        return;
+      }
+      if (fname === _lastGroupFile) return;
       _lastGroupFile = fname;
       var hdr = document.createElement('div');
       hdr.className = 'pr-file-group-hdr pr-file-group-hdr-collapsible';
@@ -1127,6 +1258,8 @@ function initIndexPage() {
       if (msg.type === "done") {
         es.close(); _stopElapsedTicker();
         if (window._phase7Timer) { clearInterval(window._phase7Timer); window._phase7Timer = null; }
+        /* Clear active job — run is complete */
+        try { sessionStorage.removeItem("misra_active_run"); } catch (_e) { }
         const targetId = msg.run_id || runId || jobId;
 
         // ── FIX: use total from done event if we still don't have one ──
@@ -1157,7 +1290,7 @@ function initIndexPage() {
           if (_liveHdr) {
             var _statusEl = _liveHdr.querySelector('.pr-fhdr-status');
             if (_statusEl) {
-              _statusEl.className = 'pr-fhdr-status';
+              _statusEl.className = 'pr-fhdr-status pr-fhdr-done-status';
               _statusEl.innerHTML = '&#10003; Done &middot; ' + currentRunWids.size + ' warning' + (currentRunWids.size !== 1 ? 's' : '');
             }
           }
@@ -1244,13 +1377,18 @@ function initIndexPage() {
 
       if (msg.type === "error") {
         es.close(); _stopElapsedTicker();
+        try { sessionStorage.removeItem("misra_active_run"); } catch (_e) { }
         document.querySelectorAll(".phase-item.active").forEach(el => { el.classList.remove("active"); el.classList.add("error"); });
         if (statusLn) statusLn.textContent = "Something went wrong. Please try again.";
         const ep = document.createElement("div"); ep.className = "error-panel mt-16"; ep.textContent = msg.message || msg.detail || "Unknown error"; progressPanel.appendChild(ep);
         resetUI();
       }
     };
-    es.onerror = () => { es.close(); _stopElapsedTicker(); if (statusLn) statusLn.textContent = "Connection lost. Please refresh and try again."; };
+    es.onerror = () => {
+      es.close(); _stopElapsedTicker();
+      try { sessionStorage.removeItem("misra_active_run"); } catch (_e) { }
+      if (statusLn) statusLn.textContent = "Connection lost. Please refresh and try again.";
+    };
   }
 
   function plainEnglish(label, detail) {
@@ -1615,6 +1753,31 @@ function _spRestoreActionState(wid) {
         _undoBtn.onclick = function () { undoCommit(wid); };
         commitBtn.parentElement && commitBtn.parentElement.appendChild(_undoBtn);
       }
+      /* Restore download button */
+      var _dlEl2 = document.getElementById("download-link-" + wid);
+      if (_dlEl2 && committed.downloadUrl) {
+        var _df2 = committed.filename || "patched.c";
+        var _sf2 = committed.originalFile || _df2;
+        _dlEl2.href = "#";
+        _dlEl2.onclick = function (e) {
+          e.preventDefault();
+          _dlEl2.textContent = "Saving\u2026";
+          _dlEl2.style.pointerEvents = "none";
+          fetch("/api/save_patched_c", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ filename: _df2, src_filename: _sf2 })
+          }).then(function (r) { return r.json(); }).then(function (res) {
+            if (res.status === "ok") {
+              _dlEl2.innerHTML = "&#10003; Saved as <em>" + escHtml(res.filename) + "</em>";
+              _dlEl2.style.color = "#15803d";
+            } else {
+              _dlEl2.textContent = "\u26a0 Save failed"; _dlEl2.style.color = "#dc2626";
+            }
+            _dlEl2.style.pointerEvents = "auto";
+          }).catch(function () { _dlEl2.textContent = "\u26a0 Error"; _dlEl2.style.pointerEvents = "auto"; });
+          return false;
+        };
+      }
     }
   }
 }
@@ -1787,7 +1950,7 @@ function buildSidePanelContent(w, rid, isLastInGroup) {
       : Array.isArray(sc) ? sc.join("\n") : "";
 
   window._fixData = window._fixData || {};
-  window._fixData[wid] = { fixes, beforeCode: srcTxt, selectedIdx: 0, rid };
+  window._fixData[wid] = { fixes, beforeCode: srcTxt, selectedIdx: 0, rid, fileName: fp };
 
   let html = "";
 
@@ -2038,8 +2201,8 @@ function initResultsPage() {
           if (!window._commitResults[wid]) {
             var m = _cm[wid];
             window._commitResults[wid] = {
-              afterCode: "",          /* fetched lazily by _restoreCommittedPatches */
-              patchedCode: "",        /* fetched lazily */
+              afterCode: m.patchedCode || "",
+              patchedCode: m.patchedCode || "",  /* stored directly — no server fetch needed */
               patchLineStart: m.patchLineStart || 0,
               patchLineCount: m.patchLineCount || 0,
               originalFile: m.originalFile || "",
@@ -2047,7 +2210,8 @@ function initResultsPage() {
               filename: m.filename || "patched.c",
               isFullFile: m.isFullFile || false,
               wasUserEdited: m.wasUserEdited || false,
-              _needsServerLoad: true
+              /* Only need server fetch if patchedCode wasn't stored (old sessions) */
+              _needsServerLoad: !(m.patchedCode && m.patchedCode.length > 0)
             };
           }
         });
@@ -2145,6 +2309,10 @@ function initResultsPage() {
       + ' style="background:#1e40af;color:#fff;border:none;padding:9px 24px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px;">'
       + '&#128190; Save All to Audit Excel'
       + '</button>'
+      + '<button id="rr-html-btn" onclick="rrExportHtml()"'
+      + ' style="background:#0f766e;color:#fff;border:none;padding:9px 24px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px;">'
+      + '&#127760; View HTML Report'
+      + '</button>'
       + '<span id="rr-save-all-status" style="font-size:13px;color:var(--text-muted);"></span>';
     root.appendChild(wrap);
   }
@@ -2194,6 +2362,7 @@ function initResultsPage() {
 
       var payload = {
         warning_id: wId, run_id: runId,
+        file_name: (fd && fd.fileName) || "",
         all_fixes: allFixes,
         chosen_fix_index: chosenFixIndex, chosen_fix_code: chosenFixCode,
         fixed_code_full: fixedCodeFull,
@@ -2228,7 +2397,49 @@ function initResultsPage() {
 
   /* Back button — just navigate, no confirmation needed (report stays at its URL) */
   window.confirmLeave = function () {
-    return true;  // no confirmation — report is safely saved on server
+    return true;
+  };
+
+  /* ── rrExportHtml: generate HTML report and open in new tab ── */
+  window.rrExportHtml = async function () {
+    var btn = document.getElementById("rr-html-btn");
+    var statusEl = document.getElementById("rr-save-all-status");
+    if (btn) { btn.disabled = true; btn.textContent = "Generating\u2026"; }
+    /* Collect all run IDs */
+    var runIds = [];
+    try {
+      var _crs = JSON.parse(sessionStorage.getItem("misra_completed_runs") || "[]");
+      _crs.forEach(function (r) { if (r.runId && runIds.indexOf(r.runId) === -1) runIds.push(r.runId); });
+    } catch (_e) { }
+    /* Also include current runId from URL if on results page */
+    if (window.MISRA_RUN_ID && runIds.indexOf(window.MISRA_RUN_ID) === -1) {
+      /* Handle merged run IDs like "merged/runA,runB" */
+      var _rid = String(window.MISRA_RUN_ID).replace(/^merged\//, "");
+      _rid.split(",").forEach(function (r) { r = r.trim(); if (r && runIds.indexOf(r) === -1) runIds.push(r); });
+    }
+    if (!runIds.length) {
+      if (statusEl) { statusEl.style.color = "#dc2626"; statusEl.textContent = "\u26a0 No runs found. Run analysis first."; }
+      if (btn) { btn.disabled = false; btn.textContent = "&#127760; View HTML Report"; }
+      return;
+    }
+    try {
+      var r = await fetch("/api/export_html", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ run_ids: runIds })
+      });
+      var res = await r.json();
+      if (res.status === "ok") {
+        window.open(res.url || "/view_html_report", "_blank");
+        if (statusEl) { statusEl.style.color = "#065f46"; statusEl.textContent = "\u2713 HTML report opened in new tab"; }
+        if (btn) { btn.textContent = "&#127760; View HTML Report"; btn.disabled = false; }
+      } else {
+        if (statusEl) { statusEl.style.color = "#dc2626"; statusEl.textContent = "\u26a0 " + (res.error || "Failed"); }
+        if (btn) { btn.disabled = false; btn.textContent = "&#127760; View HTML Report"; }
+      }
+    } catch (e) {
+      if (statusEl) { statusEl.style.color = "#dc2626"; statusEl.textContent = "\u26a0 " + e.message; }
+      if (btn) { btn.disabled = false; btn.textContent = "&#127760; View HTML Report"; }
+    }
   };
 
   /* ── Auto-restore committed patches from server on page load ── */
@@ -2460,7 +2671,7 @@ function buildWarningDetail(w, ev, isReview, wId) {
   if (fixes.length) {
     window._fixData = window._fixData || {};
     /* Use per-warning _run_id (tagged by merged API) so commit uses the correct single run_id */
-    window._fixData[wId] = { fixes, beforeCode: sourceCode, selectedIdx: 0, rid: w._run_id || window.MISRA_RUN_ID || "" };
+    window._fixData[wId] = { fixes, beforeCode: sourceCode, selectedIdx: 0, rid: w._run_id || window.MISRA_RUN_ID || "", fileName: baseName(w.file_path || "") };
 
     const firstAfter = extractAfterCode(fixes[0]);
     const chips = fixes.map((f, i) => {
@@ -2643,8 +2854,32 @@ window.commitFix = async function (wId) {
       }).join("");
     }
     if (dlEl && result.download_url) {
-      dlEl.href = result.download_url;
-      dlEl.download = result.filename || "patched.c";
+      /* Save to Output_excel_after_run/patched_files/ on server AND give browser feedback */
+      var _dlFilename = result.filename || "patched.c";
+      var _srcFilename = result.original_file || _dlFilename;
+      dlEl.href = "#";
+      dlEl.onclick = function (e) {
+        e.preventDefault();
+        dlEl.textContent = "Saving\u2026";
+        dlEl.style.pointerEvents = "none";
+        fetch("/api/save_patched_c", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ filename: _dlFilename, src_filename: _srcFilename })
+        }).then(function (r) { return r.json(); }).then(function (res) {
+          if (res.status === "ok") {
+            dlEl.innerHTML = "&#10003; Saved as <em>" + escHtml(res.filename) + "</em>";
+            dlEl.style.color = "#15803d";
+          } else {
+            dlEl.textContent = "\u26a0 Save failed";
+            dlEl.style.color = "#dc2626";
+          }
+          dlEl.style.pointerEvents = "auto";
+        }).catch(function () {
+          dlEl.textContent = "\u26a0 Error";
+          dlEl.style.pointerEvents = "auto";
+        });
+        return false;
+      };
     }
     // Store commit result so Review Report tab can show full patched file
     window._commitResults = window._commitResults || {};
@@ -2660,7 +2895,7 @@ window.commitFix = async function (wId) {
       isFullFile: result.is_full_file || false,
       wasUserEdited: !!(data._editedCode != null && data._editedCode !== '')
     };
-    // Persist to sessionStorage so Results page can restore highlight after navigation
+    // Persist to sessionStorage so Results page can restore full patched file after navigation
     try {
       var _stored = JSON.parse(sessionStorage.getItem("misra_commits") || "{}");
       _stored[wId] = {
@@ -2670,7 +2905,10 @@ window.commitFix = async function (wId) {
         downloadUrl: result.download_url || "",
         filename: result.filename || "patched.c",
         isFullFile: result.is_full_file || false,
-        wasUserEdited: !!(data._editedCode != null && data._editedCode !== '')
+        wasUserEdited: !!(data._editedCode != null && data._editedCode !== ''),
+        /* Store patchedCode directly so restore doesn't re-fetch from server
+           (which returns the latest file for the stem, conflating warnings from same file) */
+        patchedCode: result.patched_code || ""
       };
       sessionStorage.setItem("misra_commits", JSON.stringify(_stored));
     } catch (_se) { }
@@ -2800,23 +3038,25 @@ function _rrRefreshAfterBlock(wId) {
     return;
   }
   const committed = (window._commitResults || {})[wId];
-  if (!committed || !committed.patchedCode) return;
+  if (!committed || (!committed.patchedCode && !committed.afterCode)) return;
   const labelEl = document.getElementById("rr-after-label-" + wId);
   const codeEl = document.getElementById("rr-after-code-" + wId);
   const blockEl = document.getElementById("rr-after-block-" + wId);
   const dlEl = document.getElementById("rr-download-" + wId);
   const chipsRow = document.getElementById("fixchips-" + wId);
-  if (!codeEl) return; // card not open yet — will render correctly on next open
-  /* FIX 5: reveal the chips row now that user has taken action */
+  if (!codeEl) return;
   if (chipsRow) chipsRow.style.display = "";
-  /* Update border color to green */
   if (blockEl) blockEl.style.borderColor = "rgba(21,128,61,.25)";
+  /* Show full patched file with changed-line highlights */
   const pStart = committed.patchLineStart || 0;
   const pEnd = pStart ? pStart + (committed.patchLineCount || 0) - 1 : 0;
-  codeEl.innerHTML = committed.patchedCode.split("\n").map(function (ln, i) {
-    const num = i + 1, isChg = pStart > 0 && num >= pStart && num <= pEnd;
-    return `<div class="code-row${isChg ? " patch-highlight" : ""}"><span class="ln-num">${num}</span><span class="ln-code">${escHtml(ln)}</span></div>`;
-  }).join("");
+  const _code = committed.patchedCode || committed.afterCode || "";
+  if (_code) {
+    codeEl.innerHTML = _code.split("\n").map(function (ln, i) {
+      const num = i + 1, isChg = pStart > 0 && num >= pStart && num <= pEnd;
+      return `<div class="code-row${isChg ? " patch-highlight" : ""}"><span class="ln-num">${num}</span><span class="ln-code">${escHtml(ln)}</span></div>`;
+    }).join("");
+  }
   if (labelEl) {
     const fn = committed.originalFile ? ` — <span style="font-weight:500;opacity:.8;">${escHtml(committed.originalFile)}</span>` : "";
     const fixLabel = committed.wasUserEdited

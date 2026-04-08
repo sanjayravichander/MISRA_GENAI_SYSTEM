@@ -68,6 +68,34 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 AUDIT_EXCEL = PROJECT_ROOT / "Output_excel_after_run" / "audit_report.xlsx"
 AUDIT_EXCEL.parent.mkdir(parents=True, exist_ok=True)   # create folder at startup
 
+# ── Auto-delete stale audit Excel at startup (old schema detection) ──────────
+# If audit_report.xlsx exists with the old schema (Violated Code / Fixed Code /
+# Status columns instead of Warning Details + File Summary sheets), delete it
+# so the next save creates a fresh two-sheet workbook automatically.
+try:
+    if AUDIT_EXCEL.exists():
+        import openpyxl as _opx_chk
+        _wb_chk = _opx_chk.load_workbook(str(AUDIT_EXCEL), read_only=True)
+        _stale_chk = {"Violated Code", "Fixed Code", "Status"}
+        _sheets_chk = _wb_chk.sheetnames
+        _ws_chk = _wb_chk.active
+        _hdrs_chk = {str(c.value).strip() for c in _ws_chk[1] if c.value}
+        _wb_chk.close()
+        _needs_rebuild = bool(_hdrs_chk & _stale_chk) or "Warning Details" not in _sheets_chk
+        if _needs_rebuild:
+            import logging
+            logging.getLogger(__name__).info(
+                "audit_report.xlsx has stale schema — deleting for fresh rebuild on next save"
+            )
+            try:
+                AUDIT_EXCEL.unlink()
+            except PermissionError:
+                # File open in Excel on Windows — rename it so a new one can be created
+                _stale_path = AUDIT_EXCEL.with_name("audit_report_stale_backup.xlsx")
+                AUDIT_EXCEL.rename(_stale_path)
+except Exception:
+    pass  # non-critical — stale detection will also run inside _load_or_init_workbook
+
 ALLOWED_EXCEL = {".xlsx", ".xls"}
 ALLOWED_C     = {".c", ".h"}
 
@@ -717,6 +745,40 @@ def download_file(filename):
 
 
 # ---------------------------------------------------------------------------
+# Route — Save patched .c file to Output_excel_after_run/patched_files/
+# ---------------------------------------------------------------------------
+@app.route("/api/save_patched_c", methods=["POST"])
+def save_patched_c():
+    body       = request.get_json(force=True) or {}
+    filename   = secure_filename(str(body.get("filename", "patched.c")))
+    warning_id = str(body.get("warning_id", ""))
+    # Ensure filename ends with .c
+    if not filename.lower().endswith(".c"):
+        filename = filename + ".c"
+    src_name = secure_filename(str(body.get("src_filename", filename)))
+    commit_dir = PROJECT_ROOT / "data" / "commits"
+    # Find the committed patched file
+    src_path = commit_dir / filename
+    if not src_path.exists():
+        # Try to find by warning_id pattern
+        candidates = list(commit_dir.glob(f"patched_*_{warning_id[:8]}*.c")) if warning_id else []
+        if not candidates:
+            candidates = list(commit_dir.glob("patched_*.c"))
+        if candidates:
+            src_path = max(candidates, key=lambda p: p.stat().st_mtime)
+        else:
+            return jsonify(error="Patched file not found"), 404
+    out_dir = PROJECT_ROOT / "Output_excel_after_run" / "patched_files"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    # Save with original source filename (e.g. control.c) not the patched_* name
+    dest_name = src_name if src_name.lower().endswith(".c") else (src_name + ".c")
+    dest_path = out_dir / dest_name
+    import shutil as _sh
+    _sh.copy2(str(src_path), str(dest_path))
+    return jsonify({"status": "ok", "saved_to": str(dest_path), "filename": dest_name})
+
+
+# ---------------------------------------------------------------------------
 # Route — Get committed patch for a warning (so Results page can show full
 #         patched file even after navigation from homepage side panel)
 # ---------------------------------------------------------------------------
@@ -780,7 +842,7 @@ def save_audit():
 
     # Build violated_code from enriched warnings
     violated_code = ""
-    file_name     = ""
+    file_name     = body.get("file_name", "")   # sent directly from JS as fallback
     if run_id:
         try:
             rdir = OUTPUT_DIR / secure_filename(run_id)
@@ -909,15 +971,30 @@ def _load_or_init_workbook():
             existing_headers = {str(c.value).strip() for c in ws1[1] if c.value}
             if existing_headers & _STALE_COLS:
                 app.logger.info("Audit Excel has stale schema — rebuilding from source")
-                wb.close()
-                AUDIT_EXCEL.unlink()
+                try:
+                    wb.close()
+                except Exception:
+                    pass
+                # Try to delete — on Windows the file may be open in Excel
+                try:
+                    AUDIT_EXCEL.unlink()
+                except PermissionError:
+                    # File locked by Excel — write to a new path and replace
+                    app.logger.warning("audit_report.xlsx is locked — will overwrite on next save")
+                    AUDIT_EXCEL.unlink(missing_ok=True) if hasattr(Path, 'unlink') else None
                 wb, ws1, ws2 = _fresh_wb()
             else:
                 ws2 = wb["File Summary"] if "File Summary" in wb.sheetnames else wb.create_sheet("File Summary")
                 if ws2.max_row < 1 or ws2.cell(1, 1).value != "Source File":
                     for i, h in enumerate(_SUMMARY_COLS, 1):
                         ws2.cell(row=1, column=i, value=h)
-        except Exception:
+        except Exception as _e:
+            app.logger.warning(f"Could not load audit Excel ({_e}) — rebuilding fresh")
+            try:
+                AUDIT_EXCEL.unlink()
+            except Exception:
+                pass
+            wb, ws1, ws2 = _fresh_wb()
             wb, ws1, ws2 = _fresh_wb()
     else:
         wb, ws1, ws2 = _fresh_wb()
@@ -1129,9 +1206,11 @@ def _update_audit_excel(
         file_groups = defaultdict(list)
         for row_num in range(2, ws1.max_row + 1):
             fn_raw = ws1.cell(row_num, file_col).value if file_col else None
-            if fn_raw is None:
+            if not fn_raw or str(fn_raw).strip() == "":
                 continue
-            fn = Path(str(fn_raw)).name
+            fn = Path(str(fn_raw)).name if fn_raw else ""
+            if not fn:
+                continue
             file_groups[fn].append(row_num)
 
         # Read File Summary sheet headers
@@ -1237,6 +1316,28 @@ def _update_audit_excel(
             else:
                 ws2.column_dimensions[letter].width = max(len(hdr) + 4, 18)
 
+        # ── Fill empty audit cells with "-" for un-run warnings ──────────────
+        # Audit columns start after the base source columns (Warning Number..Function)
+        # Any row that has a Warning Number but empty audit cells gets "-"
+        audit_col_start = None
+        for _ci, _ch in enumerate(headers, 1):
+            if _ch in ("Fix 1", "Chosen Fix"):
+                audit_col_start = _ci
+                break
+        if audit_col_start and wid_col:
+            dash_font = Font(name="Arial", size=9, color="999999")
+            dash_align = Alignment(horizontal="center", vertical="center")
+            for _r in range(2, ws1.max_row + 1):
+                _wid_val = ws1.cell(_r, wid_col).value
+                if _wid_val is None:
+                    continue
+                for _c in range(audit_col_start, len(headers) + 1):
+                    _cell = ws1.cell(_r, _c)
+                    if _cell.value is None or str(_cell.value).strip() == "":
+                        _cell.value = "-"
+                        _cell.font = dash_font
+                        _cell.alignment = dash_align
+
         # ── Save ─────────────────────────────────────────────────────────────
         wb.save(str(AUDIT_EXCEL))
         app.logger.info(f"Audit Excel saved -> {AUDIT_EXCEL} (warning {warning_id})")
@@ -1248,6 +1349,504 @@ def _update_audit_excel(
             f"Audit Excel FAILED for warning {warning_id}: {exc}\n{traceback.format_exc()}"
         )
         return False
+
+
+# ---------------------------------------------------------------------------
+# Route — Export HTML Audit Report (self-contained, viewable in browser)
+# Generates the two-tab audit report (File Summary + Warning Details)
+# from actual run data: evaluated_fixes.json + enriched_warnings.json +
+# audit_report.xlsx (for committed status / chosen fix / timestamps).
+# ---------------------------------------------------------------------------
+@app.route("/api/export_html", methods=["POST"])
+def export_html():
+    body    = request.get_json(force=True) or {}
+    run_ids = body.get("run_ids", [])
+    if not run_ids:
+        return jsonify(error="No run_ids provided"), 400
+
+    import json as _json
+    import datetime
+    import html as _html
+    from collections import defaultdict as _ddict
+    from pathlib import Path as _Path
+
+    def esc(v):
+        return _html.escape(str(v or ""), quote=True)
+
+    # ── 1. Load all warnings from every run ─────────────────────────────────
+    all_warnings = []
+    for rid in run_ids:
+        try:
+            rdir = OUTPUT_DIR / secure_filename(rid)
+
+            enriched_lookup = {}
+            ew_file = rdir / "enriched_warnings.json"
+            if ew_file.exists():
+                ew_data = _json.loads(ew_file.read_text(encoding="utf-8"))
+                for ew in ew_data.get("warnings", ew_data.get("results", [])):
+                    enriched_lookup[str(ew.get("warning_id", ""))] = ew
+
+            ef = rdir / "evaluated_fixes.json"
+            if not ef.exists():
+                ef = rdir / "fix_suggestions.json"
+            if ef.exists():
+                data  = _json.loads(ef.read_text(encoding="utf-8"))
+                items = data.get("results", data.get("warnings", []))
+                for w in items:
+                    wid = str(w.get("warning_id", ""))
+                    if wid in enriched_lookup:
+                        en = enriched_lookup[wid]
+                        w.setdefault("file_path",      en.get("file_path", ""))
+                        w.setdefault("rule_id",        en.get("rule_id", ""))
+                        w.setdefault("message",        en.get("message", ""))
+                        w.setdefault("function_name",  en.get("function_name", ""))
+                        w.setdefault("source_context", en.get("source_context", ""))
+                        w.setdefault("category",       en.get("category", ""))
+                    if not w.get("rule_id"):
+                        gid = w.get("guideline_id", "")
+                        w["rule_id"] = gid.replace("Rule ", "").strip() if gid else ""
+                    if not w.get("message"):
+                        w["message"] = w.get("guideline_title", "")
+                    w["_run_id"] = rid
+                    all_warnings.append(w)
+        except Exception:
+            pass
+
+    if not all_warnings:
+        return jsonify(error="No warnings found"), 404
+
+    # ── 2. Load audit status from audit_report.xlsx ─────────────────────────
+    audit_map = {}   # warning_id (str) -> dict with status, chosen_fix, timestamp, fix_code
+    try:
+        if AUDIT_EXCEL.exists():
+            import openpyxl as _opx
+            _wb  = _opx.load_workbook(str(AUDIT_EXCEL), read_only=True)
+            _ws  = _wb["Warning Details"] if "Warning Details" in _wb.sheetnames else _wb.active
+            _hdrs = [str(c.value).strip() if c.value else "" for c in _ws[1]]
+            def _ci(name):
+                try: return _hdrs.index(name)
+                except: return None
+            _wnum_ci   = _ci("Warning Number")
+            _status_ci = _ci("Audit Status")
+            _chosen_ci = _ci("Chosen Fix")
+            _code_ci   = _ci("Chosen Fix Code")
+            _ts_ci     = _ci("Timestamp")
+            _viol_ci   = _ci("Violated Source Code")
+            for _row in _ws.iter_rows(min_row=2, values_only=True):
+                if _wnum_ci is None or _row[_wnum_ci] is None:
+                    continue
+                _wid = str(_row[_wnum_ci]).strip()
+                audit_map[_wid] = {
+                    "status":     str(_row[_status_ci] or "").strip() if _status_ci is not None else "",
+                    "chosen_fix": str(_row[_chosen_ci] or "").strip() if _chosen_ci is not None else "",
+                    "fix_code":   str(_row[_code_ci]   or "").strip() if _code_ci   is not None else "",
+                    "timestamp":  str(_row[_ts_ci]     or "").strip() if _ts_ci     is not None else "",
+                    "viol_code":  str(_row[_viol_ci]   or "").strip() if _viol_ci   is not None else "",
+                }
+            _wb.close()
+    except Exception:
+        pass
+
+    # ── 3. Group by source file ─────────────────────────────────────────────
+    by_file = _ddict(list)
+    for w in all_warnings:
+        fn = _Path(w.get("file_path", "") or "").name or "unknown"
+        by_file[fn].append(w)
+
+    ts    = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+    total = len(all_warnings)
+
+    # Count committed / pending
+    committed_count = 0
+    fixes_applied   = 0
+    for w in all_warnings:
+        wid = str(w.get("warning_id", ""))
+        a   = audit_map.get(wid, {})
+        st  = a.get("status", "")
+        if "Committed" in st or "Edited" in st:
+            committed_count += 1
+        if st and st not in ("Pending", "-", ""):
+            fixes_applied += 1
+
+    pending_count = total - committed_count
+
+    # Category counts
+    cat_counts = {"R": 0, "M": 0, "A": 0}
+    for w in all_warnings:
+        cat_raw = str(w.get("category", "") or "").upper()
+        if "MISRA-M" in cat_raw or "(MANDATORY)" in cat_raw:
+            cat_counts["M"] += 1
+        elif "MISRA-A" in cat_raw or "(ADVISORY)" in cat_raw:
+            cat_counts["A"] += 1
+        else:
+            cat_counts["R"] += 1
+
+    # ── 4. Build FILE SUMMARY tab HTML ─────────────────────────────────────
+    def _audit_tag_summary(warnings_in_file):
+        """Build the fix-summary-line for a file card."""
+        lines = []
+        for w in warnings_in_file:
+            wid = str(w.get("warning_id", ""))
+            a   = audit_map.get(wid, {})
+            st  = a.get("status", "")
+            ch  = a.get("chosen_fix", "")
+            if "Committed" in st or "Edited" in st:
+                lines.append(f"✅ #{wid}: {esc(ch)}")
+        if lines:
+            return " &nbsp;·&nbsp; ".join(lines)
+        return "Status: No fixes applied"
+
+    summary_cards = ""
+    for fname, warnings in by_file.items():
+        rules = sorted({str(w.get("rule_id", "") or "").strip() for w in warnings if w.get("rule_id")})
+        rule_chips = "".join(f'<span class="rule-chip">Rule {esc(r)}</span>' for r in rules)
+        warn_minis = ""
+        for w in warnings:
+            wid  = str(w.get("warning_id", ""))
+            rule = str(w.get("rule_id", "") or "")
+            msg  = str(w.get("message", "") or "")
+            func = str(w.get("function_name", "") or "")
+            warn_minis += (
+                f'<strong>#{wid}</strong> [Rule {esc(rule)}] {esc(msg)}'
+                + (f' <em>({esc(func)})</em>' if func else "")
+                + "<br>"
+            )
+        fix_summary_line = _audit_tag_summary(warnings)
+        n = len(warnings)
+        summary_cards += f"""
+    <div class="file-card">
+      <div class="file-card-hdr">
+        <div class="file-icon-wrap">📄</div>
+        <div class="file-card-name">{esc(fname)}</div>
+        <span class="warn-count-badge">{n} warning{"s" if n != 1 else ""}</span>
+      </div>
+      <div class="file-card-body">
+        <div class="rule-list">{rule_chips}</div>
+        <div class="warn-mini">{warn_minis}</div>
+        <div class="fix-summary-line">{fix_summary_line}</div>
+      </div>
+    </div>"""
+
+    # ── 5. Build WARNING DETAILS tab HTML ───────────────────────────────────
+    def _cat_class(cat_raw):
+        c = str(cat_raw).upper()
+        if "MISRA-M" in c or "MANDATORY" in c: return "mand"
+        if "MISRA-A" in c or "ADVISORY"  in c: return "adv"
+        return "req"
+
+    def _cat_label(cat_raw):
+        c = str(cat_raw).upper()
+        if "MISRA-M" in c or "MANDATORY" in c: return "MISRA-M (Mandatory)"
+        if "MISRA-A" in c or "ADVISORY"  in c: return "MISRA-A (Advisory)"
+        return "MISRA-R (Required)"
+
+    def _audit_tag_html(status):
+        if "Committed" in status or "Edited" in status:
+            return f'<span class="audit-tag committed">✅ Committed</span>'
+        if status and status not in ("Pending", "-", ""):
+            return f'<span class="audit-tag edited">⚠ {esc(status)}</span>'
+        return '<span class="audit-tag none">Pending</span>'
+
+    def code_block(text, cls=""):
+        if not text or not str(text).strip() or str(text).strip() == "-":
+            return ""
+        return f'<div class="code-block {cls}"><pre>{esc(str(text))}</pre></div>'
+
+    # Build file filter <option> list
+    file_options = "".join(f'<option>{esc(fn)}</option>' for fn in sorted(by_file.keys()))
+
+    detail_sections = ""
+    for fname, warnings in by_file.items():
+        n = len(warnings)
+        cards_html = ""
+        for w in warnings:
+            wid     = str(w.get("warning_id", ""))
+            rule    = str(w.get("rule_id", "") or "")
+            msg     = str(w.get("message", "") or "")
+            func    = str(w.get("function_name", "") or "")
+            cat_raw = str(w.get("category", "") or "")
+            cat_cls = _cat_class(cat_raw)
+            cat_lbl = _cat_label(cat_raw)
+
+            a        = audit_map.get(wid, {})
+            status   = a.get("status", "Pending") or "Pending"
+            chosen   = a.get("chosen_fix", "") or ""
+            fix_code = a.get("fix_code", "") or ""
+            ts_val   = a.get("timestamp", "") or ""
+            viol     = a.get("viol_code", "") or ""
+
+            audit_tag = _audit_tag_html(status)
+
+            # Source context from enriched data
+            sc       = w.get("source_context", "") or ""
+            src_text = sc.get("context_text", "") if isinstance(sc, dict) else str(sc)
+            if not src_text and viol:
+                src_text = viol
+
+            # Fix suggestions
+            fixes     = w.get("ranked_fixes", w.get("fix_suggestions", w.get("fixes", []))) or []
+            fixes_html = ""
+            for fi, f in enumerate(fixes, 1):
+                pc    = f.get("patched_code", "") or f.get("corrected_code", "") or ""
+                title = f.get("title", f"Fix {fi}")
+                fixes_html += f"""
+              <div style="margin-bottom:12px;">
+                <div class="fix-label">✅ {esc(title)}</div>
+                {code_block(pc, "fixed")}
+              </div>"""
+
+            # Committed fix code block (from audit Excel)
+            committed_section = ""
+            if ("Committed" in status or "Edited" in status) and fix_code:
+                committed_section = f"""
+            <div class="section">
+              <div class="section-title">🔧 Fix Applied</div>
+              <div class="fix-label">✅ {esc(chosen)}</div>
+              {code_block(fix_code, "fixed")}
+            </div>"""
+
+            # Info grid extra rows
+            extra_info = ""
+            if ts_val:
+                extra_info += f'<div class="info-item"><div class="label">Timestamp</div><div class="value">{esc(ts_val)}</div></div>'
+            if chosen:
+                extra_info += f'<div class="info-item"><div class="label">Chosen Fix</div><div class="value">{esc(chosen)}</div></div>'
+
+            audit_status_color = ' style="color:#166534"' if ("Committed" in status or "Edited" in status) else ""
+
+            search_text = f'{wid} rule {rule} {msg} {func} {cat_lbl}'.lower()
+
+            cards_html += f"""
+    <div class="warn-card" data-cat="{esc(cat_lbl)}" data-file="{esc(fname)}" data-text="{esc(search_text)}">
+      <div class="warn-hdr">
+        <span class="wid">#{wid}</span>
+        <span class="rule-pill {cat_cls}">Rule {esc(rule)}</span>
+        <span class="wmsg">{esc(msg)}</span>
+        {f'<span class="func-tag">{esc(func)}</span>' if func else ''}
+        {audit_tag}
+        <span class="chevron">▼</span>
+      </div>
+      <div class="warn-body">
+        <div class="info-grid">
+          <div class="info-item"><div class="label">Category</div><div class="value">{esc(cat_lbl)}</div></div>
+          <div class="info-item"><div class="label">File</div><div class="value">{esc(fname)}</div></div>
+          <div class="info-item"><div class="label">Function</div><div class="value">{esc(func) if func else "—"}</div></div>
+          <div class="info-item"><div class="label">Audit Status</div><div class="value"{audit_status_color}>{esc(status)}</div></div>
+          {extra_info}
+        </div>
+        {f'<div class="section" style="margin-top:14px"><div class="section-title">🔴 Violated Code</div>{code_block(src_text, "violated")}</div>' if src_text else ''}
+        {committed_section}
+        {f'<div class="section"><div class="section-title">🔧 Fix Suggestions</div>{fixes_html}</div>' if fixes_html else ''}
+        {f'<div class="section" style="margin-top:14px"><div class="section-title">ℹ️ Details</div><p class="no-data">No fix suggestions available for this warning.</p></div>' if not fixes_html and not committed_section else ''}
+      </div>
+    </div>"""
+
+        detail_sections += f"""
+  <div class="file-section" data-file="{esc(fname)}">
+    <div class="file-hdr">
+      <div class="file-hdr-icon">📄</div>
+      <span class="file-name">{esc(fname)}</span>
+      <span class="file-badge">{n} warning{"s" if n != 1 else ""}</span>
+    </div>
+    {cards_html}
+  </div>"""
+
+    # ── 6. Assemble full HTML ────────────────────────────────────────────────
+    html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MISRA Compliance AI \u2014 Audit Report</title>
+<style>
+*{{box-sizing:border-box;margin:0;padding:0}}
+body{{font-family:'Segoe UI',Arial,sans-serif;background:#f3f4f6;color:#1f2937;min-height:100vh}}
+.header{{background:linear-gradient(135deg,#1e3a5f,#1e40af);padding:32px 40px;border-bottom:2px solid #1e3a5f}}
+.header-top{{display:flex;align-items:center;gap:14px}}
+.logo{{width:42px;height:42px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:900;flex-shrink:0}}
+.header h1{{font-size:24px;font-weight:800;color:#fff;letter-spacing:-.02em}}
+.header h1 span{{color:#93c5fd}}
+.header .sub{{color:#bfdbfe;font-size:13px;margin-top:6px}}
+.badge-row{{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}}
+.badge{{background:rgba(255,255,255,.15);color:#e0f2fe;font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;border:1px solid rgba(255,255,255,.2)}}
+.badge.green{{background:rgba(34,197,94,.2);color:#bbf7d0;border-color:rgba(34,197,94,.3)}}
+.stats{{display:flex;gap:14px;margin-top:22px;flex-wrap:wrap}}
+.stat{{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:12px 20px;text-align:center;min-width:100px}}
+.stat .n{{font-size:26px;font-weight:800;color:#fff}}
+.stat .l{{font-size:10px;color:#bfdbfe;text-transform:uppercase;letter-spacing:.06em;margin-top:2px}}
+.tabs{{background:#fff;border-bottom:1px solid #e5e7eb;display:flex;gap:0;padding:0 40px}}
+.tab{{padding:14px 20px;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s}}
+.tab.active{{color:#1d4ed8;border-bottom-color:#1d4ed8}}
+.tab:hover{{color:#374151}}
+.content{{max-width:1280px;margin:0 auto;padding:28px 24px}}
+.summary-grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;margin-bottom:28px}}
+.file-card{{background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05)}}
+.file-card-hdr{{display:flex;align-items:center;gap:10px;padding:14px 18px;background:#f9fafb;border-bottom:1px solid #e5e7eb}}
+.file-icon-wrap{{width:34px;height:34px;background:#dbeafe;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}}
+.file-card-name{{font-weight:700;font-size:13px;color:#111827;flex:1}}
+.warn-count-badge{{background:#dbeafe;color:#1d4ed8;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px}}
+.file-card-body{{padding:14px 18px}}
+.rule-list{{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}}
+.rule-chip{{background:#f3f4f6;color:#374151;font-size:11px;font-weight:600;padding:2px 9px;border-radius:6px;border:1px solid #e5e7eb;font-family:monospace}}
+.warn-mini{{font-size:12px;color:#6b7280;line-height:1.7}}
+.warn-mini strong{{color:#374151}}
+.fix-summary-line{{margin-top:10px;padding-top:10px;border-top:1px solid #f3f4f6;font-size:12px;color:#6b7280}}
+#tab-details{{display:none}}
+.filter-bar{{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center}}
+.filter-bar input{{flex:1;min-width:200px;padding:8px 14px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;outline:none;background:#fff}}
+.filter-bar input:focus{{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.1)}}
+.filter-bar select{{padding:8px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;background:#fff;outline:none;color:#374151;cursor:pointer}}
+.file-section{{margin-bottom:32px}}
+.file-hdr{{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:12px 18px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.04)}}
+.file-hdr-icon{{width:32px;height:32px;background:#eff6ff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px}}
+.file-name{{font-weight:800;font-size:13px;color:#111827;flex:1}}
+.file-badge{{background:#dbeafe;color:#1d4ed8;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px}}
+.warn-card{{background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:10px;overflow:hidden;transition:border-color .2s,box-shadow .2s;box-shadow:0 1px 3px rgba(0,0,0,.04)}}
+.warn-card.open{{border-color:#3b82f6;box-shadow:0 4px 14px rgba(59,130,246,.1)}}
+.warn-hdr{{display:flex;align-items:center;gap:10px;padding:13px 18px;background:#fafafa;flex-wrap:wrap;cursor:pointer;user-select:none}}
+.warn-hdr:hover{{background:#f3f4f6}}
+.wid{{font-family:monospace;font-size:12px;font-weight:700;background:#f3f4f6;color:#111827;padding:2px 9px;border-radius:6px;border:1px solid #e5e7eb;flex-shrink:0}}
+.rule-pill{{font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;border:1px solid;flex-shrink:0}}
+.rule-pill.req{{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}}
+.rule-pill.mand{{background:#fff7ed;color:#c2410c;border-color:#fed7aa}}
+.rule-pill.adv{{background:#f0fdf4;color:#15803d;border-color:#bbf7d0}}
+.wmsg{{color:#374151;font-size:13px;flex:1}}
+.func-tag{{color:#9ca3af;font-size:11px;background:#f9fafb;padding:2px 8px;border-radius:4px;border:1px solid #f0f0f0;flex-shrink:0}}
+.audit-tag{{font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;flex-shrink:0}}
+.audit-tag.committed{{background:#dcfce7;color:#166534;border:1px solid #bbf7d0}}
+.audit-tag.edited{{background:#fef9c3;color:#854d0e;border:1px solid #fde68a}}
+.audit-tag.none{{background:#f3f4f6;color:#9ca3af;border:1px solid #e5e7eb}}
+.chevron{{margin-left:auto;color:#9ca3af;transition:transform .2s;flex-shrink:0;font-size:14px}}
+.warn-card.open .chevron{{transform:rotate(180deg)}}
+.warn-body{{padding:18px;display:none;border-top:1px solid #e5e7eb;background:#fff}}
+.warn-card.open .warn-body{{display:block}}
+.section{{margin-bottom:16px}}
+.section-title{{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;gap:6px}}
+.info-grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}}
+.info-item{{background:#f9fafb;padding:10px 14px;border-radius:8px;border:1px solid #f0f0f0}}
+.info-item .label{{font-size:10px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.05em}}
+.info-item .value{{font-size:13px;color:#111827;font-weight:600;margin-top:3px}}
+.code-block{{background:#1e293b;border-radius:8px;overflow:auto;font-family:'Cascadia Code',Consolas,monospace;font-size:12px;max-height:280px;border:1px solid #e2e8f0;margin-top:6px;color:#e2e8f0}}
+.code-block.violated{{border-left:3px solid #ef4444}}
+.code-block.fixed{{border-left:3px solid #22c55e}}
+.code-block pre{{padding:12px 16px;white-space:pre-wrap}}
+.fix-label{{font-size:11px;font-weight:700;color:#16a34a;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em;display:flex;align-items:center;gap:5px}}
+.no-data{{font-size:13px;color:#9ca3af;font-style:italic}}
+.stats-bar{{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:24px}}
+.stat-card{{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px 20px;box-shadow:0 1px 3px rgba(0,0,0,.04)}}
+.stat-card .n{{font-size:28px;font-weight:800;color:#1d4ed8}}
+.stat-card .n.orange{{color:#d97706}}
+.stat-card .n.green{{color:#16a34a}}
+.stat-card .n.red{{color:#dc2626}}
+.stat-card .l{{font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-top:3px}}
+@media(max-width:640px){{.header{{padding:20px}}.tabs{{padding:0 16px}}.content{{padding:16px 12px}}}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="logo">M</div>
+    <div>
+      <h1>MISRA <span>Compliance AI</span></h1>
+      <div class="sub">Audit Report &nbsp;&middot;&nbsp; Generated {ts} &nbsp;&middot;&nbsp; SRM Technologies</div>
+    </div>
+  </div>
+  <div class="badge-row">
+    <span class="badge">MISRA-C 2012</span>
+    <span class="badge green">&#x25CF; Audit Complete</span>
+    <span class="badge">Polyspace Compatible</span>
+    <span class="badge">QAC Compatible</span>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="n">{total}</div><div class="l">Total Warnings</div></div>
+    <div class="stat"><div class="n">{len(by_file)}</div><div class="l">Source Files</div></div>
+    <div class="stat"><div class="n">{fixes_applied}</div><div class="l">Fixes Applied</div></div>
+    <div class="stat"><div class="n">{committed_count}</div><div class="l">Committed</div></div>
+    <div class="stat"><div class="n">{pending_count}</div><div class="l">Pending</div></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('summary',this)">&#128202; File Summary</div>
+  <div class="tab" onclick="switchTab('details',this)">&#9888;&#65039; Warning Details</div>
+</div>
+
+<div class="content">
+
+<div id="tab-summary">
+  <div class="stats-bar">
+    <div class="stat-card"><div class="n">{total}</div><div class="l">Total Warnings</div></div>
+    <div class="stat-card"><div class="n red">{cat_counts["R"]}</div><div class="l">Required (R)</div></div>
+    <div class="stat-card"><div class="n orange">{cat_counts["M"]}</div><div class="l">Mandatory (M)</div></div>
+    <div class="stat-card"><div class="n">{cat_counts["A"]}</div><div class="l">Advisory (A)</div></div>
+    <div class="stat-card"><div class="n green">{fixes_applied}</div><div class="l">Fixes Applied</div></div>
+    <div class="stat-card"><div class="n green">{committed_count}</div><div class="l">Committed</div></div>
+  </div>
+  <div class="summary-grid">{summary_cards}</div>
+</div>
+
+<div id="tab-details" style="display:none">
+  <div class="filter-bar">
+    <input type="text" id="searchInput" placeholder="&#128269; Search warnings, rules, functions..." oninput="filterWarnings()">
+    <select id="fileFilter" onchange="filterWarnings()">
+      <option value="">All Files</option>
+      {file_options}
+    </select>
+    <select id="catFilter" onchange="filterWarnings()">
+      <option value="">All Categories</option>
+      <option>MISRA-R (Required)</option>
+      <option>MISRA-M (Mandatory)</option>
+      <option>MISRA-A (Advisory)</option>
+    </select>
+  </div>
+  {detail_sections}
+</div>
+
+</div>
+
+<script>
+function switchTab(name, el) {{
+  document.getElementById('tab-summary').style.display = name === 'summary' ? 'block' : 'none';
+  document.getElementById('tab-details').style.display = name === 'details' ? 'block' : 'none';
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}}
+document.querySelectorAll('.warn-hdr').forEach(h => {{
+  h.addEventListener('click', () => h.parentElement.classList.toggle('open'));
+}});
+function filterWarnings() {{
+  const s = document.getElementById('searchInput').value.toLowerCase();
+  const f = document.getElementById('fileFilter').value;
+  const c = document.getElementById('catFilter').value;
+  document.querySelectorAll('.warn-card').forEach(card => {{
+    const text = card.dataset.text || '';
+    const file = card.dataset.file || '';
+    const cat  = card.dataset.cat  || '';
+    const show = (!s || text.includes(s)) && (!f || file === f) && (!c || cat === c);
+    card.style.display = show ? '' : 'none';
+  }});
+  document.querySelectorAll('.file-section').forEach(sec => {{
+    const visible = [...sec.querySelectorAll('.warn-card')].some(c => c.style.display !== 'none');
+    sec.style.display = visible ? '' : 'none';
+  }});
+}}
+</script>
+</body>
+</html>"""
+
+    out_dir   = PROJECT_ROOT / "Output_excel_after_run"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    html_file = out_dir / "misra_report.html"
+    html_file.write_text(html_content, encoding="utf-8")
+    return jsonify({"status": "ok", "url": "/view_html_report"})
+
+
+@app.route("/view_html_report")
+def view_html_report():
+    html_file = PROJECT_ROOT / "Output_excel_after_run" / "misra_report.html"
+    if not html_file.exists():
+        return "HTML report not generated yet.", 404
+    return send_file(str(html_file), mimetype="text/html")
 
 
 # Helper — apply rule config filter to uploaded Excel before analysis
