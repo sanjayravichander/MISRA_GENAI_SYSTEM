@@ -182,7 +182,7 @@ print(
     f"[settings] Hardware auto-detected: "
     f"RAM {_HW['ram_avail_gb']:.1f}/{_HW['ram_total_gb']:.1f} GB  "
     f"CPUs {_HW['cpu_cores']}  "
-    f"GPU {'yes' if _HW['has_gpu'] else 'no'}  →  "
+    f"GPU {'yes' if _HW['has_gpu'] else 'no'}  ->  "
     f"n_ctx={LLM_N_CTX}  n_threads={LLM_N_THREADS}  "
     f"n_gpu_layers={LLM_N_GPU_LAYERS}"
 )

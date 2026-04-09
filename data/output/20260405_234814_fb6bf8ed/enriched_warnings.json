@@ -1,0 +1,770 @@
+{
+  "warning_count": 15,
+  "warnings": [
+    {
+      "warning_id": "3344",
+      "warning_no": "3344",
+      "tool_name": "",
+      "category": "MISRA-R (Required)",
+      "checker_name": "",
+      "rule_id": "14.4",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Controlling expression not Boolean",
+      "file_path": "control.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "stop_motor",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "control.c",
+        "found": true,
+        "context_text": "       1  #include <stdint.h>\n       2  \n       3  void start_motor(void)\n       4  {\n       5  }\n       6  \n       7  void stop_motor(int state)\n       8  {\n       9      if (state)\n      10      {\n      11      }\n      12  }\n      13  \n      14  void spin_wait(void)\n      15  {\n      16      int i;\n      17  \n      18      for (i = 10; i < 0; i++)\n      19      {\n      20      }\n      21  }",
+        "context_start_line": 1,
+        "context_end_line": 21,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 14.4",
+          "description": "Non-Boolean if-controlling expression",
+          "guidelines": "Rule 14.4 (Required): Non-Boolean if-controlling expression. The controlling expression of the 'if' statement is 'count', an integer, not an essentially Boolean type. Using non-Boolean values as conditions reduces readability and may mask logic errors where the value is non-zero but not the intended condition.",
+          "score": 0.8741982732108514
+        },
+        {
+          "rule_id": "Rule 14.3",
+          "description": "Controlling expressions shall not be invariant",
+          "guidelines": "Rule 14.3 (Required): Controlling expressions shall not be invariant. This code violates Rule 14.3 because controlling expressions shall not be invariant. Loop and condition forms should make control flow explicit, safe, and reviewable.",
+          "score": 0.840764658630614
+        },
+        {
+          "rule_id": "Rule 16.7",
+          "description": "A switch expression shall not have essentially Boolean type",
+          "guidelines": "Rule 16.7 (Required): A switch expression shall not have essentially Boolean type. This code violates Rule 16.7 because a switch expression shall not have essentially Boolean type. Switch logic must be complete, explicit, and easy to follow.",
+          "score": 0.821895974894202
+        },
+        {
+          "rule_id": "Rule 20.9",
+          "description": "All identifiers used in the controlling expression of #if or #elif shall be #define'd before evaluation",
+          "guidelines": "Rule 20.9 (Required): All identifiers used in the controlling expression of #if or #elif shall be #define'd before evaluation. This code violates Rule 20.9 because all identifiers used in the controlling expression of #if or #elif shall be #define'd before evaluation. Preprocessor misuse can obscure intent and create fragile expansions.",
+          "score": 0.811069342983656
+        }
+      ]
+    },
+    {
+      "warning_id": "3340",
+      "warning_no": "3340",
+      "tool_name": "",
+      "category": "MISRA-R (Required)",
+      "checker_name": "",
+      "rule_id": "14.1",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Loop never executes",
+      "file_path": "control.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "spin_wait",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "control.c",
+        "found": true,
+        "context_text": "       1  #include <stdint.h>\n       2  \n       3  void start_motor(void)\n       4  {\n       5  }\n       6  \n       7  void stop_motor(int state)\n       8  {\n       9      if (state)\n      10      {\n      11      }\n      12  }\n      13  \n      14  void spin_wait(void)\n      15  {\n      16      int i;\n      17  \n      18      for (i = 10; i < 0; i++)\n      19      {\n      20      }\n      21  }",
+        "context_start_line": 1,
+        "context_end_line": 21,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 14.3",
+          "description": "Controlling expressions shall not be invariant",
+          "guidelines": "Rule 14.3 (Required): Controlling expressions shall not be invariant. This code violates Rule 14.3 because controlling expressions shall not be invariant. Loop and condition forms should make control flow explicit, safe, and reviewable.",
+          "score": 0.7781840591321197
+        },
+        {
+          "rule_id": "Rule 14.2",
+          "description": "A for loop shall be well-formed",
+          "guidelines": "Rule 14.2 (Required): A for loop shall be well-formed. This code violates Rule 14.2 because a for loop shall be well-formed. Loop and condition forms should make control flow explicit, safe, and reviewable.",
+          "score": 0.7770658635719726
+        },
+        {
+          "rule_id": "Rule 14.1",
+          "description": "A loop counter shall not have essentially floating type",
+          "guidelines": "Rule 14.1 (Required): A loop counter shall not have essentially floating type. This code violates Rule 14.1 because a loop counter shall not have essentially floating type. Loop and condition forms should make control flow explicit, safe, and reviewable.",
+          "score": 0.7744070592841313
+        }
+      ]
+    },
+    {
+      "warning_id": "3673",
+      "warning_no": "3673",
+      "tool_name": "",
+      "category": "MISRA-A (Advisory)",
+      "checker_name": "",
+      "rule_id": "8.13",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Pointer parameter should be const",
+      "file_path": "logger.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "log_message",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "logger.c",
+        "found": true,
+        "context_text": "       1  #include <stdio.h>\n       2  #include <string.h>\n       3  \n       4  static char log_buffer[64];\n       5  \n       6  void log_message(char * msg)\n       7  {\n       8      int status = 0;\n       9  \n      10      strcpy(log_buffer, msg);\n      11  \n      12      status = puts(log_buffer);\n      13  \n      14      status = status;\n      15  }",
+        "context_start_line": 1,
+        "context_end_line": 15,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 8.13",
+          "description": "A pointer should point to a const-qualified type whenever possible",
+          "guidelines": "Rule 8.13 (Advisory): A pointer should point to a const-qualified type whenever possible. This code violates Rule 8.13 because a pointer should point to a const-qualified type whenever possible. Inconsistent declarations and linkage decisions reduce maintainability and can break interface correctness.",
+          "score": 0.861847995482683
+        },
+        {
+          "rule_id": "Rule 18.3",
+          "description": "The relational operators > >= < <= shall not be applied to objects of pointer type except where they point into the same array",
+          "guidelines": "Rule 18.3 (Required): The relational operators > >= < <= shall not be applied to objects of pointer type except where they point into the same array. This code violates Rule 18.3 because the relational operators > >= < <= shall not be applied to objects of pointer type except where they point into the same array. Pointer lifetime and pointer arithmetic mistakes can easily produce undefined behaviour.",
+          "score": 0.806582045872552
+        },
+        {
+          "rule_id": "Rule 17.8",
+          "description": "A function parameter should not be modified",
+          "guidelines": "void scale(int *value)\n{\n    *value = *value * 2;   /* parameter modified */\n}",
+          "score": 0.747807214865334
+        },
+        {
+          "rule_id": "Rule 8.3",
+          "description": "All declarations of an object or function shall use the same names and type qualifiers",
+          "guidelines": "extern const int limit;\nextern int limit;   /* qualifiers differ */",
+          "score": 0.7475823034256703
+        }
+      ]
+    },
+    {
+      "warning_id": "3200",
+      "warning_no": "3200",
+      "tool_name": "",
+      "category": "MISRA-R (Required)",
+      "checker_name": "",
+      "rule_id": "17.7",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Return value ignored",
+      "file_path": "logger.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "log_message",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "logger.c",
+        "found": true,
+        "context_text": "       1  #include <stdio.h>\n       2  #include <string.h>\n       3  \n       4  static char log_buffer[64];\n       5  \n       6  void log_message(char * msg)\n       7  {\n       8      int status = 0;\n       9  \n      10      strcpy(log_buffer, msg);\n      11  \n      12      status = puts(log_buffer);\n      13  \n      14      status = status;\n      15  }",
+        "context_start_line": 1,
+        "context_end_line": 15,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 17.7",
+          "description": "The value returned by a function having non-void return type shall be used",
+          "guidelines": "Rule 17.7 (Required): The value returned by a function having non-void return type shall be used. This code violates Rule 17.7 because the value returned by a function having non-void return type shall be used. Function interfaces and calls must be explicit, safe, and consistently used.",
+          "score": 0.7842949132062854
+        },
+        {
+          "rule_id": "Rule 17.8",
+          "description": "A function parameter should not be modified",
+          "guidelines": "Rule 17.8 (Advisory): A function parameter should not be modified. This code violates Rule 17.8 because a function parameter should not be modified. Function interfaces and calls must be explicit, safe, and consistently used.",
+          "score": 0.7624081023952666
+        },
+        {
+          "rule_id": "Rule 17.4",
+          "description": "All exit paths from a function with non-void return type shall have an explicit return statement with an expression",
+          "guidelines": "Rule 17.4 (Mandatory): All exit paths from a function with non-void return type shall have an explicit return statement with an expression. This code violates Rule 17.4 because all exit paths from a function with non-void return type shall have an explicit return statement with an expression. Function interfaces and calls must be explicit, safe, and consistently used.",
+          "score": 0.7559374300290872
+        },
+        {
+          "rule_id": "Rule 17.3",
+          "description": "A function shall not be declared implicitly",
+          "guidelines": "Rule 17.3 (Mandatory): A function shall not be declared implicitly. This code violates Rule 17.3 because a function shall not be declared implicitly. Function interfaces and calls must be explicit, safe, and consistently used.",
+          "score": 0.7527749803073832
+        }
+      ]
+    },
+    {
+      "warning_id": "1257",
+      "warning_no": "1257",
+      "tool_name": "",
+      "category": "MISRA-R (Required)",
+      "checker_name": "",
+      "rule_id": "10.3",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Narrowing conversion",
+      "file_path": "main.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "main",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "main.c",
+        "found": true,
+        "context_text": "       1  #include <stdio.h>\n       2  #include <stdint.h>\n       3  #include \"calc.h\"\n       4  \n       5  static int validate_input(int value)\n       6  {\n       7      if (value < 0)\n       8      {\n       9          return 0;\n      10      }\n      11  \n      12      if ((uint8_t)value > 200U)\n      13      {\n      14          return 0;\n      15      }\n      16  \n      17      return 1;\n      18  }\n      19  \n      20  int main(void)\n      21  {\n      22      int x = 10;\n      23      int y = 20;\n      24      uint8_t small;\n      25  \n      26      int total = calculate_total(x, y);\n      27  \n      28      small = total + 300;\n      29  \n      30      printf(\"%d\\n\", total);\n      31  \n      32      if (validate_input(total) == 1)\n      33      {\n      34          total = total * total;\n      35      }\n      36  \n      37      return 0;\n      38  }",
+        "context_start_line": 1,
+        "context_end_line": 38,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 10.3",
+          "description": "Implicit narrowing conversion",
+          "guidelines": "Rule 10.3 (Required): Implicit narrowing conversion. The value of 'u16val' (uint16_t) is assigned to 'u8val' (uint8_t). This implicit narrowing conversion may silently truncate the value (300 → 44), causing data loss and incorrect program behaviour.",
+          "score": 0.8634639776174552
+        },
+        {
+          "rule_id": "Rule 10.5",
+          "description": "The value of an expression should not be cast to an inappropriate essential type",
+          "guidelines": "uint32_t wide = 300U;\nuint8_t  small = (uint8_t)wide;   /* cast to inappropriate essential type */",
+          "score": 0.7124482343960833
+        },
+        {
+          "rule_id": "Rule 7.3",
+          "description": "The lowercase character \"l\" shall not be used in a literal suffix",
+          "guidelines": "long value = 10l;   /* lowercase l suffix */",
+          "score": 0.7053589746890625
+        },
+        {
+          "rule_id": "Rule 10.8",
+          "description": "The value of a composite expression shall not be cast to a different essential type category or a wider essential type",
+          "guidelines": "uint16_t a, b;\nuint32_t x = (uint32_t)(a + b);   /* cast composite expression to wider category */",
+          "score": 0.7015159781284985
+        }
+      ]
+    },
+    {
+      "warning_id": "5124",
+      "warning_no": "5124",
+      "tool_name": "",
+      "category": "MISRA-R (Required)",
+      "checker_name": "",
+      "rule_id": "21.6",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Standard I/O function used",
+      "file_path": "main.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "main",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "main.c",
+        "found": true,
+        "context_text": "       1  #include <stdio.h>\n       2  #include <stdint.h>\n       3  #include \"calc.h\"\n       4  \n       5  static int validate_input(int value)\n       6  {\n       7      if (value < 0)\n       8      {\n       9          return 0;\n      10      }\n      11  \n      12      if ((uint8_t)value > 200U)\n      13      {\n      14          return 0;\n      15      }\n      16  \n      17      return 1;\n      18  }\n      19  \n      20  int main(void)\n      21  {\n      22      int x = 10;\n      23      int y = 20;\n      24      uint8_t small;\n      25  \n      26      int total = calculate_total(x, y);\n      27  \n      28      small = total + 300;\n      29  \n      30      printf(\"%d\\n\", total);\n      31  \n      32      if (validate_input(total) == 1)\n      33      {\n      34          total = total * total;\n      35      }\n      36  \n      37      return 0;\n      38  }",
+        "context_start_line": 1,
+        "context_end_line": 38,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 21.6",
+          "description": "The standard input/output library <stdio.h> shall not be used",
+          "guidelines": "Rule 21.6 (Required): The standard input/output library <stdio.h> shall not be used. This code violates Rule 21.6 because the standard input/output library <stdio.h> shall not be used. Restricted standard-library features are disallowed because they reduce determinism, analyzability, or portability.",
+          "score": 0.8190369890355794
+        },
+        {
+          "rule_id": "Rule 17.1",
+          "description": "The standard header file <stdarg.h> shall not be used",
+          "guidelines": "Rule 17.1 (Required): The standard header file <stdarg.h> shall not be used. This code violates Rule 17.1 because the standard header file <stdarg.h> shall not be used. Function interfaces and calls must be explicit, safe, and consistently used.",
+          "score": 0.8055357944269869
+        },
+        {
+          "rule_id": "Rule 21.7",
+          "description": "The atof, atoi, atol and atoll functions of <stdlib.h> shall not be used",
+          "guidelines": "Rule 21.7 (Required): The atof, atoi, atol and atoll functions of <stdlib.h> shall not be used. This code violates Rule 21.7 because the atof, atoi, atol and atoll functions of <stdlib.h> shall not be used. Restricted standard-library features are disallowed because they reduce determinism, analyzability, or portability.",
+          "score": 0.8045705167161361
+        },
+        {
+          "rule_id": "Rule 21.9",
+          "description": "The bsearch function of <stdlib.h> shall not be used",
+          "guidelines": "Rule 21.9 (Required): The bsearch function of <stdlib.h> shall not be used. This code violates Rule 21.9 because the bsearch function of <stdlib.h> shall not be used. Restricted standard-library features are disallowed because they reduce determinism, analyzability, or portability.",
+          "score": 0.7921583134317813
+        }
+      ]
+    },
+    {
+      "warning_id": "1338",
+      "warning_no": "1338",
+      "tool_name": "",
+      "category": "MISRA-R (Required)",
+      "checker_name": "",
+      "rule_id": "17.8",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Function parameter modified",
+      "file_path": "protocol.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "parse_frame",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "protocol.c",
+        "found": true,
+        "context_text": "       1  #include <stdint.h>\n       2  \n       3  void parse_frame(uint8_t * data, uint8_t len)\n       4  {\n       5      uint8_t i;\n       6  \n       7      for (i = 0U; i < len; i++)\n       8      {\n       9          data[i] = (uint8_t)(data[i] + 1U);\n      10      }\n      11  }\n      12  \n      13  uint8_t make_mask(uint8_t shift)\n      14  {\n      15      return (uint8_t)(1U << shift);\n      16  }",
+        "context_start_line": 1,
+        "context_end_line": 16,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 17.8",
+          "description": "A function parameter should not be modified",
+          "guidelines": "Rule 17.8 (Advisory): A function parameter should not be modified. This code violates Rule 17.8 because a function parameter should not be modified. Function interfaces and calls must be explicit, safe, and consistently used.",
+          "score": 0.8808143202590158
+        },
+        {
+          "rule_id": "Rule 17.3",
+          "description": "A function shall not be declared implicitly",
+          "guidelines": "Rule 17.3 (Mandatory): A function shall not be declared implicitly. This code violates Rule 17.3 because a function shall not be declared implicitly. Function interfaces and calls must be explicit, safe, and consistently used.",
+          "score": 0.7816779813409992
+        },
+        {
+          "rule_id": "Rule 17.5",
+          "description": "The function argument corresponding to a parameter declared to have an array type shall have an appropriate number of elements",
+          "guidelines": "Rule 17.5 (Advisory): The function argument corresponding to a parameter declared to have an array type shall have an appropriate number of elements. This code violates Rule 17.5 because the function argument corresponding to a parameter declared to have an array type shall have an appropriate number of elements. Function interfaces and calls must be explicit, safe, and consistently used.",
+          "score": 0.7799309895857135
+        }
+      ]
+    },
+    {
+      "warning_id": "2790",
+      "warning_no": "2790",
+      "tool_name": "",
+      "category": "MISRA-R (Required)",
+      "checker_name": "",
+      "rule_id": "12.2",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Shift range issue",
+      "file_path": "protocol.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "make_mask",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "protocol.c",
+        "found": true,
+        "context_text": "       1  #include <stdint.h>\n       2  \n       3  void parse_frame(uint8_t * data, uint8_t len)\n       4  {\n       5      uint8_t i;\n       6  \n       7      for (i = 0U; i < len; i++)\n       8      {\n       9          data[i] = (uint8_t)(data[i] + 1U);\n      10      }\n      11  }\n      12  \n      13  uint8_t make_mask(uint8_t shift)\n      14  {\n      15      return (uint8_t)(1U << shift);\n      16  }",
+        "context_start_line": 1,
+        "context_end_line": 16,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 12.2",
+          "description": "The right hand operand of a shift operator shall lie between zero and one less than the width in bits of the essential type of the left hand operand",
+          "guidelines": "Rule 12.2 (Required): The right hand operand of a shift operator shall lie between zero and one less than the width in bits of the essential type of the left hand operand. This code violates Rule 12.2 because the right hand operand of a shift operator shall lie between zero and one less than the width in bits of the essential type of the left hand operand. Expression complexity and unsafe shifts can hide errors and make evaluation harder to reason about.",
+          "score": 0.7898985920730351
+        },
+        {
+          "rule_id": "Rule 10.3",
+          "description": "Implicit narrowing conversion",
+          "guidelines": "Rule 10.3 (Required): Implicit narrowing conversion. The value of 'u16val' (uint16_t) is assigned to 'u8val' (uint8_t). This implicit narrowing conversion may silently truncate the value (300 → 44), causing data loss and incorrect program behaviour.",
+          "score": 0.7472436153997002
+        }
+      ]
+    },
+    {
+      "warning_id": "2883",
+      "warning_no": "2883",
+      "tool_name": "",
+      "category": "MISRA-M (Mandatory)",
+      "checker_name": "",
+      "rule_id": "9.1",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Variable used before initialization",
+      "file_path": "sensor.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "read_sensor",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "sensor.c",
+        "found": true,
+        "context_text": "       1  #include <stdint.h>\n       2  \n       3  int read_sensor(void)\n       4  {\n       5      int raw_value;\n       6      int output = 0;\n       7  \n       8      if (output == 0)\n       9      {\n      10          output = raw_value;\n      11      }\n      12  \n      13      return output;\n      14  }\n      15  \n      16  uint8_t scale_value(uint16_t input)\n      17  {\n      18      uint8_t scaled;\n      19  \n      20      scaled = input;\n      21      return scaled;\n      22  }",
+        "context_start_line": 1,
+        "context_end_line": 22,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 9.1",
+          "description": "Non-initialized local variable",
+          "guidelines": "Rule 9.1 (Mandatory): Non-initialized local variable. Variable 'x' is read before being assigned a value. Reading an automatic variable before it is set leads to undefined behaviour and unpredictable results.",
+          "score": 0.876738135507812
+        },
+        {
+          "rule_id": "Rule 9.4",
+          "description": "An element of an object shall not be initialized more than once",
+          "guidelines": "Rule 9.4 (Required): An element of an object shall not be initialized more than once. This code violates Rule 9.4 because an element of an object shall not be initialized more than once. Incorrect initialization can leave objects in unexpected states and introduce subtle runtime defects.",
+          "score": 0.8217901328162805
+        },
+        {
+          "rule_id": "Rule 20.9",
+          "description": "All identifiers used in the controlling expression of #if or #elif shall be #define'd before evaluation",
+          "guidelines": "Rule 20.9 (Required): All identifiers used in the controlling expression of #if or #elif shall be #define'd before evaluation. This code violates Rule 20.9 because all identifiers used in the controlling expression of #if or #elif shall be #define'd before evaluation. Preprocessor misuse can obscure intent and create fragile expansions.",
+          "score": 0.8217685166516584
+        },
+        {
+          "rule_id": "Rule 9.2",
+          "description": "Braces shall be used to indicate and match the structure in the non-zero initialization of arrays and structures",
+          "guidelines": "Rule 9.2 (Required): Braces shall be used to indicate and match the structure in the non-zero initialization of arrays and structures. This code violates Rule 9.2 because braces shall be used to indicate and match the structure in the non-zero initialization of arrays and structures. Incorrect initialization can leave objects in unexpected states and introduce subtle runtime defects.",
+          "score": 0.7978266803760293
+        }
+      ]
+    },
+    {
+      "warning_id": "1266",
+      "warning_no": "1266",
+      "tool_name": "",
+      "category": "MISRA-R (Required)",
+      "checker_name": "",
+      "rule_id": "10.3",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Narrowing conversion",
+      "file_path": "sensor.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "scale_value",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "sensor.c",
+        "found": true,
+        "context_text": "       1  #include <stdint.h>\n       2  \n       3  int read_sensor(void)\n       4  {\n       5      int raw_value;\n       6      int output = 0;\n       7  \n       8      if (output == 0)\n       9      {\n      10          output = raw_value;\n      11      }\n      12  \n      13      return output;\n      14  }\n      15  \n      16  uint8_t scale_value(uint16_t input)\n      17  {\n      18      uint8_t scaled;\n      19  \n      20      scaled = input;\n      21      return scaled;\n      22  }",
+        "context_start_line": 1,
+        "context_end_line": 22,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 10.3",
+          "description": "Implicit narrowing conversion",
+          "guidelines": "Rule 10.3 (Required): Implicit narrowing conversion. The value of 'u16val' (uint16_t) is assigned to 'u8val' (uint8_t). This implicit narrowing conversion may silently truncate the value (300 → 44), causing data loss and incorrect program behaviour.",
+          "score": 0.8634639776174552
+        },
+        {
+          "rule_id": "Rule 10.5",
+          "description": "The value of an expression should not be cast to an inappropriate essential type",
+          "guidelines": "uint32_t wide = 300U;\nuint8_t  small = (uint8_t)wide;   /* cast to inappropriate essential type */",
+          "score": 0.7124482343960833
+        },
+        {
+          "rule_id": "Rule 7.3",
+          "description": "The lowercase character \"l\" shall not be used in a literal suffix",
+          "guidelines": "long value = 10l;   /* lowercase l suffix */",
+          "score": 0.7053589746890625
+        },
+        {
+          "rule_id": "Rule 10.8",
+          "description": "The value of a composite expression shall not be cast to a different essential type category or a wider essential type",
+          "guidelines": "uint16_t a, b;\nuint32_t x = (uint32_t)(a + b);   /* cast composite expression to wider category */",
+          "score": 0.7015159781284985
+        }
+      ]
+    },
+    {
+      "warning_id": "2883_uninit_read",
+      "warning_no": "2883_uninit_read",
+      "tool_name": "",
+      "category": "MISRA-M (Mandatory)",
+      "checker_name": "",
+      "rule_id": "9.1",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Variable used before initialization",
+      "file_path": "uninit_read.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "func",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "uninit_read.c",
+        "found": true,
+        "context_text": "       1  #include <stdio.h>\n       2  \n       3  void func(void)\n       4  {\n       5      int x;       /* no init */\n       6      int y;\n       7  \n       8      y = x + 1;   /* x read before set */\n       9  \n      10      printf(\"%d\\n\", y);\n      11  }",
+        "context_start_line": 1,
+        "context_end_line": 11,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 9.1",
+          "description": "Non-initialized local variable",
+          "guidelines": "Rule 9.1 (Mandatory): Non-initialized local variable. Variable 'x' is read before being assigned a value. Reading an automatic variable before it is set leads to undefined behaviour and unpredictable results.",
+          "score": 0.876738135507812
+        },
+        {
+          "rule_id": "Rule 9.4",
+          "description": "An element of an object shall not be initialized more than once",
+          "guidelines": "Rule 9.4 (Required): An element of an object shall not be initialized more than once. This code violates Rule 9.4 because an element of an object shall not be initialized more than once. Incorrect initialization can leave objects in unexpected states and introduce subtle runtime defects.",
+          "score": 0.8217901328162805
+        },
+        {
+          "rule_id": "Rule 20.9",
+          "description": "All identifiers used in the controlling expression of #if or #elif shall be #define'd before evaluation",
+          "guidelines": "Rule 20.9 (Required): All identifiers used in the controlling expression of #if or #elif shall be #define'd before evaluation. This code violates Rule 20.9 because all identifiers used in the controlling expression of #if or #elif shall be #define'd before evaluation. Preprocessor misuse can obscure intent and create fragile expansions.",
+          "score": 0.8217685166516584
+        },
+        {
+          "rule_id": "Rule 9.2",
+          "description": "Braces shall be used to indicate and match the structure in the non-zero initialization of arrays and structures",
+          "guidelines": "Rule 9.2 (Required): Braces shall be used to indicate and match the structure in the non-zero initialization of arrays and structures. This code violates Rule 9.2 because braces shall be used to indicate and match the structure in the non-zero initialization of arrays and structures. Incorrect initialization can leave objects in unexpected states and introduce subtle runtime defects.",
+          "score": 0.7978266803760293
+        }
+      ]
+    },
+    {
+      "warning_id": "2980",
+      "warning_no": "2980",
+      "tool_name": "",
+      "category": "MISRA-R (Required)",
+      "checker_name": "",
+      "rule_id": "2.2",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Statement has no effect",
+      "file_path": "utils.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "helper_add",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "utils.c",
+        "found": true,
+        "context_text": "       1  #include <stdint.h>\n       2  \n       3  int helper_add(int a, int b)\n       4  {\n       5      int result = a + b;\n       6      result = result;\n       7      return result;\n       8  }\n       9  \n      10  void update_index(void)\n      11  {\n      12      int i = 0;\n      13      int arr[5] = {0};\n      14  \n      15      arr[i] = i++;\n      16      i = i++ + 1;\n      17  }\n      18  \n      19  int early_return(int value)\n      20  {\n      21      if (value == 0)\n      22      {\n      23          return 0;\n      24          value = 1;\n      25      }\n      26  \n      27      return value;\n      28  }\n      29  \n      30  int factorial(int n)\n      31  {\n      32      if (n <= 1)\n      33      {\n      34          return 1;\n      35      }\n      36  \n      37      return n * factorial(n - 1);\n      38  }",
+        "context_start_line": 1,
+        "context_end_line": 38,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 2.2",
+          "description": "There shall be no dead code",
+          "guidelines": "void f(void)\n{\n    int x = 0;\n    x = x + 1;\n    x;      /* statement has no effect */\n}",
+          "score": 0.7183383425569512
+        },
+        {
+          "rule_id": "Rule 21.2",
+          "description": "A reserved identifier or macro name shall not be declared",
+          "guidelines": "int errno;   /* reserved identifier declared */",
+          "score": 0.7112744758135217
+        },
+        {
+          "rule_id": "Rule 20.9",
+          "description": "All identifiers used in the controlling expression of #if or #elif shall be #define'd before evaluation",
+          "guidelines": "#if FEATURE_FLAG\n#endif   /* identifier not defined before use */",
+          "score": 0.7066565042948503
+        },
+        {
+          "rule_id": "Rule 14.4",
+          "description": "Non-Boolean if-controlling expression",
+          "guidelines": "int count = 10;\n/* non-Boolean controlling expression */\nif (count) {\n    do_something();\n}",
+          "score": 0.7025885049916138
+        }
+      ]
+    },
+    {
+      "warning_id": "400",
+      "warning_no": "400",
+      "tool_name": "",
+      "category": "MISRA-R (Required)",
+      "checker_name": "",
+      "rule_id": "13.2",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Evaluation order side effects",
+      "file_path": "utils.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "update_index",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "utils.c",
+        "found": true,
+        "context_text": "       1  #include <stdint.h>\n       2  \n       3  int helper_add(int a, int b)\n       4  {\n       5      int result = a + b;\n       6      result = result;\n       7      return result;\n       8  }\n       9  \n      10  void update_index(void)\n      11  {\n      12      int i = 0;\n      13      int arr[5] = {0};\n      14  \n      15      arr[i] = i++;\n      16      i = i++ + 1;\n      17  }\n      18  \n      19  int early_return(int value)\n      20  {\n      21      if (value == 0)\n      22      {\n      23          return 0;\n      24          value = 1;\n      25      }\n      26  \n      27      return value;\n      28  }\n      29  \n      30  int factorial(int n)\n      31  {\n      32      if (n <= 1)\n      33      {\n      34          return 1;\n      35      }\n      36  \n      37      return n * factorial(n - 1);\n      38  }",
+        "context_start_line": 1,
+        "context_end_line": 38,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 13.2",
+          "description": "The value of an expression and its persistent side effects shall be the same under all permitted evaluation orders",
+          "guidelines": "Rule 13.2 (Required): The value of an expression and its persistent side effects shall be the same under all permitted evaluation orders. This code violates Rule 13.2 because the value of an expression and its persistent side effects shall be the same under all permitted evaluation orders. Side effects in complex expressions make behaviour harder to predict and verify.",
+          "score": 0.8462238388743512
+        },
+        {
+          "rule_id": "Rule 13.3",
+          "description": "A full expression containing an increment or decrement operator should have no other potential side effects other than that caused by the increment or decrement operator",
+          "guidelines": "Rule 13.3 (Advisory): A full expression containing an increment or decrement operator should have no other potential side effects other than that caused by the increment or decrement operator. This code violates Rule 13.3 because a full expression containing an increment or decrement operator should have no other potential side effects other than that caused by the increment or decrement operator. Side effects in complex expressions make behaviour harder to predict and verify.",
+          "score": 0.8036866936031238
+        },
+        {
+          "rule_id": "Rule 13.1",
+          "description": "Initializer lists shall not contain persistent side effects",
+          "guidelines": "Rule 13.1 (Required): Initializer lists shall not contain persistent side effects. This code violates Rule 13.1 because initializer lists shall not contain persistent side effects. Side effects in complex expressions make behaviour harder to predict and verify.",
+          "score": 0.7828817709321968
+        },
+        {
+          "rule_id": "Rule 13.5",
+          "description": "The right hand operand of a logical && or || operator shall not contain persistent side effects",
+          "guidelines": "Rule 13.5 (Required): The right hand operand of a logical && or || operator shall not contain persistent side effects. This code violates Rule 13.5 because the right hand operand of a logical && or || operator shall not contain persistent side effects. Side effects in complex expressions make behaviour harder to predict and verify.",
+          "score": 0.7591934106229684
+        }
+      ]
+    },
+    {
+      "warning_id": "1460",
+      "warning_no": "1460",
+      "tool_name": "",
+      "category": "MISRA-R (Required)",
+      "checker_name": "",
+      "rule_id": "2.1",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Unreachable code detected",
+      "file_path": "utils.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "early_return",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "utils.c",
+        "found": true,
+        "context_text": "       1  #include <stdint.h>\n       2  \n       3  int helper_add(int a, int b)\n       4  {\n       5      int result = a + b;\n       6      result = result;\n       7      return result;\n       8  }\n       9  \n      10  void update_index(void)\n      11  {\n      12      int i = 0;\n      13      int arr[5] = {0};\n      14  \n      15      arr[i] = i++;\n      16      i = i++ + 1;\n      17  }\n      18  \n      19  int early_return(int value)\n      20  {\n      21      if (value == 0)\n      22      {\n      23          return 0;\n      24          value = 1;\n      25      }\n      26  \n      27      return value;\n      28  }\n      29  \n      30  int factorial(int n)\n      31  {\n      32      if (n <= 1)\n      33      {\n      34          return 1;\n      35      }\n      36  \n      37      return n * factorial(n - 1);\n      38  }",
+        "context_start_line": 1,
+        "context_end_line": 38,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 2.1",
+          "description": "A project shall not contain unreachable code",
+          "guidelines": "Rule 2.1 (Required): A project shall not contain unreachable code. This code violates Rule 2.1 because a project shall not contain unreachable code. Unused, dead, or unreachable constructs increase maintenance cost and can hide real defects.",
+          "score": 0.8320532639930821
+        },
+        {
+          "rule_id": "Rule 2.2",
+          "description": "There shall be no dead code",
+          "guidelines": "Rule 2.2 (Required): There shall be no dead code. This code violates Rule 2.2 because there shall be no dead code. Unused, dead, or unreachable constructs increase maintenance cost and can hide real defects.",
+          "score": 0.7914440945437703
+        },
+        {
+          "rule_id": "Rule 1.3",
+          "description": "There shall be no occurrence of undefined or critical unspecified behaviour",
+          "guidelines": "Rule 1.3 (Required): There shall be no occurrence of undefined or critical unspecified behaviour. This code violates Rule 1.3 because there shall be no occurrence of undefined or critical unspecified behaviour. Violating core language and implementation rules can make the program non-portable, non-compliant, or undefined.",
+          "score": 0.7657317179489628
+        }
+      ]
+    },
+    {
+      "warning_id": "1520",
+      "warning_no": "1520",
+      "tool_name": "",
+      "category": "MISRA-R (Required)",
+      "checker_name": "",
+      "rule_id": "17.2",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Recursive function detected",
+      "file_path": "utils.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "factorial",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "utils.c",
+        "found": true,
+        "context_text": "       1  #include <stdint.h>\n       2  \n       3  int helper_add(int a, int b)\n       4  {\n       5      int result = a + b;\n       6      result = result;\n       7      return result;\n       8  }\n       9  \n      10  void update_index(void)\n      11  {\n      12      int i = 0;\n      13      int arr[5] = {0};\n      14  \n      15      arr[i] = i++;\n      16      i = i++ + 1;\n      17  }\n      18  \n      19  int early_return(int value)\n      20  {\n      21      if (value == 0)\n      22      {\n      23          return 0;\n      24          value = 1;\n      25      }\n      26  \n      27      return value;\n      28  }\n      29  \n      30  int factorial(int n)\n      31  {\n      32      if (n <= 1)\n      33      {\n      34          return 1;\n      35      }\n      36  \n      37      return n * factorial(n - 1);\n      38  }",
+        "context_start_line": 1,
+        "context_end_line": 38,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 17.3",
+          "description": "A function shall not be declared implicitly",
+          "guidelines": "Rule 17.3 (Mandatory): A function shall not be declared implicitly. This code violates Rule 17.3 because a function shall not be declared implicitly. Function interfaces and calls must be explicit, safe, and consistently used.",
+          "score": 0.7562343303595722
+        },
+        {
+          "rule_id": "Rule 17.8",
+          "description": "A function parameter should not be modified",
+          "guidelines": "Rule 17.8 (Advisory): A function parameter should not be modified. This code violates Rule 17.8 because a function parameter should not be modified. Function interfaces and calls must be explicit, safe, and consistently used.",
+          "score": 0.7543699254555444
+        },
+        {
+          "rule_id": "Rule 17.2",
+          "description": "Functions shall not call themselves, either directly or indirectly",
+          "guidelines": "Rule 17.2 (Required): Functions shall not call themselves, either directly or indirectly. This code violates Rule 17.2 because functions shall not call themselves, either directly or indirectly. Function interfaces and calls must be explicit, safe, and consistently used.",
+          "score": 0.7533242395099792
+        },
+        {
+          "rule_id": "Rule 17.1",
+          "description": "The standard header file <stdarg.h> shall not be used",
+          "guidelines": "Rule 17.1 (Required): The standard header file <stdarg.h> shall not be used. This code violates Rule 17.1 because the standard header file <stdarg.h> shall not be used. Function interfaces and calls must be explicit, safe, and consistently used.",
+          "score": 0.7528229070952096
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "warning_count": 1,
+  "warnings": [
+    {
+      "warning_id": "2883",
+      "warning_no": "2883",
+      "tool_name": "",
+      "category": "MISRA-M (Mandatory)",
+      "checker_name": "",
+      "rule_id": "9.1",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Variable used before initialization",
+      "file_path": "uninit_read.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "func",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "uninit_read.c",
+        "found": true,
+        "context_text": "       1  #include <stdio.h>\n       2  \n       3  void func(void)\n       4  {\n       5      int x;       /* no init */\n       6      int y;\n       7  \n       8      y = x + 1;   /* x read before set */\n       9  \n      10      printf(\"%d\\n\", y);\n      11  }",
+        "context_start_line": 1,
+        "context_end_line": 11,
+        "flagged_lines": []
+      }
+    }
+  ]
+}

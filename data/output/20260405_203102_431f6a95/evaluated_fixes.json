@@ -1,0 +1,294 @@
+{
+  "warning_count": 2,
+  "confidence_high": 0,
+  "confidence_medium": 2,
+  "confidence_low": 0,
+  "needs_manual_review": 0,
+  "results": [
+    {
+      "guideline_id": "Rule 14.4",
+      "guideline_title": "Non-Boolean if-controlling expression",
+      "explanation": {
+        "summary": "The controlling expression of the 'if' statement is 'state', an integer, not an essentially Boolean type. Using non-Boolean values as conditions reduces readability and may mask logic errors where the value is non-zero but not the intended condition.",
+        "rule_basis": "Rule 14.4 (Required): Non-Boolean if-controlling expression.",
+        "code_evidence": "The provided code snippet contains an if statement with a non-Boolean controlling expression."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Convert if statement to a conditional expression",
+          "why": "This approach converts the if statement to a conditional expression, making it clearer that a Boolean value is expected.",
+          "patched_code": "7  void stop_motor(int state)\n       8  {\n       9    (state != 0) ? {\n      10      } : {};\n      11  }",
+          "compliance_notes": "This fix ensures that the if statement is only executed when the controlling expression is a Boolean value.",
+          "risk_reduction": "This fix reduces the risk of logic errors and improves readability.",
+          "original_patched_code": "7  void stop_motor(int state)\n       8  {\n       9    (state != 0) ? {\n      10      } : {};\n      11  }",
+          "original_title": "Convert if statement to a conditional expression",
+          "confidence": "Medium",
+          "is_correct": true,
+          "issues_found": []
+        }
+      ],
+      "risk_analysis": {
+        "severity": "Medium",
+        "why": "The use of a non-Boolean value as a controlling expression can lead to logic errors and reduced readability.",
+        "potential_failures": [
+          "Logic errors due to incorrect interpretation of non-Boolean values"
+        ],
+        "runtime_risk": "Medium",
+        "maintainability_risk": "Medium"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Implement the fix",
+        "required_justification": "The use of non-Boolean values as controlling expressions is not allowed according to MISRA guidelines.",
+        "review_notes": "Ensure that all if statements use essentially Boolean types as controlling expressions."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "ca495443-61eb-4f47-a1c5-63f95be23040",
+          "d60078ca-7fbd-4c75-871c-6fdd1a403f3f",
+          "8ec8440d-148a-474f-a13e-c324b18340c4"
+        ],
+        "retrieval_score_raw": 0.791543,
+        "retrieval_score_reranked": 0.871543,
+        "confidence": 0.9,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear consistent."
+        ]
+      },
+      "warning_id": "3344",
+      "source": "final_cache",
+      "_from_cache": true,
+      "evaluation": {
+        "version": "3.0.1",
+        "description": "Evaluation of MISRA fixes for Warning 3344 Rule 14.4",
+        "properties": {
+          "source_code": {
+            "type": "string",
+            "description": "The original source code with the MISRA warning"
+          },
+          "patched_code": {
+            "type": "string",
+            "description": "The patched source code after applying the MISRA fix"
+          },
+          "rule_text": {
+            "type": "string",
+            "description": "The text of the MISRA rule related to the warning"
+          },
+          "fixes_to_evaluate": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "The unique identifier for the fix"
+                },
+                "description": {
+                  "type": "string",
+                  "description": "A brief description of the fix"
+                },
+                "why": {
+                  "type": "string",
+                  "description": "The reason for applying the fix"
+                },
+                "patched_code": {
+                  "type": "string",
+                  "description": "The patched source code after applying the fix"
+                },
+                "compliance": {
+                  "type": "string",
+                  "description": "Whether the fix ensures compliance with the MISRA rule"
+                },
+                "risk_reduction": {
+                  "type": "string",
+                  "description": "The reduction in risk achieved by applying the fix"
+                }
+              },
+              "required": [
+                "id",
+                "description",
+                "why",
+                "patched_code",
+                "compliance",
+                "risk_reduction"
+              ]
+            }
+          },
+          "evaluation": {
+            "type": "object",
+            "properties": {
+              "summary": {
+                "type": "string",
+                "description": "A summary of the evaluation results"
+              },
+              "rule_basis": {
+                "type": "string",
+                "description": "The basis for the MISRA rule related to the warning"
+              }
+            },
+            "required": [
+              "summary",
+              "rule_basis"
+            ]
+          }
+        },
+        "warning_id": "3344",
+        "rule_id": "",
+        "overall_confidence": "Medium",
+        "needs_manual_review": false,
+        "evaluated_fixes": [],
+        "evaluator_notes": "",
+        "_eval_from_cache": true
+      },
+      "overall_confidence": "Medium",
+      "needs_manual_review": false,
+      "evaluator_notes": "",
+      "_eval_from_cache": true
+    },
+    {
+      "guideline_id": "Rule 21.7",
+      "guideline_title": "The atof, atoi, atol and atoll functions of <stdlib.h> shall not be used",
+      "explanation": {
+        "summary": "The code uses atoi function which is not allowed according to MISRA.",
+        "rule_basis": "This code violates Rule 21.7 because the atoi function of <stdlib.h> shall not be used. Restricted standard-library features are disallowed because they reduce determinism, analyzability, or portability.",
+        "code_evidence": "The atoi function is used in the code snippet."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Replace atoi with a safer alternative",
+          "why": "The atoi function is not recommended due to its potential for undefined behavior.",
+          "patched_code": "/* Replace atoi with sscanf */\nint i = 0;\nsscanf(some_string, \"%d\", &i);",
+          "compliance_notes": "This fix replaces the atoi function with sscanf, which is a safer alternative for converting strings to integers.",
+          "risk_reduction": "Using sscanf instead of atoi reduces the risk of undefined behavior.",
+          "original_patched_code": "/* Replace atoi with sscanf */\nint i = 0;\nsscanf(some_string, \"%d\", &i);",
+          "original_title": "Replace atoi with a safer alternative",
+          "confidence": "Medium",
+          "is_correct": true,
+          "issues_found": []
+        }
+      ],
+      "risk_analysis": {
+        "severity": "High",
+        "why": "The use of atoi function can lead to undefined behavior.",
+        "potential_failures": [
+          "Undefined behavior due to incorrect input"
+        ],
+        "runtime_risk": "High",
+        "maintainability_risk": "High"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Implement the fix",
+        "required_justification": "The use of atoi function is not allowed according to MISRA.",
+        "review_notes": "Ensure that all instances of atoi are replaced with safer alternatives."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "ae5fc129-e704-4b08-9b30-c09715775425",
+          "755186d5-3629-410c-8f29-aff0630d2719",
+          "8ec8440d-148a-474f-a13e-c324b18340c4"
+        ],
+        "retrieval_score_raw": 0.711057,
+        "retrieval_score_reranked": 0.791057,
+        "confidence": 0.9,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear inconsistent. The warning text suggests a loop never executes, while the retrieved context indicates a violation of Rule 21.7.",
+          "Warning text and retrieved rule statement may not fully align."
+        ]
+      },
+      "warning_id": "3340",
+      "source": "final_cache",
+      "_from_cache": true,
+      "evaluation": {
+        "jsonSchema": {
+          "title": "MISRA Fix Evaluation",
+          "type": "object",
+          "properties": {
+            "SOURCE": {
+              "type": "string",
+              "description": "The original source code"
+            },
+            "MISRA_RULE_TEXT": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "The text of the MISRA rule that was violated"
+            },
+            "FIXES_TO_EVALUATE": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "number",
+                    "description": "The unique identifier for the fix"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "A brief description of the fix"
+                  },
+                  "patched_code": {
+                    "type": "string",
+                    "description": "The patched code after applying the fix"
+                  },
+                  "compliance": {
+                    "type": "string",
+                    "description": "A statement about whether the fix complies with the MISRA rule"
+                  },
+                  "risk_reduction": {
+                    "type": "string",
+                    "description": "An explanation of how the fix reduces risk"
+                  },
+                  "explanation": {
+                    "type": "object",
+                    "properties": {
+                      "summary": {
+                        "type": "string",
+                        "description": "A summary of the issue"
+                      },
+                      "rule_basis": {
+                        "type": "string",
+                        "description": "The basis for the MISRA rule"
+                      }
+                    },
+                    "required": [
+                      "summary",
+                      "rule_basis"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "description",
+                  "patched_code",
+                  "compliance",
+                  "risk_reduction",
+                  "explanation"
+                ]
+              }
+            }
+          },
+          "required": [
+            "SOURCE",
+            "MISRA_RULE_TEXT",
+            "FIXES_TO_EVALUATE"
+          ]
+        },
+        "warning_id": "3340",
+        "rule_id": "",
+        "overall_confidence": "Medium",
+        "needs_manual_review": false,
+        "evaluated_fixes": [],
+        "evaluator_notes": "",
+        "_eval_from_cache": true
+      },
+      "overall_confidence": "Medium",
+      "needs_manual_review": false,
+      "evaluator_notes": "",
+      "_eval_from_cache": true
+    }
+  ]
+}

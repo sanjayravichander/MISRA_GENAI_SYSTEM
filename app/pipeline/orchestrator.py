@@ -29,7 +29,7 @@ from typing import Any, Dict, List
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-# ── Force line-buffered stdout so server.py receives print() output immediately
+# -- Force line-buffered stdout so server.py receives print() output immediately
 # rather than waiting for the 8KB pipe buffer to fill (critical on Windows).
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(line_buffering=True)
@@ -55,7 +55,7 @@ def phase_6a_parse(
     verbose: bool = True,
 ) -> List[Dict[str, Any]]:
     if verbose:
-        print(f"\n{'─'*60}", flush=True)
+        print(f"\n{'-'*60}", flush=True)
         print(f"Phase 6a — Parsing Polyspace report", flush=True)
         print(f"  Excel  : {xlsx_path}", flush=True)
         print(f"  Sources: {source_dir}", flush=True)
@@ -88,7 +88,7 @@ def phase_6b_retrieve(
     verbose: bool = True,
 ) -> List[Dict[str, Any]]:
     if verbose:
-        print(f"\n{'─'*60}", flush=True)
+        print(f"\n{'-'*60}", flush=True)
         print(f"Phase 6b — Retrieving MISRA context (Qdrant + BGE)", flush=True)
 
     from app.retrieval.retrieve_rules import retrieve_rules
@@ -133,7 +133,7 @@ def phase_7_generate(
     verbose: bool = True,
 ) -> List[Dict[str, Any]]:
     if verbose:
-        print(f"\n{'─'*60}", flush=True)
+        print(f"\n{'-'*60}", flush=True)
         print(f"Phase 7 — Generating fix suggestions (llama-cpp)", flush=True)
         print(f"  Model : {LOCAL_MODEL_PATH}", flush=True)
         print(f"  Warnings: {len(enriched)}", flush=True)
@@ -191,10 +191,25 @@ def phase_7_generate(
 
         t0 = time.time()
         try:
+            # Build code snippet — synthesize a minimal stub if source unavailable
+            _raw_snippet = w.get("source_context", {}).get("context_text", "")
+            if not _raw_snippet or _raw_snippet.startswith("[Source file not found"):
+                _fn   = w.get("function_name", "func")
+                _fp   = w.get("file_path", "source.c")
+                _msg  = w.get("message", "")
+                _rule = w.get("rule_id", "")
+                _raw_snippet = (
+                    f"/* Warning: {_msg} */\n"
+                    f"/* Rule: {_rule} in function '{_fn}' of {_fp} */\n"
+                    f"/* Source file not uploaded — fix the flagged construct below */\n"
+                    f"void {_fn}(/* params */) {{\n"
+                    f"    /* TODO: apply {_rule} fix here */\n"
+                    f"}}"
+                )
             bundle = generate_misra_response(
                 rule_id=w.get("rule_id", ""),
                 warning_message=w.get("message", ""),
-                code_snippet=w.get("source_context", {}).get("context_text", ""),
+                code_snippet=_raw_snippet,
                 checker_name=w.get("checker_name", ""),
                 config=config,
                 top_k=5,
@@ -247,7 +262,7 @@ def phase_8_evaluate(
     verbose: bool = True,
 ) -> List[Dict[str, Any]]:
     if verbose:
-        print(f"\n{'─'*60}", flush=True)
+        print(f"\n{'-'*60}", flush=True)
         print(f"Phase 8 — Evaluating fix suggestions (self-critique)", flush=True)
 
     from app.pipeline.evaluate_fixes import evaluate_all

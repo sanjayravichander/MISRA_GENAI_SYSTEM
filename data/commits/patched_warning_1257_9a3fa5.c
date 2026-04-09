@@ -1,0 +1,1 @@
+small = (uint8_t)(total + 300);

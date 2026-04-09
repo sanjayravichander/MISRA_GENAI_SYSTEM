@@ -1,0 +1,59 @@
+{
+  "warning_count": 2,
+  "warnings": [
+    {
+      "warning_id": "1257",
+      "warning_no": "1257",
+      "tool_name": "",
+      "category": "MISRA-R (Required)",
+      "checker_name": "",
+      "rule_id": "10.3",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Narrowing conversion",
+      "file_path": "main.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "main",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "main.c",
+        "found": true,
+        "context_text": "       1  #include <stdio.h>\n       2  #include <stdint.h>\n       3  #include \"calc.h\"\n       4  \n       5  static int validate_input(int value)\n       6  {\n       7      if (value < 0)\n       8      {\n       9          return 0;\n      10      }\n      11  \n      12      if ((uint8_t)value > 200U)\n      13      {\n      14          return 0;\n      15      }\n      16  \n      17      return 1;\n      18  }\n      19  \n      20  int main(void)\n      21  {\n      22      int x = 10;\n      23      int y = 20;\n      24      uint8_t small;\n      25  \n      26      int total = calculate_total(x, y);\n      27  \n      28      small = total + 300;\n      29  \n      30      printf(\"%d\\n\", total);\n      31  \n      32      if (validate_input(total) == 1)\n      33      {\n      34          total = total * total;\n      35      }\n      36  \n      37      return 0;\n      38  }",
+        "context_start_line": 1,
+        "context_end_line": 38,
+        "flagged_lines": []
+      }
+    },
+    {
+      "warning_id": "5124",
+      "warning_no": "5124",
+      "tool_name": "",
+      "category": "MISRA-R (Required)",
+      "checker_name": "",
+      "rule_id": "21.6",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Standard I/O function used",
+      "file_path": "main.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "main",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "main.c",
+        "found": true,
+        "context_text": "       1  #include <stdio.h>\n       2  #include <stdint.h>\n       3  #include \"calc.h\"\n       4  \n       5  static int validate_input(int value)\n       6  {\n       7      if (value < 0)\n       8      {\n       9          return 0;\n      10      }\n      11  \n      12      if ((uint8_t)value > 200U)\n      13      {\n      14          return 0;\n      15      }\n      16  \n      17      return 1;\n      18  }\n      19  \n      20  int main(void)\n      21  {\n      22      int x = 10;\n      23      int y = 20;\n      24      uint8_t small;\n      25  \n      26      int total = calculate_total(x, y);\n      27  \n      28      small = total + 300;\n      29  \n      30      printf(\"%d\\n\", total);\n      31  \n      32      if (validate_input(total) == 1)\n      33      {\n      34          total = total * total;\n      35      }\n      36  \n      37      return 0;\n      38  }",
+        "context_start_line": 1,
+        "context_end_line": 38,
+        "flagged_lines": []
+      }
+    }
+  ]
+}

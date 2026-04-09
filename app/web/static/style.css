@@ -1646,14 +1646,14 @@ a:hover {
 }
 
 .detail-section-title {
-    font-size: 10.5px;
+    font-size: 11px;
     font-weight: 800;
-    color: var(--text-muted);
+    color: var(--text);
     text-transform: uppercase;
-    letter-spacing: .09em;
+    letter-spacing: .08em;
     margin-bottom: 10px;
     padding-bottom: 7px;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 2px solid var(--border);
     font-family: var(--font-ui);
 }
 
@@ -1662,9 +1662,9 @@ a:hover {
     border: 1px solid var(--border);
     border-radius: var(--r2);
     padding: 14px 18px;
-    font-size: 13px;
-    color: var(--text-sub);
-    line-height: 1.75;
+    font-size: 13.5px;
+    color: var(--text);
+    line-height: 1.8;
 }
 
 .info-box.eval-note {
@@ -2802,109 +2802,150 @@ a:hover {
    appending any missing pieces)
    ═══════════════════════════════════════════════════════════ */
 .pr-counter {
-    font-size: 12.5px;
-    font-weight: 600;
+    font-size: 12px;
+    font-weight: 700;
     color: var(--text-muted);
     font-family: var(--font-ui);
-    padding: 8px 0 4px;
-    letter-spacing: .01em;
+    padding: 10px 2px 6px;
+    letter-spacing: .02em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .pr-counter-done {
-    color: var(--accent);
+    color: #059669;
     font-weight: 700;
+}
+
+.pr-counter-done::before {
+    content: '';
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, .18);
+    flex-shrink: 0;
 }
 
 .per-record-wrap {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    margin: 12px 0 0;
-    max-height: 460px;
-    overflow-y: auto;
-    padding-right: 4px;
+    gap: 6px;
+    margin: 8px 0 0;
+    padding-right: 2px;
     scroll-behavior: smooth;
 }
 
 .pr-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--r3);
-    padding: 14px 18px 12px;
-    box-shadow: var(--shadow-xs);
-    transition: border-color var(--t), box-shadow var(--t), background var(--t);
+    background: #fff;
+    border: 1px solid #e8edf4;
+    border-radius: 12px;
+    padding: 14px 18px 10px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, .05), 0 0 0 0 transparent;
+    transition: border-color .2s, box-shadow .2s, transform .15s;
     animation: card-in .28s var(--ease) both;
+    position: relative;
+    overflow: hidden;
+}
+
+.pr-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: #e2e8f0;
+    border-radius: 3px 0 0 3px;
+    transition: background .3s;
 }
 
 .pr-card:hover {
-    border-color: var(--border2);
-    box-shadow: var(--shadow-sm);
+    border-color: #c7d6ed;
+    box-shadow: 0 3px 10px rgba(15, 23, 42, .08);
+    transform: translateY(-1px);
 }
 
 .pr-card.pr-card-done {
-    border-color: var(--accent-line);
-    background: var(--accent-soft);
+    border-color: #bbf0d8;
+    background: linear-gradient(135deg, #f0fdf8 0%, #ffffff 100%);
+}
+
+.pr-card.pr-card-done::before {
+    background: linear-gradient(180deg, #10b981, #059669);
+}
+
+.pr-card.stream-new::before {
+    background: #f59e0b;
 }
 
 .pr-header {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 12px;
+    margin-bottom: 4px;
 }
 
 .pr-wid {
     font-family: var(--font-mono);
-    font-size: 11.5px;
+    font-size: 13px;
     font-weight: 700;
-    color: var(--text);
-    background: var(--bg-2);
-    padding: 2px 9px;
-    border-radius: var(--r);
+    color: #1e293b;
+    background: #f1f5f9;
+    padding: 3px 10px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
     flex-shrink: 0;
+    letter-spacing: .01em;
 }
 
 .pr-status-badge {
-    font-size: 10.5px;
+    font-size: 10px;
     font-weight: 700;
-    padding: 2px 10px;
+    padding: 2px 9px;
     border-radius: 20px;
     font-family: var(--font-ui);
+    letter-spacing: .04em;
+    text-transform: uppercase;
     transition: all var(--t);
 }
 
 .pr-running {
-    background: var(--amber-bg);
-    color: var(--amber);
-    border: 1px solid rgba(184, 106, 0, .2);
+    background: #fef9ec;
+    color: #b45309;
+    border: 1px solid rgba(245, 158, 11, .3);
 }
 
 .pr-done {
-    background: var(--green-bg);
-    color: var(--green);
-    border: 1px solid rgba(45, 125, 90, .2);
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid rgba(16, 185, 129, .25);
 }
 
 .pr-view-btn {
     margin-left: auto;
-    font-size: 11.5px;
+    font-size: 12px;
     font-weight: 700;
-    padding: 5px 14px;
-    border-radius: 20px;
-    background: var(--accent);
+    padding: 6px 16px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
     color: #fff;
     border: none;
     cursor: pointer;
     font-family: var(--font-ui);
     animation: btn-pop .35s var(--ease) both;
-    transition: all var(--t) var(--ease);
+    transition: all .2s ease;
     white-space: nowrap;
+    letter-spacing: .01em;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, .25);
 }
 
 .pr-view-btn:hover {
-    background: var(--accent-hover);
+    background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%);
     transform: translateY(-1px);
-    box-shadow: 0 4px 14px rgba(30, 95, 168, .28);
+    box-shadow: 0 5px 16px rgba(30, 64, 175, .35);
 }
 
 @keyframes btn-pop {
@@ -2923,7 +2964,7 @@ a:hover {
 .pr-steps-bar {
     display: flex;
     align-items: center;
-    padding: 14px 8px 10px;
+    padding: 12px 4px 6px;
     gap: 0;
 }
 
@@ -2931,32 +2972,33 @@ a:hover {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 5px;
+    gap: 4px;
     flex-shrink: 0;
     position: relative;
-    min-width: 52px;
+    min-width: 56px;
 }
 
 .pr-step-node {
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid #cbd5e1;
-    background: var(--surface);
-    transition: all 0.35s ease;
+    border: 2px solid #dde3ed;
+    background: #f8fafc;
+    transition: all 0.3s cubic-bezier(.4, 0, .2, 1);
     position: relative;
     z-index: 1;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, .06);
 }
 
 .pr-step-dot {
-    width: 7px;
-    height: 7px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
-    background: #cbd5e1;
-    transition: all 0.35s ease;
+    background: #c8d3e0;
+    transition: all 0.3s ease;
     display: block;
 }
 
@@ -2969,37 +3011,52 @@ a:hover {
 }
 
 .pr-step-lbl {
-    font-size: 9.5px;
-    font-weight: 600;
-    color: var(--text-dim);
+    font-size: 9px;
+    font-weight: 700;
+    color: #94a3b8;
     text-transform: uppercase;
-    letter-spacing: .05em;
+    letter-spacing: .07em;
     font-family: var(--font-ui);
     white-space: nowrap;
-    transition: color 0.3s ease;
+    transition: color 0.25s ease;
 }
 
 .pr-step-line {
     flex: 1;
     height: 2px;
-    background: #e2e8f0;
+    background: #e8edf4;
     border-radius: 2px;
-    margin-bottom: 19px;
-    transition: background 0.4s ease;
+    margin-bottom: 22px;
+    transition: background 0.5s cubic-bezier(.4, 0, .2, 1);
     min-width: 12px;
+    overflow: hidden;
+    position: relative;
 }
 
 .pr-step-line-done {
-    background: #10b981;
+    background: linear-gradient(90deg, #059669 0%, #10b981 50%, #34d399 100%);
+    background-size: 200% 100%;
+    animation: shimmer-bar 2.5s linear infinite;
 }
 
-/* pending state — default */
+@keyframes shimmer-bar {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* pending state */
 .pr-step-pending .pr-step-node {
-    border-color: #cbd5e1;
+    border-color: #dde3ed;
+    background: #f8fafc;
 }
 
 .pr-step-pending .pr-step-dot {
-    background: #cbd5e1;
+    background: #c8d3e0;
 }
 
 .pr-step-pending .pr-step-check {
@@ -3007,14 +3064,14 @@ a:hover {
 }
 
 .pr-step-pending .pr-step-lbl {
-    color: var(--text-dim);
+    color: #94a3b8;
 }
 
 /* active state */
 .pr-step-active .pr-step-node {
     border-color: #f59e0b;
     background: #fffbeb;
-    box-shadow: 0 0 0 3px rgba(245, 158, 11, .18);
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, .15), 0 2px 6px rgba(245, 158, 11, .2);
     animation: pulse-step 1.4s ease-in-out infinite;
 }
 
@@ -3027,14 +3084,15 @@ a:hover {
 }
 
 .pr-step-active .pr-step-lbl {
-    color: #b45309;
-    font-weight: 700;
+    color: #92400e;
+    font-weight: 800;
 }
 
 /* done state */
 .pr-step-done .pr-step-node {
     border-color: #10b981;
-    background: #10b981;
+    background: linear-gradient(135deg, #10b981, #059669);
+    box-shadow: 0 2px 6px rgba(16, 185, 129, .3);
 }
 
 .pr-step-done .pr-step-dot {
@@ -3047,18 +3105,44 @@ a:hover {
 
 .pr-step-done .pr-step-lbl {
     color: #065f46;
-    font-weight: 700;
+    font-weight: 800;
+}
+
+/* FIX 3+4: linear progress bar inside each record card */
+.pr-bar {
+    height: 3px;
+    background: #eef1f6;
+    border-radius: 2px;
+    margin: 4px 4px 2px;
+    overflow: hidden;
+}
+
+.pr-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #2563eb, #3b82f6);
+    border-radius: 2px;
+    transition: width 0.45s cubic-bezier(.4, 0, .2, 1);
+    width: 0%;
+}
+
+.pr-card-done .pr-bar-fill {
+    background: linear-gradient(90deg, #059669, #10b981);
+}
+
+.pr-bar-fill-done {
+    background: linear-gradient(90deg, #059669, #10b981) !important;
+    transition: none;
 }
 
 @keyframes pulse-step {
 
     0%,
     100% {
-        box-shadow: 0 0 0 3px rgba(245, 158, 11, .18);
+        box-shadow: 0 0 0 4px rgba(245, 158, 11, .15), 0 2px 6px rgba(245, 158, 11, .2);
     }
 
     50% {
-        box-shadow: 0 0 0 6px rgba(245, 158, 11, .08);
+        box-shadow: 0 0 0 7px rgba(245, 158, 11, .07), 0 2px 6px rgba(245, 158, 11, .1);
     }
 }
 
@@ -3194,8 +3278,8 @@ a:hover {
 }
 
 .sp-msg {
-    font-size: 13.5px;
-    color: var(--text-sub);
+    font-size: 14px;
+    color: var(--text);
     line-height: 1.65;
     margin-bottom: 18px;
 }
@@ -3246,6 +3330,23 @@ body.pr-panel-open {
 .fmap-card.fmap-open {
     border-color: var(--border2);
 }
+
+/* FIX: visual style for files that have already been analysed */
+.fmap-card.fmap-ran {
+    border-color: var(--accent-line, rgba(30, 95, 168, .25));
+    background: var(--accent-soft, rgba(30, 95, 168, .04));
+}
+
+.fmap-card.fmap-ran .fmap-filename {
+    color: var(--text-muted);
+}
+
+.fmap-done-btn {
+    color: var(--green, #10b981) !important;
+    border-color: rgba(16, 185, 129, .3) !important;
+    opacity: 0.85;
+}
+
 
 .fmap-card-header {
     display: flex;
@@ -3913,28 +4014,30 @@ body.pr-panel-open {
 }
 
 .sp-section-title {
-    font-family: var(--font-display);
-    font-size: 11.5px;
-    font-weight: 700;
-    letter-spacing: .06em;
+    font-family: var(--font-ui);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .08em;
     text-transform: uppercase;
-    color: var(--text-muted);
+    color: var(--text);
     margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 1.5px solid var(--border);
 }
 
 /* ── Field rows ── */
 .sp-field {
     display: grid;
-    grid-template-columns: 130px 1fr;
-    gap: 6px 12px;
-    margin-bottom: 8px;
-    font-size: 13px;
-    line-height: 1.55;
+    grid-template-columns: 140px 1fr;
+    gap: 8px 14px;
+    margin-bottom: 10px;
+    font-size: 13.5px;
+    line-height: 1.65;
 }
 
 .sp-label {
-    font-weight: 600;
-    color: var(--text-sub);
+    font-weight: 700;
+    color: var(--text);
     padding-top: 1px;
 }
 
@@ -4385,6 +4488,37 @@ body.pr-panel-open {
     width: 100%;
 }
 
+/* ── Violated line — stronger red highlight with left bar ── */
+.code-row.violated-line {
+    border-left: 3px solid #c0392b;
+    background: rgba(192, 57, 43, .07);
+}
+
+.code-row.violated-line .ln-num {
+    color: #c0392b;
+    font-weight: 700;
+    margin-left: -3px;
+}
+
+.code-row.violated-line .ln-code {
+    background: rgba(192, 57, 43, .10);
+    color: #c0392b;
+    font-weight: 600;
+    display: block;
+    width: 100%;
+}
+
+/* ── Legend label beside "Violated Source Code" heading ── */
+.violated-legend {
+    font-size: 10px;
+    font-weight: 500;
+    color: #c0392b;
+    text-transform: none;
+    letter-spacing: 0;
+    margin-left: 8px;
+    opacity: 0.75;
+}
+
 /* =============================================================
    RULE CONFIG MODAL — new flat-list design
    ============================================================= */
@@ -4529,4 +4663,260 @@ body.pr-panel-open {
     font-weight: 600;
     color: var(--green-text);
     font-family: var(--font-ui);
+    word-break: break-all;
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+/* ── Info tooltip (ⓘ) ──────────────────────────────────── */
+.info-tip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: var(--text-muted, #94a3b8);
+    margin-left: 4px;
+    cursor: help;
+    vertical-align: middle;
+    transition: color 0.15s;
+    font-style: normal;
+}
+
+.info-tip:hover {
+    color: var(--accent, #2563eb);
+}
+
+/* ── Pipeline status tag transitions ───────────────────── */
+.pipeline-status-tag {
+    transition: background 0.4s, color 0.4s, border-color 0.4s;
+}
+
+#pipeline-status-dot {
+    transition: background 0.4s;
+}
+
+/* ── sp-section-title, sp-label, sp-value: already fixed at source above ── */
+
+/* ── Header status dot: green=server running ─────────────── */
+.status-dot {
+    transition: background 0.3s;
+}
+
+/* ================================================================
+   FEATURE 1 — File group headers in progress panel
+   ================================================================ */
+.pr-file-group-hdr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: #f1f5f9;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin: 16px 0 5px;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, .06);
+    color: #1e293b;
+}
+
+.pr-fhdr-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.pr-fhdr-left>svg {
+    flex-shrink: 0;
+    color: #475569;
+}
+
+.pr-fhdr-name {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: #1e293b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pr-fhdr-badge {
+    font-size: 10px;
+    font-weight: 600;
+    background: rgba(30, 41, 59, .08);
+    color: #475569;
+    padding: 1px 8px;
+    border-radius: 20px;
+    border: 1px solid rgba(30, 41, 59, .15);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.pr-fhdr-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.pr-fhdr-status {
+    font-size: 10px;
+    font-weight: 700;
+    color: #059669;
+    letter-spacing: .02em;
+    white-space: nowrap;
+}
+
+.pr-fhdr-running {
+    color: #b45309;
+    animation: fhdr-pulse-text 1.5s ease-in-out infinite;
+}
+
+@keyframes fhdr-pulse-text {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: .6;
+    }
+}
+
+/* ================================================================
+   FEATURE 1 — Collapsible file group headers
+   ================================================================ */
+.pr-file-group-hdr-collapsible {
+    cursor: pointer;
+    user-select: none;
+    transition: box-shadow .15s, background .15s;
+}
+
+.pr-file-group-hdr-collapsible:hover {
+    background: #e2e8f0;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, .1);
+}
+
+.pr-file-group-hdr-collapsible:active {
+    transform: translateY(0);
+}
+
+.pr-file-grp-chevron {
+    flex-shrink: 0;
+    transition: transform 0.22s cubic-bezier(.4, 0, .2, 1);
+    color: #475569;
+}
+
+.sp-edit-btn {
+    font-size: 11px;
+    font-weight: 600;
+    color: #2563eb;
+    background: rgba(37, 99, 235, .07);
+    border: 1px solid rgba(37, 99, 235, .22);
+    border-radius: 6px;
+    padding: 3px 9px;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+    white-space: nowrap;
+}
+
+.sp-edit-btn:hover {
+    background: rgba(37, 99, 235, .14);
+}
+
+.sp-edit-btn-active {
+    color: #15803d;
+    background: rgba(21, 128, 61, .1);
+    border-color: rgba(21, 128, 61, .3);
+}
+
+.fix-edit-area {
+    width: 100%;
+    min-height: 160px;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.55;
+    padding: 10px 12px;
+    border: 1.5px solid #2563eb;
+    border-radius: var(--r, 8px);
+    background: #f0f6ff;
+    color: var(--text, #1e293b);
+    resize: vertical;
+    box-sizing: border-box;
+    outline: none;
+}
+
+.fix-edit-area:focus {
+    border-color: #1d4ed8;
+    background: #eaf1ff;
+}
+
+.fix-edit-area.hidden {
+    display: none;
+}
+
+/* ================================================================
+   FEATURE 2/3 — Commit row (commit + go-without side by side)
+   ================================================================ */
+.sp-commit-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+}
+
+/* ================================================================
+   FEATURE 3 — "Go Without Change" button
+   ================================================================ */
+.go-without-btn {
+    font-size: 12px;
+    font-weight: 600;
+    color: #92400e;
+    background: rgba(234, 179, 8, .1);
+    border: 1px solid rgba(234, 179, 8, .35);
+    border-radius: 8px;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.go-without-btn:hover {
+    background: rgba(234, 179, 8, .18);
+}
+
+.go-without-btn-done {
+    color: #15803d;
+    background: rgba(21, 128, 61, .08);
+    border-color: rgba(21, 128, 61, .25);
+    cursor: default;
+}
+
+/* ================================================================
+   FEATURE 2 — Side panel nav bar (Prev / Next)
+   ================================================================ */
+#pr-side-nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px 10px;
+    border-bottom: 1px solid var(--border, #e2e8f0);
+    flex-shrink: 0;
+    background: #fafbfc;
+}
+
+#pr-side-nav button {
+    transition: background .15s, color .15s, box-shadow .15s;
+}
+
+#pr-side-nav button:not([disabled]):hover {
+    background: #eff6ff !important;
+    color: #1d4ed8 !important;
+    box-shadow: 0 1px 4px rgba(37, 99, 235, .12) !important;
 }

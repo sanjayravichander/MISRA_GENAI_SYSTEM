@@ -1,0 +1,111 @@
+{
+  "warning_count": 2,
+  "warnings": [
+    {
+      "warning_id": "1257",
+      "warning_no": "1257",
+      "tool_name": "",
+      "category": "MISRA-R (Required)",
+      "checker_name": "",
+      "rule_id": "10.3",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Narrowing conversion",
+      "file_path": "main.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "main",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "main.c",
+        "found": true,
+        "context_text": "       1  #include <stdio.h>\n       2  #include <stdint.h>\n       3  #include \"calc.h\"\n       4  \n       5  static int validate_input(int value)\n       6  {\n       7      if (value < 0)\n       8      {\n       9          return 0;\n      10      }\n      11  \n      12      if ((uint8_t)value > 200U)\n      13      {\n      14          return 0;\n      15      }\n      16  \n      17      return 1;\n      18  }\n      19  \n      20  int main(void)\n      21  {\n      22      int x = 10;\n      23      int y = 20;\n      24      uint8_t small;\n      25  \n      26      int total = calculate_total(x, y);\n      27  \n      28      small = total + 300;\n      29  \n      30      printf(\"%d\\n\", total);\n      31  \n      32      if (validate_input(total) == 1)\n      33      {\n      34          total = total * total;\n      35      }\n      36  \n      37      return 0;\n      38  }",
+        "context_start_line": 1,
+        "context_end_line": 38,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 10.3",
+          "description": "Implicit narrowing conversion",
+          "guidelines": "Rule 10.3 (Required): Implicit narrowing conversion. The value of 'u16val' (uint16_t) is assigned to 'u8val' (uint8_t). This implicit narrowing conversion may silently truncate the value (300 → 44), causing data loss and incorrect program behaviour.",
+          "score": 0.8634639776174552
+        },
+        {
+          "rule_id": "Rule 10.5",
+          "description": "The value of an expression should not be cast to an inappropriate essential type",
+          "guidelines": "uint32_t wide = 300U;\nuint8_t  small = (uint8_t)wide;   /* cast to inappropriate essential type */",
+          "score": 0.7124482343960833
+        },
+        {
+          "rule_id": "Rule 7.3",
+          "description": "The lowercase character \"l\" shall not be used in a literal suffix",
+          "guidelines": "long value = 10l;   /* lowercase l suffix */",
+          "score": 0.7053589746890625
+        },
+        {
+          "rule_id": "Rule 10.8",
+          "description": "The value of a composite expression shall not be cast to a different essential type category or a wider essential type",
+          "guidelines": "uint16_t a, b;\nuint32_t x = (uint32_t)(a + b);   /* cast composite expression to wider category */",
+          "score": 0.7015159781284985
+        }
+      ]
+    },
+    {
+      "warning_id": "5124",
+      "warning_no": "5124",
+      "tool_name": "",
+      "category": "MISRA-R (Required)",
+      "checker_name": "",
+      "rule_id": "21.6",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Standard I/O function used",
+      "file_path": "main.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "main",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "main.c",
+        "found": true,
+        "context_text": "       1  #include <stdio.h>\n       2  #include <stdint.h>\n       3  #include \"calc.h\"\n       4  \n       5  static int validate_input(int value)\n       6  {\n       7      if (value < 0)\n       8      {\n       9          return 0;\n      10      }\n      11  \n      12      if ((uint8_t)value > 200U)\n      13      {\n      14          return 0;\n      15      }\n      16  \n      17      return 1;\n      18  }\n      19  \n      20  int main(void)\n      21  {\n      22      int x = 10;\n      23      int y = 20;\n      24      uint8_t small;\n      25  \n      26      int total = calculate_total(x, y);\n      27  \n      28      small = total + 300;\n      29  \n      30      printf(\"%d\\n\", total);\n      31  \n      32      if (validate_input(total) == 1)\n      33      {\n      34          total = total * total;\n      35      }\n      36  \n      37      return 0;\n      38  }",
+        "context_start_line": 1,
+        "context_end_line": 38,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 21.6",
+          "description": "The standard input/output library <stdio.h> shall not be used",
+          "guidelines": "Rule 21.6 (Required): The standard input/output library <stdio.h> shall not be used. This code violates Rule 21.6 because the standard input/output library <stdio.h> shall not be used. Restricted standard-library features are disallowed because they reduce determinism, analyzability, or portability.",
+          "score": 0.8190369890355794
+        },
+        {
+          "rule_id": "Rule 17.1",
+          "description": "The standard header file <stdarg.h> shall not be used",
+          "guidelines": "Rule 17.1 (Required): The standard header file <stdarg.h> shall not be used. This code violates Rule 17.1 because the standard header file <stdarg.h> shall not be used. Function interfaces and calls must be explicit, safe, and consistently used.",
+          "score": 0.8055357944269869
+        },
+        {
+          "rule_id": "Rule 21.7",
+          "description": "The atof, atoi, atol and atoll functions of <stdlib.h> shall not be used",
+          "guidelines": "Rule 21.7 (Required): The atof, atoi, atol and atoll functions of <stdlib.h> shall not be used. This code violates Rule 21.7 because the atof, atoi, atol and atoll functions of <stdlib.h> shall not be used. Restricted standard-library features are disallowed because they reduce determinism, analyzability, or portability.",
+          "score": 0.8045705167161361
+        },
+        {
+          "rule_id": "Rule 21.9",
+          "description": "The bsearch function of <stdlib.h> shall not be used",
+          "guidelines": "Rule 21.9 (Required): The bsearch function of <stdlib.h> shall not be used. This code violates Rule 21.9 because the bsearch function of <stdlib.h> shall not be used. Restricted standard-library features are disallowed because they reduce determinism, analyzability, or portability.",
+          "score": 0.7921583134317813
+        }
+      ]
+    }
+  ]
+}

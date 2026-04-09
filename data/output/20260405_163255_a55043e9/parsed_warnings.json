@@ -1,0 +1,59 @@
+{
+  "warning_count": 2,
+  "warnings": [
+    {
+      "warning_id": "1338",
+      "warning_no": "1338",
+      "tool_name": "",
+      "category": "MISRA-R (Required)",
+      "checker_name": "",
+      "rule_id": "17.8",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Function parameter modified",
+      "file_path": "protocol.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "parse_frame",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "protocol.c",
+        "found": true,
+        "context_text": "       1  #include <stdint.h>\n       2  \n       3  void parse_frame(uint8_t * data, uint8_t len)\n       4  {\n       5      uint8_t i;\n       6  \n       7      for (i = 0U; i < len; i++)\n       8      {\n       9          data[i] = (uint8_t)(data[i] + 1U);\n      10      }\n      11  }\n      12  \n      13  uint8_t make_mask(uint8_t shift)\n      14  {\n      15      return (uint8_t)(1U << shift);\n      16  }",
+        "context_start_line": 1,
+        "context_end_line": 16,
+        "flagged_lines": []
+      }
+    },
+    {
+      "warning_id": "2790",
+      "warning_no": "2790",
+      "tool_name": "",
+      "category": "MISRA-R (Required)",
+      "checker_name": "",
+      "rule_id": "12.2",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Shift range issue",
+      "file_path": "protocol.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "make_mask",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "protocol.c",
+        "found": true,
+        "context_text": "       1  #include <stdint.h>\n       2  \n       3  void parse_frame(uint8_t * data, uint8_t len)\n       4  {\n       5      uint8_t i;\n       6  \n       7      for (i = 0U; i < len; i++)\n       8      {\n       9          data[i] = (uint8_t)(data[i] + 1U);\n      10      }\n      11  }\n      12  \n      13  uint8_t make_mask(uint8_t shift)\n      14  {\n      15      return (uint8_t)(1U << shift);\n      16  }",
+        "context_start_line": 1,
+        "context_end_line": 16,
+        "flagged_lines": []
+      }
+    }
+  ]
+}

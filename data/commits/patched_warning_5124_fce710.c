@@ -1,0 +1,1 @@
+replace printf("%d\n", total); with printf("value=%d\n", total);

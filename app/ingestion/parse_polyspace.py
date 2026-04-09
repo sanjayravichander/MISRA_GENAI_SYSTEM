@@ -83,6 +83,9 @@ def extract_source_context(
     line_no: Optional[int],
     inline_code: str = "",
     context: int = CONTEXT_LINES,
+    function_name: str = "",
+    rule_id: str = "",
+    message: str = "",
 ) -> Dict[str, Any]:
     """
     Build source context for the flagged code viewer.
@@ -134,6 +137,87 @@ def extract_source_context(
 
     all_lines = src_file.read_text(encoding="utf-8", errors="replace").splitlines()
     total = len(all_lines)
+
+    # Rule-aware violated line detection when no explicit line number given
+    if not line_no and (function_name or rule_id or message):
+        import re as _rp
+
+        # Normalise rule id: "Rule 10.3" → "10.3"
+        _nr = _rp.sub(r"(?i)^rule\s*", "", str(rule_id or "")).strip()
+        _msg = (message or "").lower()
+
+        # Rule → patterns that identify the violated line (highest priority first)
+        _RPATS: Dict[str, List[str]] = {
+            "10.3":  [r'=\s*\w+\s*\+\s*\d', r'=\s*\w+\s*\+\s*\w', r'uint[0-9]+_t\b.*=.*\+', r'\bsmall\s*='],
+            "8.13":  [r'char\s*\*\s*\w+', r'void\s*\*\s*\w+', r'\w+\s*\*\s+\w+\s*\)'],
+            "17.7":  [r'^\s*puts\s*\(', r'^\s*printf\s*\(', r'^\s*strcpy\s*\(', r'^\s*fprintf\s*\(', r'=\s*puts\s*\(', r'=\s*printf\s*\('],
+            "9.1":   [r'return\s+\w+', r'\w+\s*=\s*raw_value', r'raw_value\b'],
+            "14.4":  [r'if\s*\(\s*\w+\s*\)', r'while\s*\(\s*\w+\s*\)'],
+            "14.1":  [r'for\s*\(', r'while\s*\(0\)'],
+            "21.6":  [r'printf\s*\(', r'scanf\s*\(', r'fprintf\s*\(', r'puts\s*\('],
+            "2.2":   [r'\w+\s*=\s*\w+\s*;(?!\s*//)'],
+            "17.2":  [r'\b' + (_rp.escape(function_name.strip()) if function_name.strip() else r'\w+') + r'\s*\('],
+            "17.8":  [r'^\s*\w+\s*[+\-\*]?=\s*\w', r'\bparam\b.*[+\-\*]?='],
+            "12.2":  [r'<<\s*\d+', r'>>\s*\d+'],
+            "13.2":  [r'\+\+\w+', r'\w+\+\+', r'--\w+', r'\w+--'],
+            "2.1":   [r'return\s+\d+\s*;', r'break\s*;'],
+        }
+
+        # For rule 8.13, the violation is the function signature itself (param not const)
+        # So we also search the signature line
+        _check_sig = _nr in ("8.13",) or "const" in _msg or "pointer param" in _msg
+
+        fn = (function_name or "").strip()
+
+        # Find function signature line and body bounds
+        _sig_line = None
+        _body_start = None
+        _body_end = None
+        for _i, _ln in enumerate(all_lines):
+            if fn and fn in _ln and "(" in _ln:
+                _sig_line = _i
+                _bd = 0
+                for _j in range(_i, min(_i + 8, total)):
+                    if "{" in all_lines[_j]:
+                        _body_start = _j + 1  # first line after opening brace
+                        _bd = 0
+                        for _k in range(_j, total):
+                            _bd += all_lines[_k].count("{") - all_lines[_k].count("}")
+                            if _bd <= 0 and _k > _j:
+                                _body_end = _k
+                                break
+                        break
+                break
+
+        _pats = _RPATS.get(_nr, [])
+
+        # For rules about signatures (8.13), search includes the signature line
+        _search_from = _sig_line if (_check_sig and _sig_line is not None) else (_body_start if _body_start is not None else (_sig_line + 1 if _sig_line is not None else 0))
+        _search_to   = _body_end if _body_end is not None else total
+
+        _found = None
+        # First pass: try rule-specific patterns
+        for _pat in _pats:
+            for _i in range(_search_from, _search_to):
+                _s = all_lines[_i].strip()
+                if not _s or _s in ("{", "}") or _s.startswith("//") or _s.startswith("/*"):
+                    continue
+                if _rp.search(_pat, all_lines[_i]):
+                    _found = _i + 1  # 1-indexed
+                    break
+            if _found:
+                break
+
+        # Second pass fallback: first non-trivial executable line in body
+        if not _found and _body_start is not None:
+            for _i in range(_body_start, _search_to):
+                _s = all_lines[_i].strip()
+                if _s and _s not in ("{", "}") and not _s.startswith("//") and not _s.startswith("/*"):
+                    _found = _i + 1
+                    break
+
+        if _found:
+            line_no = _found
 
     if not line_no:
         ctx_start, ctx_end = 1, min(total, 40)
@@ -237,7 +321,8 @@ def _parse_qac(rows, headers, source_dir, uploaded_stems) -> List[Dict]:
         sl_no = _get(row, idx, "sl.no", "sl no", "slno")
         wid   = f"W{int(sl_no):04d}" if sl_no and str(sl_no).strip().isdigit() else f"W{row_num:04d}"
 
-        source_ctx = extract_source_context(source_dir, file_path, line_no, inline_code)
+        source_ctx = extract_source_context(source_dir, file_path, line_no, inline_code,
+                                             function_name=_get(row, idx, "function name", "function", "func name", "funcname"))
 
         warnings.append({
             "warning_id":      wid,
@@ -299,8 +384,13 @@ def _parse_mock(rows, headers, source_dir, uploaded_stems) -> List[Dict]:
         misra_category = rule_map.get("misra_category", severity) if rule_map else severity
         approved_fix   = patch_rec.get("after_code") if patch_rec else None
 
-        line_no = int(ls_raw) if ls_raw and str(ls_raw).strip().isdigit() else None
-        source_ctx = extract_source_context(source_dir, file_path, line_no)
+        func_name  = _get(row, idx, "function name", "function", "func name", "funcname")
+        message_val = _get(row, idx, "message")
+        line_no    = int(ls_raw) if ls_raw and str(ls_raw).strip().isdigit() else None
+        source_ctx = extract_source_context(source_dir, file_path, line_no,
+                                            function_name=func_name,
+                                            rule_id=rule_raw,
+                                            message=message_val)
 
         warnings.append({
             "warning_id":      warning_no,
@@ -316,7 +406,7 @@ def _parse_mock(rows, headers, source_dir, uploaded_stems) -> List[Dict]:
             "file_path":       file_path,
             "line_start":      line_no,
             "line_end":        int(le_raw) if le_raw and str(le_raw).strip().isdigit() else line_no,
-            "function_name":   _get(row, idx, "function name", "function", "func name", "funcname"),
+            "function_name":   func_name,
             "approved_fix":    approved_fix,
             "has_approved_fix": bool(approved_fix),
             "client_accepted": False,
@@ -384,3 +474,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+    

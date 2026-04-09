@@ -1,0 +1,58 @@
+{
+  "warning_count": 1,
+  "warnings": [
+    {
+      "warning_id": "2883",
+      "warning_no": "2883",
+      "tool_name": "",
+      "category": "MISRA-M (Mandatory)",
+      "checker_name": "",
+      "rule_id": "9.1",
+      "severity": "Medium",
+      "severity_rank": 2,
+      "misra_category": "Medium",
+      "message": "Variable used before initialization",
+      "file_path": "uninit_read.c",
+      "line_start": null,
+      "line_end": null,
+      "function_name": "func",
+      "approved_fix": null,
+      "has_approved_fix": false,
+      "client_accepted": false,
+      "source_context": {
+        "file": "uninit_read.c",
+        "found": true,
+        "context_text": "       1  #include <stdio.h>\n       2  \n       3  void func(void)\n       4  {\n       5      int x;       /* no init */\n       6      int y;\n       7  \n       8      y = x + 1;   /* x read before set */\n       9  \n      10      printf(\"%d\\n\", y);\n      11  }",
+        "context_start_line": 1,
+        "context_end_line": 11,
+        "flagged_lines": []
+      },
+      "misra_context": [
+        {
+          "rule_id": "Rule 9.1",
+          "description": "Non-initialized local variable",
+          "guidelines": "Rule 9.1 (Mandatory): Non-initialized local variable. Variable 'x' is read before being assigned a value. Reading an automatic variable before it is set leads to undefined behaviour and unpredictable results.",
+          "score": 0.876738135507812
+        },
+        {
+          "rule_id": "Rule 9.4",
+          "description": "An element of an object shall not be initialized more than once",
+          "guidelines": "Rule 9.4 (Required): An element of an object shall not be initialized more than once. This code violates Rule 9.4 because an element of an object shall not be initialized more than once. Incorrect initialization can leave objects in unexpected states and introduce subtle runtime defects.",
+          "score": 0.8217901328162805
+        },
+        {
+          "rule_id": "Rule 20.9",
+          "description": "All identifiers used in the controlling expression of #if or #elif shall be #define'd before evaluation",
+          "guidelines": "Rule 20.9 (Required): All identifiers used in the controlling expression of #if or #elif shall be #define'd before evaluation. This code violates Rule 20.9 because all identifiers used in the controlling expression of #if or #elif shall be #define'd before evaluation. Preprocessor misuse can obscure intent and create fragile expansions.",
+          "score": 0.8217685166516584
+        },
+        {
+          "rule_id": "Rule 9.2",
+          "description": "Braces shall be used to indicate and match the structure in the non-zero initialization of arrays and structures",
+          "guidelines": "Rule 9.2 (Required): Braces shall be used to indicate and match the structure in the non-zero initialization of arrays and structures. This code violates Rule 9.2 because braces shall be used to indicate and match the structure in the non-zero initialization of arrays and structures. Incorrect initialization can leave objects in unexpected states and introduce subtle runtime defects.",
+          "score": 0.7978266803760293
+        }
+      ]
+    }
+  ]
+}

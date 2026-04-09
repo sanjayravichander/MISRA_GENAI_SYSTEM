@@ -1,0 +1,160 @@
+{
+  "warning_count": 2,
+  "confidence_high": 0,
+  "confidence_medium": 1,
+  "confidence_low": 0,
+  "needs_manual_review": 1,
+  "results": [
+    {
+      "guideline_id": "Rule 10.3",
+      "guideline_title": "Implicit narrowing conversion",
+      "explanation": {
+        "summary": "The code performs an implicit narrowing conversion which may lead to data loss and incorrect program behavior.",
+        "rule_basis": "The value of 'total' (int) is assigned to 'small' (uint8_t). This implicit narrowing conversion may silently truncate the value (300 + total > 255), causing data loss and incorrect program behavior.",
+        "code_evidence": "The code snippet contains an implicit narrowing conversion from int to uint8_t."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Explicit cast",
+          "why": "To avoid implicit narrowing conversion and potential data loss.",
+          "patched_code": "small = (uint8_t)(total + 300);",
+          "compliance_notes": "This fix ensures that the conversion is explicit and less prone to errors.",
+          "risk_reduction": "High"
+        },
+        {
+          "rank": 2,
+          "title": "Use a larger data type",
+          "why": "To prevent potential data loss due to narrowing conversion.",
+          "patched_code": "uint16_t small;",
+          "compliance_notes": "This fix reduces the risk of data loss by using a larger data type.",
+          "risk_reduction": "Medium"
+        }
+      ],
+      "risk_analysis": {
+        "severity": "High",
+        "why": "The implicit narrowing conversion may lead to data loss and incorrect program behavior.",
+        "potential_failures": [
+          "Data loss due to implicit narrowing conversion",
+          "Incorrect program behavior due to truncated values"
+        ],
+        "runtime_risk": "High",
+        "maintainability_risk": "High"
+      },
+      "deviation_advice": {
+        "deviation_possible": "No",
+        "recommended_decision": "Implement one of the provided fixes.",
+        "required_justification": "Implicit narrowing conversion is not allowed in MISRA C.",
+        "review_notes": "Ensure that the fix does not introduce new issues."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "ac195ae8-bb0d-484f-9b1e-b777db09c5cc",
+          "2e618e23-85df-409e-82e6-f6094004e480",
+          "5f982fcc-83fe-4c58-a8d3-c057556e444c",
+          "7bad2d39-853b-4a5a-97b6-5c3e0994ae4a"
+        ],
+        "retrieval_score_raw": 0.834182,
+        "retrieval_score_reranked": 0.914182,
+        "confidence": 0.9,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear inconsistent as the warning message does not explicitly mention 'narrowing conversion'."
+        ]
+      },
+      "warning_id": "1257",
+      "source": "final_cache",
+      "_from_cache": true,
+      "needs_manual_review": true,
+      "evaluator_notes": "Evaluator error: Failed to create llama_context"
+    },
+    {
+      "guideline_id": "Rule 21.6",
+      "guideline_title": "The standard input/output library <stdio.h> shall not be used",
+      "explanation": {
+        "summary": "The standard input/output library <stdio.h> is used, which is not allowed according to MISRA C.",
+        "rule_basis": "MISRA C:2012, Rule 21.6",
+        "code_evidence": "The code snippet includes the #include <stdio.h> line."
+      },
+      "fix_suggestions": [
+        {
+          "rank": 1,
+          "title": "Replace printf with a safer alternative",
+          "why": "printf is a standard I/O function that violates MISRA C.",
+          "patched_code": "replace printf(\"%d\\n\", total); with printf(\"value=%d\\n\", total);",
+          "compliance_notes": "This fix addresses the violation but introduces a new violation of Rule 21.6. Consider using a safer alternative such as snprintf or vprintf.",
+          "risk_reduction": "Low",
+          "original_patched_code": "replace printf(\"%d\\n\", total); with printf(\"value=%d\\n\", total);",
+          "original_title": "Replace printf with a safer alternative",
+          "confidence": "Medium",
+          "is_correct": true,
+          "issues_found": []
+        }
+      ],
+      "risk_analysis": {
+        "severity": "Medium",
+        "why": "The use of standard I/O functions can lead to portability issues and reduced determinism.",
+        "potential_failures": [
+          "Portability issues",
+          "Reduced determinism"
+        ],
+        "runtime_risk": "Medium",
+        "maintainability_risk": "Medium"
+      },
+      "deviation_advice": {
+        "deviation_possible": "Conditional",
+        "recommended_decision": "Avoid using standard I/O functions unless there is a compelling reason.",
+        "required_justification": "If a deviation is necessary, document the reason and the potential risks.",
+        "review_notes": "Consider using a safer alternative such as snprintf or vprintf."
+      },
+      "traceability": {
+        "retrieved_chunk_ids": [
+          "73009af8-3657-49d1-9e1e-3bbb9703614d",
+          "ae5fc129-e704-4b08-9b30-c09715775425",
+          "cbe32b38-a8cf-4356-8262-b59826738cb7"
+        ],
+        "retrieval_score_raw": 0.793019,
+        "retrieval_score_reranked": 0.873019,
+        "confidence": 0.9,
+        "limitations": [
+          "The warning text and retrieved rule meaning appear inconsistent. The warning text suggests the use of printf, while the retrieved rule text forbids it."
+        ]
+      },
+      "warning_id": "5124",
+      "source": "final_cache",
+      "_from_cache": true,
+      "evaluation": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "string"
+          },
+          "rule_basis": {
+            "type": "string"
+          },
+          "code_evidence": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "summary",
+          "rule_basis",
+          "code_evidence"
+        ],
+        "warning_id": "5124",
+        "rule_id": "",
+        "overall_confidence": "Medium",
+        "needs_manual_review": false,
+        "evaluated_fixes": [],
+        "evaluator_notes": "",
+        "_eval_from_cache": true
+      },
+      "overall_confidence": "Medium",
+      "needs_manual_review": false,
+      "evaluator_notes": "",
+      "_eval_from_cache": true
+    }
+  ]
+}
