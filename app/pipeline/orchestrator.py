@@ -29,7 +29,7 @@ from typing import Any, Dict, List
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-# ── Force line-buffered stdout so server.py receives print() output immediately
+# -- Force line-buffered stdout so server.py receives print() output immediately
 # rather than waiting for the 8KB pipe buffer to fill (critical on Windows).
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(line_buffering=True)
@@ -55,7 +55,7 @@ def phase_6a_parse(
     verbose: bool = True,
 ) -> List[Dict[str, Any]]:
     if verbose:
-        print(f"\n{'─'*60}", flush=True)
+        print(f"\n{'-'*60}", flush=True)
         print(f"Phase 6a — Parsing Polyspace report", flush=True)
         print(f"  Excel  : {xlsx_path}", flush=True)
         print(f"  Sources: {source_dir}", flush=True)
@@ -88,7 +88,7 @@ def phase_6b_retrieve(
     verbose: bool = True,
 ) -> List[Dict[str, Any]]:
     if verbose:
-        print(f"\n{'─'*60}", flush=True)
+        print(f"\n{'-'*60}", flush=True)
         print(f"Phase 6b — Retrieving MISRA context (Qdrant + BGE)", flush=True)
 
     from app.retrieval.retrieve_rules import retrieve_rules
@@ -133,7 +133,7 @@ def phase_7_generate(
     verbose: bool = True,
 ) -> List[Dict[str, Any]]:
     if verbose:
-        print(f"\n{'─'*60}", flush=True)
+        print(f"\n{'-'*60}", flush=True)
         print(f"Phase 7 — Generating fix suggestions (llama-cpp)", flush=True)
         print(f"  Model : {LOCAL_MODEL_PATH}", flush=True)
         print(f"  Warnings: {len(enriched)}", flush=True)
@@ -262,7 +262,7 @@ def phase_8_evaluate(
     verbose: bool = True,
 ) -> List[Dict[str, Any]]:
     if verbose:
-        print(f"\n{'─'*60}", flush=True)
+        print(f"\n{'-'*60}", flush=True)
         print(f"Phase 8 — Evaluating fix suggestions (self-critique)", flush=True)
 
     from app.pipeline.evaluate_fixes import evaluate_all
